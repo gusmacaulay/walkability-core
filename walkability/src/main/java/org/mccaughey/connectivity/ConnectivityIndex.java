@@ -5,12 +5,18 @@
 package org.mccaughey.connectivity;
 
 
-import java.io.File;
-import org.geotools.data.FileDataStore;
-import org.geotools.data.FileDataStoreFinder;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Iterator;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
-import org.opengis.coverage.grid.GridCoverage;
+import org.geotools.feature.FeatureIterator;
+import org.geotools.graph.build.feature.FeatureGraphGenerator;
+import org.geotools.graph.build.line.LineStringGraphGenerator;
+import org.geotools.graph.structure.Edge;
+import org.geotools.graph.structure.Graph;
+import org.geotools.graph.structure.Node;
+import org.opengis.feature.Feature;
 
 /**
  *
@@ -18,17 +24,43 @@ import org.opengis.coverage.grid.GridCoverage;
  */
 public class ConnectivityIndex {
 
-    public static void main(String[] args) throws Exception {
-        //Read a shapefile in ...
-        SimpleFeatureSource featureSource = openShapeFile("/home/gus/SRC/geoserver-trunk/data/release/data/taz_shapes/tasmania_roads.shp");
-
-     
+    public static int connections(SimpleFeatureSource featureSource) throws Exception {
+        
+        Graph graph = buildLineNetwork(featureSource);
+        return countConnections(graph);
     }
 
-    private static SimpleFeatureSource openShapeFile(String filename) throws Exception {
-        File shapeFile = new File(filename);
-        // Connect to the shapefile
-        FileDataStore dataStore = FileDataStoreFinder.getDataStore(shapeFile);
-        return dataStore.getFeatureSource();
+    private static Graph buildLineNetwork(SimpleFeatureSource featureSource) throws IOException {        
+        // get a feature collection
+        SimpleFeatureCollection fCollection = featureSource.getFeatures();
+
+        //create a linear graph generate
+        LineStringGraphGenerator lineStringGen = new LineStringGraphGenerator();
+
+        //wrap it in a feature graph generator
+        FeatureGraphGenerator featureGen = new FeatureGraphGenerator(lineStringGen);
+
+        //throw all the features into the graph generator
+        FeatureIterator iter = fCollection.features();
+        try {
+            while (iter.hasNext()) {
+                Feature feature = iter.next();
+                featureGen.add(feature);
+            }
+        } finally {
+            iter.close();
+        }
+        return featureGen.getGraph();
     }
+    
+    private static int countConnections(Graph graph) {
+        int count = 0;
+        for (Node node : (Collection<Node>)graph.getNodes()) {
+            if (node.getEdges().size() >= 3) { //3 or more legged nodes are connected
+                count++;
+            }
+        }
+        return count;
+    }
+    
 }

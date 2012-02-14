@@ -29,13 +29,13 @@ import org.opengis.geometry.Envelope;
 public class VectorToGridExample {
     public static void main(String[] args) throws Exception {
         //Read a shapefile in ...
-        SimpleFeatureSource featureSource = openShapeFile("/home/gus/SRC/geoserver-trunk/data/release/data/taz_shapes/tasmania_roads.shp");
+        SimpleFeatureSource featureSource = openShapeFile("/home/amacaulay/apache-tomcat-7.0.22/webapps/geoserver/data/data/taz_shapes/tasmania_roads.shp");
 
         SimpleFeatureCollection featureCollection = addValues(featureSource);
         //Write out features as coverage ...
         GridCoverage coverage = collectionToCoverage(featureCollection, "Value");
         //Write coverage to file ...
-        File geotiff = writeCoverage("/home/gus/coverage.geotiff",coverage);
+        File geotiff = writeCoverage("/home/amacaulay/coverage.geotiff",coverage);
     }
 
     private static SimpleFeatureSource openShapeFile(String filename) throws Exception {
