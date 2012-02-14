@@ -41,7 +41,7 @@ public class GraphTest {
         System.out.println("Graph Edges: " + String.valueOf(graph.getEdges().size()));
         //Count all the orphans 
         int orphans = countOrphans(graph);
-        System.out.println("Orpahn Count: " + String.valueOf(orphans));
+        System.out.println("Orphan Count: " + String.valueOf(orphans));
     
     }
 
