@@ -15,9 +15,10 @@ import org.geotools.data.simple.SimpleFeatureSource;
 public class ConnectivityIndexOMS {
 
     @In public SimpleFeatureSource featureSource;
+    @Out public int connections;
     
     @Execute
     public void run() throws Exception {
-        System.out.println(ConnectivityIndex.connections(featureSource));
+        connections = ConnectivityIndex.connections(featureSource);
     }
 }
