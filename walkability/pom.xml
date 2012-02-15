@@ -109,7 +109,7 @@
          <testResources>
 	       <testResource>
 	         <directory>src/test/resources</directory>
-	         <filtering>true</filtering>
+	         <filtering>false</filtering> <!-- this is important for binary files -->
 	       </testResource>
 	    </testResources>
         <plugins>
