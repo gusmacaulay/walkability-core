@@ -17,8 +17,14 @@ public class ConnectivityIndexOMS {
     @In public SimpleFeatureSource featureSource;
     @Out public int connections;
     
+    public void ConnectivityIndexOMS() {
+        
+    }
+     
     @Execute
     public void run() throws Exception {
         connections = ConnectivityIndex.connections(featureSource);
     }
+    
+    
 }
