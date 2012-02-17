@@ -5,6 +5,7 @@
 package org.mccaughey.connectivity;
 
 
+import com.vividsolutions.jts.geom.Geometry;
 import java.io.IOException;
 import java.util.Collection;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -22,10 +23,11 @@ import org.opengis.feature.Feature;
  */
 public class ConnectivityIndex {
 
-    public static int connections(SimpleFeatureSource featureSource) throws Exception {
+    public static double connectivity(SimpleFeatureSource featureSource, Geometry roi) throws Exception {
         
+        double area = roi.getArea();
         Graph graph = buildLineNetwork(featureSource);
-        return countConnections(graph);
+        return countConnections(graph)/area;
     }
 
     private static Graph buildLineNetwork(SimpleFeatureSource featureSource) throws IOException {        
@@ -57,8 +59,8 @@ public class ConnectivityIndex {
             if (node.getEdges().size() >= 3) { //3 or more legged nodes are connected
                 count++;
             }
-        }
-        return count;
+       }
+       return count;
     }
     
 }

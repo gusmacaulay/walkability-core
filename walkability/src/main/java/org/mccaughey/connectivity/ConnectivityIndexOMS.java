@@ -4,6 +4,7 @@
  */
 package org.mccaughey.connectivity;
 
+import com.vividsolutions.jts.geom.Geometry;
 import oms3.annotations.*;
 import org.geotools.data.simple.SimpleFeatureSource;
 
@@ -15,7 +16,8 @@ import org.geotools.data.simple.SimpleFeatureSource;
 public class ConnectivityIndexOMS {
 
     @In public SimpleFeatureSource featureSource;
-    @Out public int connections;
+    @In public Geometry region;
+    @Out public double connections;
     
     public void ConnectivityIndexOMS() {
         
@@ -23,7 +25,7 @@ public class ConnectivityIndexOMS {
      
     @Execute
     public void run() throws Exception {
-        connections = ConnectivityIndex.connections(featureSource);
+        connections = ConnectivityIndex.connectivity(featureSource, region);
     }
     
     
