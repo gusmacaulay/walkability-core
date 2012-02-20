@@ -17,7 +17,7 @@ public class ConnectivityIndexOMS {
 
     @In public SimpleFeatureSource featureSource;
     @In public Geometry region;
-    @Out public double connections;
+    @Out public double connectivity;
     
     public void ConnectivityIndexOMS() {
         
@@ -25,7 +25,7 @@ public class ConnectivityIndexOMS {
      
     @Execute
     public void run() throws Exception {
-        connections = ConnectivityIndex.connectivity(featureSource, region);
+        connectivity = ConnectivityIndex.connectivity(featureSource, region);
     }
     
     

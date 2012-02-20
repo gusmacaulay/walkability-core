@@ -26,11 +26,13 @@ public class ConnectivityIndex {
     public static double connectivity(SimpleFeatureSource featureSource, Geometry roi) throws Exception {
         
         double area = roi.getArea();
-        Graph graph = buildLineNetwork(featureSource);
+        System.out.println("Area:" + String.valueOf(area));
+        Graph graph = buildLineNetwork(featureSource, roi);
+        System.out.println("Connections:" + String.valueOf(countConnections(graph)));
         return countConnections(graph)/area;
     }
 
-    private static Graph buildLineNetwork(SimpleFeatureSource featureSource) throws IOException {        
+    private static Graph buildLineNetwork(SimpleFeatureSource featureSource, Geometry roi) throws IOException {        
         // get a feature collection
         SimpleFeatureCollection fCollection = featureSource.getFeatures();
 
@@ -45,7 +47,8 @@ public class ConnectivityIndex {
         try {
             while (iter.hasNext()) {
                 Feature feature = iter.next();
-                featureGen.add(feature);
+                if (roi.crosses((Geometry)feature.getDefaultGeometryProperty().getValue())) 
+                    featureGen.add(feature);
             }
         } finally {
             iter.close();
