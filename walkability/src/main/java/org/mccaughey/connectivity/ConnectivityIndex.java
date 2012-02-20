@@ -42,12 +42,12 @@ public class ConnectivityIndex {
         //wrap it in a feature graph generator
         FeatureGraphGenerator featureGen = new FeatureGraphGenerator(lineStringGen);
 
-        //throw all the features into the graph generator
+        //put all the features that intersect the roi into  the graph generator
         FeatureIterator iter = fCollection.features();
         try {
             while (iter.hasNext()) {
                 Feature feature = iter.next();
-                if (roi.crosses((Geometry)feature.getDefaultGeometryProperty().getValue())) 
+                if (roi.intersects((Geometry)feature.getDefaultGeometryProperty().getValue())) 
                     featureGen.add(feature);
             }
         } finally {
