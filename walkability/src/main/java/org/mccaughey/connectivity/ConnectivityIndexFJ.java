@@ -18,34 +18,16 @@ import org.opengis.feature.Feature;
  * @author amacaulay
  */
 public class ConnectivityIndexFJ extends RecursiveAction {
-//    private final int threshold;
-//    private final SelectMaxProblem problem;
-
     private final double[] results;
     private final FileDataStore roadsDataStore;
     private final Feature[] regions;
 
     public ConnectivityIndexFJ(FileDataStore roadsDataStore, Feature[] regions) {
-//        this.problem = problem;
-//        this.threshold = threshold;
         this.roadsDataStore = roadsDataStore;
         this.regions = regions;
         this.results = new double[regions.length];
     }
 
-//    @Override
-//    protected void compute() {
-//        if (problem.size < threshold)
-//            result = problem.solveSequentially();
-//        else {
-//            int midpoint = problem.size / 2;
-//            ConnectivityIndexFJ left = new ConnectivityIndexFJ(problem.subproblem(0, midpoint), threshold);
-//            ConnectivityIndexFJ right = new ConnectivityIndexFJ(problem.subproblem(midpoint + 1, problem.size), threshold);
-//            invokeAll(left, right);
-//            
-//            result = Math.max(left.result, right.result);
-//        }
-//    }
     @Override
     protected void compute() {
        
@@ -55,7 +37,7 @@ public class ConnectivityIndexFJ extends RecursiveAction {
             if (regions.length == 1) {
                 Geometry geom = (Geometry) regions[0].getDefaultGeometryProperty().getValue();
                 double connectivity = ConnectivityIndex.connectivity(roadsDataStore.getFeatureSource(), geom);
-                System.out.println("Connectivity: " + String.valueOf(connectivity));
+//                System.out.println("Connectivity: " + String.valueOf(connectivity));
                 results[0] = connectivity;
             }
             else {
@@ -69,7 +51,7 @@ public class ConnectivityIndexFJ extends RecursiveAction {
                 invokeAll(indexers);
                 int i =0;
                 for(ConnectivityIndexFJ cifj: indexers) {
-                    System.out.println("Appending result: " + String.valueOf(cifj.results[0]));
+//                    System.out.println("Appending result: " + String.valueOf(cifj.results[0]));
                     this.results[i] = cifj.results[0];
                     i++;
                 }
@@ -82,12 +64,7 @@ public class ConnectivityIndexFJ extends RecursiveAction {
     }
 
     public void connectivity() throws Exception {
-      
-//        int[] numbers = {1, 2, 3, 4};
-//        SelectMaxProblem problem = new SelectMaxProblem(numbers, 0, 3);
-//        int threshold = 1;
         int nThreads = 4;
-       // ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(roadsDataStore, regions);
         ForkJoinPool fjPool = new ForkJoinPool(nThreads);
 
         fjPool.invoke(this);
