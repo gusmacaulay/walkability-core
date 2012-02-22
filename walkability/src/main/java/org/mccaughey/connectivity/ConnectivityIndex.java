@@ -26,9 +26,8 @@ public class ConnectivityIndex {
     public static double connectivity(SimpleFeatureSource featureSource, Geometry roi) throws Exception {
         
         double area = roi.getArea();
-        System.out.println("Area:" + String.valueOf(area));
         Graph graph = buildLineNetwork(featureSource, roi);
-        System.out.println("Connections:" + String.valueOf(countConnections(graph)));
+        System.out.println("Area:" + String.valueOf(area) + " Connections:" + String.valueOf(countConnections(graph)));
         return countConnections(graph)/area;
     }
 
