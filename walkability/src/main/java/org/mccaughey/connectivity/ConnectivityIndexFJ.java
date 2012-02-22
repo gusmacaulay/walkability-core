@@ -21,9 +21,9 @@ public class ConnectivityIndexFJ extends RecursiveAction {
 //    private final int threshold;
 //    private final SelectMaxProblem problem;
 
-    public double[] results;
-    FileDataStore roadsDataStore;
-    Feature[] regions;
+    private final double[] results;
+    private final FileDataStore roadsDataStore;
+    private final Feature[] regions;
 
     public ConnectivityIndexFJ(FileDataStore roadsDataStore, Feature[] regions) {
 //        this.problem = problem;
@@ -81,7 +81,7 @@ public class ConnectivityIndexFJ extends RecursiveAction {
         }
     }
 
-    public void getResult() throws Exception {
+    public void connectivity() throws Exception {
       
 //        int[] numbers = {1, 2, 3, 4};
 //        SelectMaxProblem problem = new SelectMaxProblem(numbers, 0, 3);
