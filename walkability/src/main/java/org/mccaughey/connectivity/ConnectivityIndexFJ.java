@@ -18,6 +18,7 @@ import org.opengis.feature.Feature;
  * @author amacaulay
  */
 public class ConnectivityIndexFJ extends RecursiveAction {
+
     private final double[] results;
     private final FileDataStore roadsDataStore;
     private final Feature[] regions;
@@ -30,27 +31,26 @@ public class ConnectivityIndexFJ extends RecursiveAction {
 
     @Override
     protected void compute() {
-       
+
         // Connect to the network shapefile and regions shapefile, process with ConnectivityIndex
         try {
-            
+
             if (regions.length == 1) {
                 Geometry geom = (Geometry) regions[0].getDefaultGeometryProperty().getValue();
                 double connectivity = ConnectivityIndex.connectivity(roadsDataStore.getFeatureSource(), geom);
-//                System.out.println("Connectivity: " + String.valueOf(connectivity));
+//              System.out.println("Connectivity: " + String.valueOf(connectivity));
                 results[0] = connectivity;
-            }
-            else {
+            } else {
                 ArrayList<ConnectivityIndexFJ> indexers = new ArrayList();
-                for(int i=0;i<regions.length;i++) {
+                for (int i = 0; i < regions.length; i++) {
                     Feature[] singleRegion = new Feature[1];
                     singleRegion[0] = regions[i];
                     ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(roadsDataStore, singleRegion);
                     indexers.add(cifj);
                 }
                 invokeAll(indexers);
-                int i =0;
-                for(ConnectivityIndexFJ cifj: indexers) {
+                int i = 0;
+                for (ConnectivityIndexFJ cifj : indexers) {
 //                    System.out.println("Appending result: " + String.valueOf(cifj.results[0]));
                     this.results[i] = cifj.results[0];
                     i++;
@@ -59,18 +59,18 @@ public class ConnectivityIndexFJ extends RecursiveAction {
             // assert (connectivity == 27.443516115141286); //correct number for tasmania_roads.shp
         } catch (Exception e) {
             e.printStackTrace();
-            
+
         }
     }
 
     public void connectivity() throws Exception {
-        int nThreads = 4;
-        ForkJoinPool fjPool = new ForkJoinPool(nThreads);
-
-        fjPool.invoke(this);
-        for(int i=0;i<results.length;i++) {
-            System.out.println("Connectivity: " + String.valueOf(results[i]));
-        }
+        //Get the available processors, processors==threads is probably best?
+        Runtime runtime = Runtime.getRuntime();
+        int nrOfProcessors = runtime.availableProcessors();
+        int nThreads = nrOfProcessors;
         
+        
+        ForkJoinPool fjPool = new ForkJoinPool(nThreads);
+        fjPool.invoke(this);
     }
 }
