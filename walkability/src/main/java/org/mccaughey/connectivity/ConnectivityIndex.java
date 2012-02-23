@@ -9,13 +9,17 @@ import java.io.IOException;
 import java.util.Collection;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
+import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
+
 import org.geotools.graph.build.feature.FeatureGraphGenerator;
 import org.geotools.graph.build.line.LineStringGraphGenerator;
 import org.geotools.graph.structure.Graph;
 import org.geotools.graph.structure.Node;
 import org.opengis.feature.Feature;
+import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.Filter;
+import org.opengis.filter.FilterFactory2;
 
 /**
  * Calculates the Connectivity Index - count of 3 legged intersection per square
@@ -38,7 +42,7 @@ public class ConnectivityIndex {
 
         double area = roi.getArea() / 1000000; // converting to sq. km. -- bit dodgy should check units but assuming in metres
         Graph graph = buildLineNetwork(featureSource, roi);
-        System.out.println("Area:" + String.valueOf(area) + " Connections:" + String.valueOf(countConnections(graph)));
+        //System.out.println("Area:" + String.valueOf(area) + " Connections:" + String.valueOf(countConnections(graph)));
         return countConnections(graph) / area;
     }
 
@@ -53,8 +57,16 @@ public class ConnectivityIndex {
      * @throws IOException
      */
     private static Graph buildLineNetwork(SimpleFeatureSource featureSource, Geometry roi) throws IOException {
-        // get a feature collection
-        SimpleFeatureCollection fCollection = featureSource.getFeatures(Filter.INCLUDE);
+        //Construct a filter which first filters within the bbox of roi and then filters with intersections of roi
+        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+        FeatureType schema = featureSource.getSchema();
+
+        String geometryPropertyName = schema.getGeometryDescriptor().getLocalName();
+
+        Filter filter = ff.intersects(ff.property(geometryPropertyName),ff.literal(roi));
+
+        // get a feature collection of filtered features
+        SimpleFeatureCollection fCollection = featureSource.getFeatures(filter);
 
         //create a linear graph generate
         LineStringGraphGenerator lineStringGen = new LineStringGraphGenerator();
@@ -64,14 +76,14 @@ public class ConnectivityIndex {
 
         //put all the features that intersect the roi into  the graph generator
         FeatureIterator iter = fCollection.features();
-        //System.out.println("Features: " +fCollection.size());
+
         try {
             while (iter.hasNext()) {
                 Feature feature = iter.next();
-                if (roi.intersects((Geometry) feature.getDefaultGeometryProperty().getValue())) {
-                    featureGen.add(feature);
+               // if (roi.intersects((Geometry) feature.getDefaultGeometryProperty().getValue())) {
+                featureGen.add(feature);
                     // System.out.println("interesected!");
-                }
+               // }
             }
         } finally {
             iter.close();
