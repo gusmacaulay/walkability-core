@@ -15,6 +15,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <geotools.version>8.0-M4</geotools.version>
+        <netbeans.hint.license>gpl30</netbeans.hint.license>
     </properties>
 
     <dependencies>
@@ -94,11 +95,6 @@
             <groupId>org.jgrasstools</groupId>
             <artifactId>jgt-oms3</artifactId>
             <version>0.7.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetlang</groupId>
-            <artifactId>jetlang</artifactId>
-            <version>0.2.9</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
