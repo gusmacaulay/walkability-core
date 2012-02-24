@@ -13,7 +13,7 @@ import org.geotools.data.FileDataStore;
 import org.opengis.feature.Feature;
 
 /**
- *
+ * Calculates connectivity for a set of regions using a Fork/Join for concurrency
  * @author amacaulay
  */
 public class ConnectivityIndexFJ extends RecursiveAction {
@@ -24,8 +24,8 @@ public class ConnectivityIndexFJ extends RecursiveAction {
 
     /**
      * 
-     * @param roadsDataStore
-     * @param regions
+     * @param The road network to count connections from
+     * @param regions The regions of interest to calculate connectivity in
      */
     public ConnectivityIndexFJ(FileDataStore roadsDataStore, Feature[] regions) {
         this.roadsDataStore = roadsDataStore;
@@ -34,7 +34,9 @@ public class ConnectivityIndexFJ extends RecursiveAction {
     }
 
     /**
-     * 
+     * Computes the connectivity index, for a single region, otherwise if there are
+     * multiple regions it splits the task into single region operations and invokes separately
+     * note: this is slightly different from normal fork/join which bisects until the threshold condition is met.
      */
     @Override
     protected void compute() {
@@ -69,7 +71,7 @@ public class ConnectivityIndexFJ extends RecursiveAction {
     }
 
     /**
-     * 
+     * Sets up the ForkJoinPool and then calls invoke to calculate connectivity for all regions available
      */
     public void connectivity() {
         //Get the available processors, processors==threads is probably best?
