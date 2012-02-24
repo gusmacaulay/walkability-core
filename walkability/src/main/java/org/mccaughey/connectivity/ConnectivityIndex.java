@@ -27,8 +27,13 @@ import org.opengis.filter.FilterFactory2;
  *
  * @author gus
  */
-public class ConnectivityIndex {
+public final class ConnectivityIndex {
 
+    /**
+     * Private hidden constructor as this is a utility style class
+     */
+    private ConnectivityIndex () {}
+    
     /**
      * Calculates the connectivity of a region upon a network
      *
