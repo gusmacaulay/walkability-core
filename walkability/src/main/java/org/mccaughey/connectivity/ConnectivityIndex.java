@@ -11,12 +11,16 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 
 import org.geotools.graph.build.feature.FeatureGraphGenerator;
 import org.geotools.graph.build.line.LineStringGraphGenerator;
 import org.geotools.graph.structure.Graph;
 import org.geotools.graph.structure.Node;
 import org.opengis.feature.Feature;
+import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
@@ -43,12 +47,26 @@ public final class ConnectivityIndex {
      * @return returns the connections per square kilometer in the roi
      * @throws IOException
      */
-    public static double connectivity(SimpleFeatureSource featureSource, Geometry roi) throws IOException {
+    public static SimpleFeature connectivity(SimpleFeatureSource featureSource, SimpleFeature roiFeature) throws IOException {
 
-        double area = roi.getArea() / 1000000; // converting to sq. km. -- bit dodgy should check units but assuming in metres
-        Graph graph = buildLineNetwork(featureSource, roi);
+        Geometry roiGeom = (Geometry) roiFeature.getDefaultGeometryProperty().getValue();
+        double area = roiGeom.getArea() / 1000000; // converting to sq. km. -- bit dodgy should check units but assuming in metres
+        Graph graph = buildLineNetwork(featureSource, roiGeom);
         //System.out.println("Area:" + String.valueOf(area) + " Connections:" + String.valueOf(countConnections(graph)));
-        return countConnections(graph) / area;
+        SimpleFeatureType sft = (SimpleFeatureType)roiFeature.getType();
+        SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+        stb.init(sft);
+        stb.setName("connectivityFeatureType");
+        //Add the connectivity attribute
+        stb.add("Connectivity", Double.class);
+        SimpleFeatureType connectivityFeatureType = stb.buildFeatureType();
+        SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(connectivityFeatureType);
+        sfb.addAll(roiFeature.getAttributes());
+        double connectivity = countConnections(graph) / area;
+        sfb.add(connectivity);
+        SimpleFeature connectivityFeature = sfb.buildFeature(null);
+        
+        return connectivityFeature;
     }
 
     /**
@@ -73,7 +91,7 @@ public final class ConnectivityIndex {
         // get a feature collection of filtered features
         SimpleFeatureCollection fCollection = featureSource.getFeatures(filter);
 
-        //create a linear graph generate
+        //create a linear graph generator
         LineStringGraphGenerator lineStringGen = new LineStringGraphGenerator();
 
         //wrap it in a feature graph generator
@@ -84,12 +102,13 @@ public final class ConnectivityIndex {
 
         try {
             while (iter.hasNext()) {
-                Feature feature = iter.next();
-               // if (roi.intersects((Geometry) feature.getDefaultGeometryProperty().getValue())) {
+                Feature feature = iter.next();      
                 featureGen.add(feature);
-                    // System.out.println("interesected!");
-               // }
-            }
+               }
+        }
+        catch(ClassCastException e) {
+            System.out.println("AHA!");
+            throw new IOException(e.getMessage());
         } finally {
             iter.close();
         }

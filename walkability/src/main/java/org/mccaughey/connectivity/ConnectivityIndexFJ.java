@@ -4,13 +4,17 @@
  */
 package org.mccaughey.connectivity;
 
-import com.vividsolutions.jts.geom.Geometry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
-import org.geotools.data.FileDataStore;
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureSource;
+import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.FeatureCollections;
+import org.geotools.feature.FeatureIterator;
 import org.opengis.feature.Feature;
+import org.opengis.feature.simple.SimpleFeature;
 
 /**
  * Calculates connectivity for a set of regions using a Fork/Join for concurrency
@@ -19,18 +23,17 @@ import org.opengis.feature.Feature;
 public class ConnectivityIndexFJ extends RecursiveAction {
 
     public double[] results;
-    private final FileDataStore roadsDataStore;
-    private final Feature[] regions;
+    private final SimpleFeatureSource roadsFeatureSource;
+    private final SimpleFeatureCollection regions;
 
     /**
-     * 
      * @param The road network to count connections from
      * @param regions The regions of interest to calculate connectivity in
      */
-    public ConnectivityIndexFJ(FileDataStore roadsDataStore, Feature[] regions) {
-        this.roadsDataStore = roadsDataStore;
-        this.regions = regions.clone();
-        this.results = new double[regions.length];
+    public ConnectivityIndexFJ(SimpleFeatureSource roadsFeatureSource, SimpleFeatureCollection regionsFeatureCollection) {
+        this.roadsFeatureSource = roadsFeatureSource;
+        this.regions = regionsFeatureCollection;
+        this.results = new double[regionsFeatureCollection.size()];
     }
 
     /**
@@ -40,24 +43,28 @@ public class ConnectivityIndexFJ extends RecursiveAction {
      */
     @Override
     protected void compute() {
-        if (regions.length == 1) {
+        if (regions.size() == 1) { //if there is only one region compute the connectivity and store in results
             try {
-                Geometry geom = (Geometry) regions[0].getDefaultGeometryProperty().getValue();
-                double connectivity = ConnectivityIndex.connectivity(roadsDataStore.getFeatureSource(), geom);
-//              System.out.println("Connectivity: " + String.valueOf(connectivity));
-                results[0] = connectivity;
+                SimpleFeature connectivityFeature = ConnectivityIndex.connectivity(roadsFeatureSource, regions.features().next());
+                
+                results[0] = (Double)connectivityFeature.getAttribute("Connectivity");
+//              /  System.out.println("Connectivity: " + String.valueOf(results[0]));
             } catch (IOException e) {
                 this.completeExceptionally(e);
             }
-        } else {
+        } else { //otherwise split the regions into single region arrays and invokeAll
             ArrayList<ConnectivityIndexFJ> indexers = new ArrayList();
-            for (int i = 0; i < regions.length; i++) {
-                Feature[] singleRegion = new Feature[1];
-                singleRegion[0] = regions[i];
-                ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(roadsDataStore, singleRegion);
+           // for (int i = 0; i < regions.length; i++) {
+            FeatureIterator features = regions.features();
+            while(features.hasNext()) {
+                SimpleFeatureCollection singleRegionCollection = FeatureCollections.newCollection();
+                SimpleFeature rf = (SimpleFeature)features.next();
+                singleRegionCollection.add(rf);
+                ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(roadsFeatureSource, singleRegionCollection);
                 indexers.add(cifj);
             }
             invokeAll(indexers);
+        
             int i = 0;
             for (ConnectivityIndexFJ cifj : indexers) {
 //                    System.out.println("Appending result: " + String.valueOf(cifj.results[0]));
@@ -76,8 +83,8 @@ public class ConnectivityIndexFJ extends RecursiveAction {
     public void connectivity() {
         //Get the available processors, processors==threads is probably best?
         Runtime runtime = Runtime.getRuntime();
-        int nrOfProcessors = runtime.availableProcessors();
-        int nThreads = nrOfProcessors;
+        int nProcessors = runtime.availableProcessors();
+        int nThreads = nProcessors;
 
         //Fork/Join handles threads for me, all I do is invoke
         ForkJoinPool fjPool = new ForkJoinPool(nThreads);
