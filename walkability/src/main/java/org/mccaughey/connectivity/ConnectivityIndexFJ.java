@@ -4,16 +4,13 @@
  */
 package org.mccaughey.connectivity;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
-import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
-import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
 
 /**
@@ -22,7 +19,7 @@ import org.opengis.feature.simple.SimpleFeature;
  */
 public class ConnectivityIndexFJ extends RecursiveAction {
 
-    public double[] results;
+    public SimpleFeatureCollection results;
     private final SimpleFeatureSource roadsFeatureSource;
     private final SimpleFeatureCollection regions;
 
@@ -33,7 +30,7 @@ public class ConnectivityIndexFJ extends RecursiveAction {
     public ConnectivityIndexFJ(SimpleFeatureSource roadsFeatureSource, SimpleFeatureCollection regionsFeatureCollection) {
         this.roadsFeatureSource = roadsFeatureSource;
         this.regions = regionsFeatureCollection;
-        this.results = new double[regionsFeatureCollection.size()];
+        this.results = FeatureCollections.newCollection();
     }
 
     /**
@@ -46,10 +43,8 @@ public class ConnectivityIndexFJ extends RecursiveAction {
         if (regions.size() == 1) { //if there is only one region compute the connectivity and store in results
             try {
                 SimpleFeature connectivityFeature = ConnectivityIndex.connectivity(roadsFeatureSource, regions.features().next());
-                
-                results[0] = (Double)connectivityFeature.getAttribute("Connectivity");
-//              /  System.out.println("Connectivity: " + String.valueOf(results[0]));
-            } catch (IOException e) {
+                results.add(connectivityFeature);
+            } catch (Exception e) {
                 this.completeExceptionally(e);
             }
         } else { //otherwise split the regions into single region arrays and invokeAll
@@ -64,15 +59,13 @@ public class ConnectivityIndexFJ extends RecursiveAction {
                 indexers.add(cifj);
             }
             invokeAll(indexers);
-        
-            int i = 0;
             for (ConnectivityIndexFJ cifj : indexers) {
 //                    System.out.println("Appending result: " + String.valueOf(cifj.results[0]));
                 if (cifj.isCompletedAbnormally()) {
                     this.completeExceptionally(cifj.getException());
                 }
-                this.results[i] = cifj.results[0];
-                i++;
+                results.addAll(cifj.results);
+               
             }
         }
     }

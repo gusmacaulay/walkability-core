@@ -36,8 +36,9 @@ public final class ConnectivityIndex {
     /**
      * Private hidden constructor as this is a utility style class
      */
-    private ConnectivityIndex () {}
-    
+    private ConnectivityIndex() {
+    }
+
     /**
      * Calculates the connectivity of a region upon a network
      *
@@ -52,8 +53,8 @@ public final class ConnectivityIndex {
         Geometry roiGeom = (Geometry) roiFeature.getDefaultGeometryProperty().getValue();
         double area = roiGeom.getArea() / 1000000; // converting to sq. km. -- bit dodgy should check units but assuming in metres
         Graph graph = buildLineNetwork(featureSource, roiGeom);
-        //System.out.println("Area:" + String.valueOf(area) + " Connections:" + String.valueOf(countConnections(graph)));
-        SimpleFeatureType sft = (SimpleFeatureType)roiFeature.getType();
+        //Construct a new feature with a "Connectivity" attribute to store connectivity in //
+        SimpleFeatureType sft = (SimpleFeatureType) roiFeature.getType();
         SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
         stb.init(sft);
         stb.setName("connectivityFeatureType");
@@ -62,6 +63,7 @@ public final class ConnectivityIndex {
         SimpleFeatureType connectivityFeatureType = stb.buildFeatureType();
         SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(connectivityFeatureType);
         sfb.addAll(roiFeature.getAttributes());
+
         double connectivity = countConnections(graph) / area;
         sfb.add(connectivity);
         SimpleFeature connectivityFeature = sfb.buildFeature(null);
@@ -86,7 +88,7 @@ public final class ConnectivityIndex {
 
         String geometryPropertyName = schema.getGeometryDescriptor().getLocalName();
 
-        Filter filter = ff.intersects(ff.property(geometryPropertyName),ff.literal(roi));
+        Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(roi));
 
         // get a feature collection of filtered features
         SimpleFeatureCollection fCollection = featureSource.getFeatures(filter);
@@ -102,13 +104,9 @@ public final class ConnectivityIndex {
 
         try {
             while (iter.hasNext()) {
-                Feature feature = iter.next();      
+                Feature feature = iter.next();
                 featureGen.add(feature);
-               }
-        }
-        catch(ClassCastException e) {
-            System.out.println("AHA!");
-            throw new IOException(e.getMessage());
+            }
         } finally {
             iter.close();
         }
