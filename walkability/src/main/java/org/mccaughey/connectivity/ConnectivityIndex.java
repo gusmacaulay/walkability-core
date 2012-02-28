@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class ConnectivityIndex {
 
-    static final Logger logger = LoggerFactory.getLogger(ConnectivityIndex.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(ConnectivityIndex.class);
 
     /**
      * Private hidden constructor as this is a utility style class
@@ -54,7 +54,7 @@ public final class ConnectivityIndex {
      * @throws IOException
      */
     public static SimpleFeature connectivity(SimpleFeatureSource featureSource, SimpleFeature roiFeature) throws IOException {
-        logger.debug("Calculating connectivity with feature {}", roiFeature.getID());
+        LOGGER.debug("Calculating connectivity with feature {}", roiFeature.getID());
         Geometry roiGeom = (Geometry) roiFeature.getDefaultGeometryProperty().getValue();
         double area = roiGeom.getArea() / 1000000; // converting to sq. km. -- bit dodgy should check units but assuming in metres
         Graph graph = buildLineNetwork(featureSource, roiGeom);

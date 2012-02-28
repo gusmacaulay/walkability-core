@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  */
 @Description("Calculates Connectivity for a given network and region")
 public class ConnectivityIndexOMS {
-    static final Logger logger = LoggerFactory.getLogger(ConnectivityIndexOMS.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(ConnectivityIndexOMS.class);
     /**
      * The road network to count connections from
      */
@@ -38,11 +38,11 @@ public class ConnectivityIndexOMS {
     @Execute
     public void connectivity() {
         try {
-            logger.info("Calculating connectivity with network {} and region {}",network.getName().toString(),region.getID());
+            LOGGER.info("Calculating connectivity with network {} and region {}",network.getName().toString(),region.getID());
             connectivityFeature = ConnectivityIndex.connectivity(network, region);
         }
         catch(Exception e) { //Can't do much here because of OMS?
-            logger.error(e.getMessage());
+            LOGGER.error(e.getMessage());
         }
     }
 }

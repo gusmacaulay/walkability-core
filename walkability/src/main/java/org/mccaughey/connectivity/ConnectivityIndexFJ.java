@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ConnectivityIndexFJ extends RecursiveAction {
 
-    static final Logger logger = LoggerFactory.getLogger(ConnectivityIndexFJ.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(ConnectivityIndexFJ.class);
     public SimpleFeatureCollection results;
     private final SimpleFeatureSource roadsFeatureSource;
     private final SimpleFeatureCollection regions;
@@ -82,12 +82,12 @@ public class ConnectivityIndexFJ extends RecursiveAction {
         int nProcessors = runtime.availableProcessors();
         int nThreads = nProcessors;
 
-        logger.debug("Initialising ForkJoinPool with {}", nThreads);
+        LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
         //Fork/Join handles threads for me, all I do is invoke
         ForkJoinPool fjPool = new ForkJoinPool(nThreads);
         fjPool.invoke(this);
         if (this.isCompletedAbnormally()) {
-            logger.error("ForkJoin connectivity calculation failed: {}", this.getException().toString());
+            LOGGER.error("ForkJoin connectivity calculation failed: {}", this.getException().toString());
             this.completeExceptionally(this.getException());
         } 
     }
