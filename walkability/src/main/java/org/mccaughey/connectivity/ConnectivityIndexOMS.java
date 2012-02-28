@@ -8,6 +8,8 @@ import java.io.IOException;
 import oms3.annotations.*;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.opengis.feature.simple.SimpleFeature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is a wrapper for ConnectivityIndex that provides OMS3 annotations so it can be used in OMS3 workflows, scripts etc.
@@ -15,7 +17,7 @@ import org.opengis.feature.simple.SimpleFeature;
  */
 @Description("Calculates Connectivity for a given network and region")
 public class ConnectivityIndexOMS {
-
+    static final Logger logger = LoggerFactory.getLogger(ConnectivityIndexOMS.class);
     /**
      * The road network to count connections from
      */
@@ -36,10 +38,11 @@ public class ConnectivityIndexOMS {
     @Execute
     public void connectivity() {
         try {
+            logger.info("Calculating connectivity with network {} and region {}",network.getName().toString(),region.getID());
             connectivityFeature = ConnectivityIndex.connectivity(network, region);
         }
-        catch(IOException e) { //Can't do much here because of OMS?
-            //TODO: Add logging
+        catch(Exception e) { //Can't do much here because of OMS?
+            logger.error(e.getMessage());
         }
     }
 }

@@ -12,6 +12,8 @@ import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
 import org.opengis.feature.simple.SimpleFeature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Calculates connectivity for a set of regions using a Fork/Join for concurrency
@@ -19,6 +21,7 @@ import org.opengis.feature.simple.SimpleFeature;
  */
 public class ConnectivityIndexFJ extends RecursiveAction {
 
+    static final Logger logger = LoggerFactory.getLogger(ConnectivityIndexFJ.class);
     public SimpleFeatureCollection results;
     private final SimpleFeatureSource roadsFeatureSource;
     private final SimpleFeatureCollection regions;
@@ -79,10 +82,12 @@ public class ConnectivityIndexFJ extends RecursiveAction {
         int nProcessors = runtime.availableProcessors();
         int nThreads = nProcessors;
 
+        logger.debug("Initialising ForkJoinPool with {}", nThreads);
         //Fork/Join handles threads for me, all I do is invoke
         ForkJoinPool fjPool = new ForkJoinPool(nThreads);
         fjPool.invoke(this);
         if (this.isCompletedAbnormally()) {
+            logger.error("ForkJoin connectivity calculation failed: {}", this.getException().toString());
             this.completeExceptionally(this.getException());
         } 
     }
