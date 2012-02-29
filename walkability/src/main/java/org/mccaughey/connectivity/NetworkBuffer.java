@@ -16,18 +16,35 @@
  */
 package org.mccaughey.connectivity;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.index.SpatialIndex;
+import com.vividsolutions.jts.index.strtree.STRtree;
+import com.vividsolutions.jts.linearref.LinearLocation;
+import com.vividsolutions.jts.linearref.LocationIndexedLine;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.geometry.jts.JTSFactoryFinder;
+
 import org.geotools.graph.build.feature.FeatureGraphGenerator;
 import org.geotools.graph.build.line.LineStringGraphGenerator;
+import org.geotools.graph.structure.Edge;
 import org.geotools.graph.structure.Graph;
 import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
@@ -39,31 +56,129 @@ import org.slf4j.LoggerFactory;
  * @author amacaulay
  */
 public final class NetworkBuffer {
-    
+
     static final Logger LOGGER = LoggerFactory.getLogger(NetworkBuffer.class);
-    
-    private NetworkBuffer() {}
-    
-    public static SimpleFeature createPolygonBuffer(SimpleFeatureSource network, SimpleFeature pointOfInterest, Double distance) throws IOException {
-                
-        
-                //Build network Graph - within bounds
-                Point point = (Point)pointOfInterest.getDefaultGeometry();
-                LOGGER.info(point.toText());
-                Geometry pointBuffer = point.buffer(distance);
-                LOGGER.info(pointBuffer.toText());
-                Graph networkGraph = buildLineNetwork(network,pointBuffer);
-                
-                //Snap point to network
-                
-                //Follow paths out from point/node of interest, cut lines at distance
-                
-                //create buffer of subnetwork, polygonize
-                
-                return pointOfInterest;
+
+    private NetworkBuffer() {
     }
-    
-       /**
+
+    public static SimpleFeature createPolygonBuffer(SimpleFeatureSource network, SimpleFeature pointFeature, Double distance) throws IOException {
+
+
+        //Build network Graph - within bounds
+        Point pointOfInterest = (Point) pointFeature.getDefaultGeometry();
+
+        Geometry pointBuffer = pointOfInterest.buffer(distance);
+
+        SimpleFeatureCollection networkRegion = featuresInRegion(network, pointBuffer);
+        FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
+        Graph networkGraph = networkGraphGen.getGraph();
+        //Snap point to network
+        final SpatialIndex index = new STRtree();
+
+        // Create line string index
+        // Just in case: check for  null or empty geometry
+        for (Edge edge : (Collection<Edge>) networkGraph.getEdges()) {
+            Geometry geom = (Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry();
+            if (geom != null) {
+                Envelope env = geom.getEnvelopeInternal();
+                if (!env.isNull()) {
+                    index.insert(env, new LocationIndexedLine(geom));
+                }
+            }
+        }
+
+        Coordinate pt = pointOfInterest.getCoordinate();
+        Envelope search = new Envelope(pt);
+        search.expandBy(distance);
+
+        /*
+         * Query the spatial index for objects within the search envelope. Note
+         * that this just compares the point envelope to the line envelopes so
+         * it is possible that the point is actually more distant than
+         * MAX_SEARCH_DISTANCE from a line.
+         */
+        List<LocationIndexedLine> lines = index.query(search);
+
+        // Initialize the minimum distance found to our maximum acceptable
+        // distance plus a little bit
+        double minDist = distance + 1.0e-6;
+        Coordinate minDistPoint = null;
+
+        for (LocationIndexedLine line : lines) {
+            LinearLocation here = line.project(pt); //What does project do?
+            Coordinate point = line.extractPoint(here); //What does extracPoint do?
+            double dist = point.distance(pt);
+            if (dist < minDist) {
+                minDist = dist;
+                minDistPoint = point;
+            }
+        }
+
+
+        if (minDistPoint == null) {
+            // No line close enough to snap the point to
+            LOGGER.info(pt + "- X");
+
+        } else {
+            LOGGER.info("{} - snapped by moving {}\n", pt.toString(), minDist);
+            pointFeature.setDefaultGeometry(pointOfInterest);
+            System.out.println("Old network features: " + String.valueOf(networkRegion.size()));
+            GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
+
+            Coordinate[] coords =
+                    new Coordinate[]{new Coordinate(0, 2), new Coordinate(2, 0), new Coordinate(8, 6)};
+
+            LineString snapLine = geometryFactory.createLineString(coords);
+            networkGraphGen.add(buildFeatureFromGeometry(networkRegion.features().next(),snapLine));
+            //feature.setDefaultGeometry(pointOfInterest);
+            System.out.println("Added snapped node");
+            //Graph networkGraph2 = networkGraphGen.getGraph();
+            System.out.println("Orginal nodes: " + String.valueOf(networkRegion.size()));
+            System.out.println("New nodes: " + String.valueOf(networkGraph.getNodes().size()));
+
+        }
+
+
+        //
+
+
+
+        //Follow paths out from point/node of interest, cut lines at distance
+        //create buffer of subnetwork, polygonize
+        return pointFeature;
+    }
+
+    private static SimpleFeature buildFeatureFromGeometry(SimpleFeature feature, Geometry geom) {
+
+        SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+        stb.init(feature.getFeatureType());
+        //stb.setName("connectivityFeatureType");
+        //Add the connectivity attribute
+//        stb.add("Connectivity", Double.class);
+//        SimpleFeatureType connectivityFeatureType = stb.buildFeatureType();
+        SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(feature.getFeatureType());
+      //  sfb.addAll(feature.getAttributes());
+        sfb.add(geom);
+
+        SimpleFeature newFeature = sfb.buildFeature(null);
+        return newFeature;
+    }
+
+    private static SimpleFeatureCollection featuresInRegion(SimpleFeatureSource featureSource, Geometry roi) throws IOException {
+        //Construct a filter which first filters within the bbox of roi and then filters with intersections of roi
+        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+        FeatureType schema = featureSource.getSchema();
+
+        String geometryPropertyName = schema.getGeometryDescriptor().getLocalName();
+
+        Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(roi));
+
+        // collection of filtered features
+        return featureSource.getFeatures(filter);
+    }
+
+    /**
      * Constructs a geotools Graph line network from a feature source within a
      * given region of interest
      *
@@ -73,26 +188,15 @@ public final class NetworkBuffer {
      * of interest
      * @throws IOException
      */
-    private static Graph buildLineNetwork(SimpleFeatureSource featureSource, Geometry roi) throws IOException {
-        //Construct a filter which first filters within the bbox of roi and then filters with intersections of roi
-        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-        FeatureType schema = featureSource.getSchema();
-
-        String geometryPropertyName = schema.getGeometryDescriptor().getLocalName();
-
-        Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(roi));
-
-        // get a feature collection of filtered features
-        SimpleFeatureCollection fCollection = featureSource.getFeatures(filter);
-
+    private static FeatureGraphGenerator buildFeatureNetwork(SimpleFeatureCollection featureCollection) {
         //create a linear graph generator
         LineStringGraphGenerator lineStringGen = new LineStringGraphGenerator();
 
         //wrap it in a feature graph generator
         FeatureGraphGenerator featureGen = new FeatureGraphGenerator(lineStringGen);
 
-        //put all the features that intersect the roi into  the graph generator
-        FeatureIterator iter = fCollection.features();
+        //put all the features into  the graph generator
+        FeatureIterator iter = featureCollection.features();
 
         try {
             while (iter.hasNext()) {
@@ -103,6 +207,6 @@ public final class NetworkBuffer {
         } finally {
             iter.close();
         }
-        return featureGen.getGraph();
+        return featureGen;
     }
 }
