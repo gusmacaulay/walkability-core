@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ConnectivityIndexFJ extends RecursiveAction {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(ConnectivityIndexFJ.class);
+    static final Logger LOGGER  = LoggerFactory.getLogger(ConnectivityIndexFJ.class);
     public SimpleFeatureCollection results;
     private final SimpleFeatureSource roadsFeatureSource;
     private final SimpleFeatureCollection regions;
@@ -56,8 +56,8 @@ public class ConnectivityIndexFJ extends RecursiveAction {
             FeatureIterator features = regions.features();
             while(features.hasNext()) {
                 SimpleFeatureCollection singleRegionCollection = FeatureCollections.newCollection();
-                SimpleFeature rf = (SimpleFeature)features.next();
-                singleRegionCollection.add(rf);
+                SimpleFeature feature = (SimpleFeature)features.next();
+                singleRegionCollection.add(feature);
                 ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(roadsFeatureSource, singleRegionCollection);
                 indexers.add(cifj);
             }
