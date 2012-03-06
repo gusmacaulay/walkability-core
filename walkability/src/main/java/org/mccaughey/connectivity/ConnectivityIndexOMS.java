@@ -14,7 +14,7 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
-import org.geotools.geojson.FeatureJSON;
+
 import org.geotools.geojson.geom.GeometryJSON;
 import org.json.JSONException;
 import org.json.JSONObject;
