@@ -6,6 +6,7 @@ package org.mccaughey.connectivity;
 
 import com.vividsolutions.jts.geom.Geometry;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Collection;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
@@ -13,6 +14,7 @@ import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.geojson.feature.FeatureJSON;
 
 import org.geotools.graph.build.feature.FeatureGraphGenerator;
 import org.geotools.graph.build.line.LineStringGraphGenerator;
@@ -68,14 +70,23 @@ public final class ConnectivityIndex {
         SimpleFeatureType connectivityFeatureType = stb.buildFeatureType();
         SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(connectivityFeatureType);
         sfb.addAll(roiFeature.getAttributes());
-
+        
         double connectivity = countConnections(graph) / area;
         sfb.add(connectivity);
         SimpleFeature connectivityFeature = sfb.buildFeature(null);
         
         return connectivityFeature;
     }
+    
+     static private void writeFeature(SimpleFeature feature) throws IOException {
+        FeatureJSON fjson = new FeatureJSON();
+        StringWriter writer = new StringWriter();
 
+        fjson.writeFeature(feature, writer);
+
+        System.out.println(writer.toString());
+        
+    }
     /**
      * Constructs a geotools Graph line network from a feature source within a
      * given region of interest

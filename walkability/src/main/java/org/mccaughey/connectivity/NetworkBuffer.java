@@ -106,6 +106,7 @@ public final class NetworkBuffer {
         Coordinate minDistPoint = null;
 
         for (LocationIndexedLine line : lines) {
+          
             LinearLocation here = line.project(pt); //What does project do?
             Coordinate point = line.extractPoint(here); //What does extracPoint do?
             double dist = point.distance(pt);
@@ -141,9 +142,9 @@ public final class NetworkBuffer {
 
 
         //
+        
 
-
-
+        
         //Follow paths out from point/node of interest, cut lines at distance
         //create buffer of subnetwork, polygonize
         return pointFeature;
@@ -178,6 +179,7 @@ public final class NetworkBuffer {
         return featureSource.getFeatures(filter);
     }
 
+    
     /**
      * Constructs a geotools Graph line network from a feature source within a
      * given region of interest
