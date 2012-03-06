@@ -14,6 +14,7 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
+import org.geotools.geojson.feature.FeatureJSON;
 
 import org.geotools.geojson.geom.GeometryJSON;
 import org.json.JSONException;
@@ -43,12 +44,12 @@ public class ConnectivityIndexOMS {
      * The region if interest
      */
     @In
-    public SimpleFeature region;
+    public URL regions;
     /**
      * The resulting connectivity
      */
     @Out
-    public SimpleFeature connectivityFeature;
+    public String results;
 
     /**
      * Processes the featureSource network and region to calculate connectivity
@@ -62,23 +63,27 @@ public class ConnectivityIndexOMS {
             FeatureJSON fjson = new FeatureJSON();
 
 //            readFeatures(network);
-            SimpleFeatureSource source = DataUtilities.source(readFeatures(network));
+            SimpleFeatureSource networkSource = DataUtilities.source(readFeatures(network));
+            SimpleFeatureSource regionSource = DataUtilities.source(readFeatures(regions));
 //            System.out.println("Road Features: " + String.valueOf(source.getFeatures().size()));
-            connectivityFeature = ConnectivityIndex.connectivity(source, region);
-
+            //connectivityFeature = ConnectivityIndex.connectivity(source, region);
+            ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(networkSource,regionSource.getFeatures());
+            cifj.connectivity();
+            results = writeFeatures(cifj.results);
+            
         } catch (Exception e) { //Can't do much here because of OMS?
             LOGGER.error(e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private void writeFeature(SimpleFeature feature) throws IOException {
+    private String writeFeatures(SimpleFeatureCollection features) throws IOException {
         FeatureJSON fjson = new FeatureJSON();
-        StringWriter writer = new StringWriter();
+        Writer writer = new StringWriter();
 
-        fjson.writeFeature(feature, writer);
+        fjson.writeFeatureCollection(features, writer);
 
-        System.out.println(writer.toString());
+        return writer.toString();
 
     }
 
