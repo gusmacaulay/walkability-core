@@ -4,7 +4,6 @@
  */
 package org.mccaughey.connectivity;
 
-import com.vividsolutions.jts.geom.GeometryCollection;
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
@@ -15,8 +14,6 @@ import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
-
-import org.geotools.geojson.geom.GeometryJSON;
 import org.opengis.feature.simple.SimpleFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
