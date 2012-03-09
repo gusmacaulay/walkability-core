@@ -124,7 +124,7 @@ public final class NetworkBuffer {
         } else {
             LOGGER.info("{} - snapped by moving {}\n", pt.toString(), minDist);
             pointFeature.setDefaultGeometry(pointOfInterest);
-            System.out.println("Old network features: " + String.valueOf(networkRegion.size()));
+           // System.out.println("Old network features: " + String.valueOf(networkRegion.size()));
             GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
 
             Coordinate[] coords =
@@ -133,10 +133,10 @@ public final class NetworkBuffer {
             LineString snapLine = geometryFactory.createLineString(coords);
             networkGraphGen.add(buildFeatureFromGeometry(networkRegion.features().next(),snapLine));
             //feature.setDefaultGeometry(pointOfInterest);
-            System.out.println("Added snapped node");
-            //Graph networkGraph2 = networkGraphGen.getGraph();
-            System.out.println("Orginal nodes: " + String.valueOf(networkRegion.size()));
-            System.out.println("New nodes: " + String.valueOf(networkGraph.getNodes().size()));
+//            System.out.println("Added snapped node");
+//            //Graph networkGraph2 = networkGraphGen.getGraph();
+//            System.out.println("Orginal nodes: " + String.valueOf(networkRegion.size()));
+//            System.out.println("New nodes: " + String.valueOf(networkGraph.getNodes().size()));
 
         }
 
@@ -162,8 +162,7 @@ public final class NetworkBuffer {
       //  sfb.addAll(feature.getAttributes());
         sfb.add(geom);
 
-        SimpleFeature newFeature = sfb.buildFeature(null);
-        return newFeature;
+        return sfb.buildFeature(null);
     }
 
     private static SimpleFeatureCollection featuresInRegion(SimpleFeatureSource featureSource, Geometry roi) throws IOException {

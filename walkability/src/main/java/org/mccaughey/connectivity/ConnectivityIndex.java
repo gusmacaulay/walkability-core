@@ -78,15 +78,6 @@ public final class ConnectivityIndex {
         return connectivityFeature;
     }
     
-     static private void writeFeature(SimpleFeature feature) throws IOException {
-        FeatureJSON fjson = new FeatureJSON();
-        StringWriter writer = new StringWriter();
-
-        fjson.writeFeature(feature, writer);
-
-        System.out.println(writer.toString());
-        
-    }
     /**
      * Constructs a geotools Graph line network from a feature source within a
      * given region of interest

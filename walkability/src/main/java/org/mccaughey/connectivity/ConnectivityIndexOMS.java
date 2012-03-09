@@ -55,22 +55,17 @@ public class ConnectivityIndexOMS {
     @Execute
     public void run() {
         try {
-            //   writeFeature(region);
-            FeatureJSON fjson = new FeatureJSON();
-
-//            readFeatures(network);
             SimpleFeatureSource networkSource = DataUtilities.source(readFeatures(network));
             SimpleFeatureSource regionSource = DataUtilities.source(readFeatures(regions));
-//            System.out.println("Road Features: " + String.valueOf(source.getFeatures().size()));
-            //connectivityFeature = ConnectivityIndex.connectivity(source, region);
+
             ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(networkSource,regionSource.getFeatures());
             cifj.connectivity();
             results = writeFeatures(cifj.results);
-            System.out.println(results);
+            LOGGER.info(results);
+//            System.out.println(results);
             
         } catch (Exception e) { //Can't do much here because of OMS?
             LOGGER.error(e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -84,17 +79,9 @@ public class ConnectivityIndexOMS {
 
     }
 
-    private void writeGeom(GeometryCollection gcol) throws IOException {
-        GeometryJSON gj = new GeometryJSON();
-        StringWriter writer = new StringWriter();
-
-        gj.writeGeometryCollection(gcol, writer);
-
-        System.out.println(writer.toString());
-    }
+  
 
     private SimpleFeatureCollection readFeatures(URL url) throws IOException {
-        System.out.println(url.toString());
         FeatureJSON io = new FeatureJSON();
       
         String json = readURL(url);
@@ -116,37 +103,6 @@ public class ConnectivityIndexOMS {
 
         return collection;
     }
-//    private void readFeatures(URL url) {
-//        MfGeoFactory mfFactory = new MfGeoFactory() {
-//
-//            public MfFeature createFeature(String id, MfGeometry geometry, JSONObject properties) {
-//                return new MyFeature(id, geometry, properties);
-//            }
-//        };
-//
-//        MfGeoJSONReader reader = new MfGeoJSONReader(mfFactory);
-//        try {
-//            MfGeo result = reader.decode(readURL(url));
-//            MfFeatureCollection collection = (MfFeatureCollection) result;
-//            Collection<MfFeature> mfCol = collection.getCollection();
-//           SimpleFeatureType TYPE = DataUtilities.createType("type","geometry:LineString:srid=3111");
-//           
-//           
-//           //featureBuilder.buildFeature(id);
-//            for (MfFeature mfFeature : mfCol) {
-//                Geometry geom = mfFeature.getMfGeometry();
-//                SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(TYPE);
-//           featureBuilder.add();
-//            }
-//            System.out.println(result.getGeoType().toString());
-//            
-//        catch (Exception e) {
-//            System.out.println("Blah");
-//            e.printStackTrace();
-//        }
-        
-        
-//   }
 
     private String readURL(URL url) throws IOException {
 
