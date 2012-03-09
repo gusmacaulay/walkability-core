@@ -53,7 +53,7 @@ public class ConnectivityIndexOMS {
      * @throws Exception
      */
     @Execute
-    public void connectivity() {
+    public void run() {
         try {
             //   writeFeature(region);
             FeatureJSON fjson = new FeatureJSON();
@@ -66,6 +66,7 @@ public class ConnectivityIndexOMS {
             ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(networkSource,regionSource.getFeatures());
             cifj.connectivity();
             results = writeFeatures(cifj.results);
+            System.out.println(results);
             
         } catch (Exception e) { //Can't do much here because of OMS?
             LOGGER.error(e.getMessage());
