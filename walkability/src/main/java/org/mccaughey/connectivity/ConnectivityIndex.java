@@ -55,7 +55,7 @@ public final class ConnectivityIndex {
     public static SimpleFeature connectivity(SimpleFeatureSource featureSource, SimpleFeature roiFeature) throws IOException {
         LOGGER.debug("Calculating connectivity with feature {}", roiFeature.getID());
         Geometry roiGeom = (Geometry) roiFeature.getDefaultGeometryProperty().getValue();
-        double area = roiGeom.getArea() / 1000000; // converting to sq. km. -- bit dodgy should check units but assuming in metres
+        
         Graph graph = buildLineNetwork(featureSource, roiGeom);
         //Construct a new feature with a "Connectivity" attribute to store connectivity in //
         SimpleFeatureType sft = (SimpleFeatureType) roiFeature.getType();
@@ -64,12 +64,17 @@ public final class ConnectivityIndex {
         stb.setName("connectivityFeatureType");
         //Add the connectivity attribute
         stb.add("Connectivity", Double.class);
+        stb.add("Area", Double.class);
+        stb.add("Connections", Integer.class);
         SimpleFeatureType connectivityFeatureType = stb.buildFeatureType();
         SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(connectivityFeatureType);
         sfb.addAll(roiFeature.getAttributes());
         
-        double connectivity = countConnections(graph) / area;
+        double area = roiGeom.getArea() ; 
+        double connectivity = countConnections(graph) / (area / 1000000); // converting to sq. km. -- bit dodgy should check units but assuming in metres
         sfb.add(connectivity);
+        sfb.add(area);
+        sfb.add(countConnections(graph));
         SimpleFeature connectivityFeature = sfb.buildFeature(null);
         
         return connectivityFeature;
