@@ -35,9 +35,9 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
+import org.opengis.filter.expression.Expression;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * Calculates the Connectivity Index - count of 3 legged intersection per square
@@ -81,17 +81,17 @@ public final class ConnectivityIndex {
         SimpleFeatureType connectivityFeatureType = stb.buildFeatureType();
         SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(connectivityFeatureType);
         sfb.addAll(roiFeature.getAttributes());
-        
-        double area = roiGeom.getArea() ; 
-        double connectivity = countConnections(graph) / (area / 1000000); // converting to sq. km. -- bit dodgy should check units but assuming in metres
+
+        double area = roiGeom.getArea();
+        double connectivity = countConnections(graph,roiFeature) / (area / 1000000); // converting to sq. km. -- bit dodgy should check units but assuming in metres
         sfb.add(connectivity);
         sfb.add(area);
-        sfb.add(countConnections(graph));
+        sfb.add(countConnections(graph,roiFeature));
         SimpleFeature connectivityFeature = sfb.buildFeature(null);
-        
+
         return connectivityFeature;
     }
-    
+
     /**
      * Constructs a geotools Graph line network from a feature source within a
      * given region of interest
@@ -110,7 +110,7 @@ public final class ConnectivityIndex {
         String geometryPropertyName = schema.getGeometryDescriptor().getLocalName();
 
         Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(roi));
-
+        
         // get a feature collection of filtered features
         SimpleFeatureCollection fCollection = featureSource.getFeatures(filter);
 
@@ -140,44 +140,59 @@ public final class ConnectivityIndex {
      * @param graph the graph to process.
      * @return returns the total number of connections
      */
-    private static int countConnections(Graph graph) {
+    private static int countConnections(Graph graph, SimpleFeature roi) {
         int count = 0;
         //System.out.println("Nodes: " + graph.getNodes().size() );
-       // List<Geometry> geometries = new ArrayList();
+        // List<Geometry> geometries = new ArrayList();
         List<SimpleFeature> features = new ArrayList();
         for (Node node : (Collection<Node>) graph.getNodes()) {
             if (node.getEdges().size() >= 3) { //3 or more legged nodes are connected
                 //   System.out.println("connection!");
-                for (Edge edge: (List<Edge>) node.getEdges())
+                for (Edge edge : (List<Edge>) node.getEdges()) {
                     features.add(((SimpleFeature) edge.getObject()));
-                count++;
+                }
+                Point nPoint = ((Point)node.getObject());
+                Geometry roiGeom = (Geometry)(roi.getDefaultGeometry());
+                if (roiGeom.intersects(nPoint)){
+                    count++;
+                }
+                //count++;
             }
         }
-      //  GeometryCollection collection = new GeometryCollection((Geometry[])geometries.toArray(),new GeometryFactory());
-        System.out.println(writeFeatures(DataUtilities.collection(features)));
+        //  GeometryCollection collection = new GeometryCollection((Geometry[])geometries.toArray(),new GeometryFactory());
+        //System.out.println(writeFeatures(DataUtilities.collection(features)));
         return count;
     }
-
-      private static String writeFeatures(SimpleFeatureCollection features) {
+    
+    private static String writeFeature(SimpleFeature feature) {
         FeatureJSON fjson = new FeatureJSON();
         Writer writer = new StringWriter();
         try {
-        fjson.writeFeatureCollection(features, writer);
+            fjson.writeFeature(feature, writer);
+        } catch (Exception e) {
+            return "{}";
         }
-        catch(Exception e) {
+        return writer.toString();
+    }
+
+    private static String writeFeatures(SimpleFeatureCollection features) {
+        FeatureJSON fjson = new FeatureJSON();
+        Writer writer = new StringWriter();
+        try {
+            fjson.writeFeatureCollection(features, writer);
+        } catch (Exception e) {
             return "{}";
         }
         return writer.toString();
 
     }
-      
-      private static String writeGeometries(GeometryCollection geometries) {
+
+    private static String writeGeometries(GeometryCollection geometries) {
         GeometryJSON fjson = new GeometryJSON();
         Writer writer = new StringWriter();
         try {
-        fjson.writeGeometryCollection(geometries, writer);
-        }
-        catch(Exception e) {
+            fjson.writeGeometryCollection(geometries, writer);
+        } catch (Exception e) {
             return "{}";
         }
         return writer.toString();
