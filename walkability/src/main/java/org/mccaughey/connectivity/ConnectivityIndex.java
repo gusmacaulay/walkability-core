@@ -65,6 +65,7 @@ public final class ConnectivityIndex {
      * @throws IOException
      */
     public static SimpleFeature connectivity(SimpleFeatureSource featureSource, SimpleFeature roiFeature) throws IOException {
+      //  System.out.println(writeFeature(roiFeature));
         LOGGER.debug("Calculating connectivity with feature {}", roiFeature.getID());
         Geometry roiGeom = (Geometry) roiFeature.getDefaultGeometryProperty().getValue();
         
@@ -146,8 +147,9 @@ public final class ConnectivityIndex {
         // List<Geometry> geometries = new ArrayList();
         List<SimpleFeature> features = new ArrayList();
         for (Node node : (Collection<Node>) graph.getNodes()) {
-            if (node.getEdges().size() >= 3) { //3 or more legged nodes are connected
+            if (node.getDegree() >= 3) { //3 or more legged nodes are connected
                 //   System.out.println("connection!");
+                
                 for (Edge edge : (List<Edge>) node.getEdges()) {
                     features.add(((SimpleFeature) edge.getObject()));
                 }
@@ -160,7 +162,7 @@ public final class ConnectivityIndex {
             }
         }
         //  GeometryCollection collection = new GeometryCollection((Geometry[])geometries.toArray(),new GeometryFactory());
-        //System.out.println(writeFeatures(DataUtilities.collection(features)));
+      //  System.out.println(writeFeatures(DataUtilities.collection(features)));
         return count;
     }
     
