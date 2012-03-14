@@ -5,16 +5,28 @@
 package org.mccaughey.connectivity;
 
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryCollection;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.Point;
+
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.geojson.feature.FeatureJSON;
+import org.geotools.geojson.geom.GeometryJSON;
 import org.geotools.graph.build.feature.FeatureGraphGenerator;
 import org.geotools.graph.build.line.LineStringGraphGenerator;
+import org.geotools.graph.structure.Edge;
 import org.geotools.graph.structure.Graph;
 import org.geotools.graph.structure.Node;
 import org.opengis.feature.Feature;
@@ -131,12 +143,44 @@ public final class ConnectivityIndex {
     private static int countConnections(Graph graph) {
         int count = 0;
         //System.out.println("Nodes: " + graph.getNodes().size() );
+       // List<Geometry> geometries = new ArrayList();
+        List<SimpleFeature> features = new ArrayList();
         for (Node node : (Collection<Node>) graph.getNodes()) {
             if (node.getEdges().size() >= 3) { //3 or more legged nodes are connected
                 //   System.out.println("connection!");
+                for (Edge edge: (List<Edge>) node.getEdges())
+                    features.add(((SimpleFeature) edge.getObject()));
                 count++;
             }
         }
+      //  GeometryCollection collection = new GeometryCollection((Geometry[])geometries.toArray(),new GeometryFactory());
+        System.out.println(writeFeatures(DataUtilities.collection(features)));
         return count;
+    }
+
+      private static String writeFeatures(SimpleFeatureCollection features) {
+        FeatureJSON fjson = new FeatureJSON();
+        Writer writer = new StringWriter();
+        try {
+        fjson.writeFeatureCollection(features, writer);
+        }
+        catch(Exception e) {
+            return "{}";
+        }
+        return writer.toString();
+
+    }
+      
+      private static String writeGeometries(GeometryCollection geometries) {
+        GeometryJSON fjson = new GeometryJSON();
+        Writer writer = new StringWriter();
+        try {
+        fjson.writeGeometryCollection(geometries, writer);
+        }
+        catch(Exception e) {
+            return "{}";
+        }
+        return writer.toString();
+
     }
 }
