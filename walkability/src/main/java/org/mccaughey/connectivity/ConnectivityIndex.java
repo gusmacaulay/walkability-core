@@ -5,25 +5,18 @@
 package org.mccaughey.connectivity;
 
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
-import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.geojson.feature.FeatureJSON;
-import org.geotools.geojson.geom.GeometryJSON;
 import org.geotools.graph.build.feature.FeatureGraphGenerator;
 import org.geotools.graph.build.line.LineStringGraphGenerator;
 import org.geotools.graph.structure.Edge;
@@ -35,7 +28,6 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
-import org.opengis.filter.expression.Expression;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,38 +158,38 @@ public final class ConnectivityIndex {
         return count;
     }
     
-    private static String writeFeature(SimpleFeature feature) {
-        FeatureJSON fjson = new FeatureJSON();
-        Writer writer = new StringWriter();
-        try {
-            fjson.writeFeature(feature, writer);
-        } catch (Exception e) {
-            return "{}";
-        }
-        return writer.toString();
-    }
-
-    private static String writeFeatures(SimpleFeatureCollection features) {
-        FeatureJSON fjson = new FeatureJSON();
-        Writer writer = new StringWriter();
-        try {
-            fjson.writeFeatureCollection(features, writer);
-        } catch (Exception e) {
-            return "{}";
-        }
-        return writer.toString();
-
-    }
-
-    private static String writeGeometries(GeometryCollection geometries) {
-        GeometryJSON fjson = new GeometryJSON();
-        Writer writer = new StringWriter();
-        try {
-            fjson.writeGeometryCollection(geometries, writer);
-        } catch (Exception e) {
-            return "{}";
-        }
-        return writer.toString();
-
-    }
+//    private static String writeFeature(SimpleFeature feature) {
+//        FeatureJSON fjson = new FeatureJSON();
+//        Writer writer = new StringWriter();
+//        try {
+//            fjson.writeFeature(feature, writer);
+//        } catch (Exception e) {
+//            return "{}";
+//        }
+//        return writer.toString();
+//    }
+//
+//    private static String writeFeatures(SimpleFeatureCollection features) {
+//        FeatureJSON fjson = new FeatureJSON();
+//        Writer writer = new StringWriter();
+//        try {
+//            fjson.writeFeatureCollection(features, writer);
+//        } catch (Exception e) {
+//            return "{}";
+//        }
+//        return writer.toString();
+//
+//    }
+//
+//    private static String writeGeometries(GeometryCollection geometries) {
+//        GeometryJSON fjson = new GeometryJSON();
+//        Writer writer = new StringWriter();
+//        try {
+//            fjson.writeGeometryCollection(geometries, writer);
+//        } catch (Exception e) {
+//            return "{}";
+//        }
+//        return writer.toString();
+//
+//    }
 }
