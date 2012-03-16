@@ -28,15 +28,20 @@ import com.vividsolutions.jts.index.strtree.STRtree;
 import com.vividsolutions.jts.linearref.LinearLocation;
 import com.vividsolutions.jts.linearref.LocationIndexedLine;
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.geojson.feature.FeatureJSON;
 import org.geotools.geometry.jts.JTSFactoryFinder;
 import org.geotools.graph.build.feature.FeatureGraphGenerator;
 import org.geotools.graph.build.line.LineStringGraphGenerator;
@@ -73,14 +78,16 @@ public final class NetworkBuffer {
 
         SimpleFeatureCollection networkRegion = featuresInRegion(network, pointBuffer);
         FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
-        Graph networkGraph = networkGraphGen.getGraph();
+       // Graph networkGraph = networkGraphGen.getGraph();
         //Snap point to network
         final SpatialIndex index = new STRtree();
 
         // Create line string index
         // Just in case: check for  null or empty geometry
-        for (Edge edge : (Collection<Edge>) networkGraph.getEdges()) {
-            Geometry geom = (Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry();
+        SimpleFeatureIterator features = network.getFeatures().features();
+        while (features.hasNext()) {
+            SimpleFeature feature = features.next();
+            Geometry geom = (Geometry) (feature.getDefaultGeometry());
             if (geom != null) {
                 Envelope env = geom.getEnvelopeInternal();
                 if (!env.isNull()) {
@@ -128,9 +135,9 @@ public final class NetworkBuffer {
             // System.out.println("Old network features: " + String.valueOf(networkRegion.size()));
             GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
 
-            Coordinate[] coords =
-                    new Coordinate[]{new Coordinate(0, 2), new Coordinate(2, 0), new Coordinate(8, 6)};
-
+           Coordinate[] coords = 
+                    new Coordinate[]{new Coordinate(pt.x,pt.y), new Coordinate(minDistPoint.x, minDistPoint.y)};
+         
             LineString snapLine = geometryFactory.createLineString(coords);
             networkGraphGen.add(buildFeatureFromGeometry(networkRegion.features().next(), snapLine));
             //feature.setDefaultGeometry(pointOfInterest);
@@ -140,25 +147,61 @@ public final class NetworkBuffer {
 //            System.out.println("New nodes: " + String.valueOf(networkGraph.getNodes().size()));
             Graph graph = networkGraphGen.getGraph();
             Path startPath = new Path();
-            Node startNode = (Node)graph.getNodes().toArray()[graph.getNodes().size()-1]; //hmm is the snap node the last node?
-            List<Path> paths = findPaths(graph,startNode,startPath);
-            System.out.println("Found paths: " + String.valueOf(paths.size()));
+            Node startNode = (Node) graph.getNodes().toArray()[graph.getNodes().size() - 1]; //hmm is the snap node the last node?
+            List<Path> paths = findPaths(graph, startNode, startPath);
+            LOGGER.info("Found paths: " + String.valueOf(paths.size()));
+         //   LOGGER.info(pathsToJSON(paths));
+            LOGGER.info(graphToJSON(graph));
         }
 
 
         //
-        
+
         //Follow paths out from point/node of interest, cut lines at distance
-                //        List<Graph> paths = findPaths(startNode,null);
-                //create buffer of subnetwork, polygonize
-        
-        
+        //        List<Graph> paths = findPaths(startNode,null);
+        //create buffer of subnetwork, polygonize
+
+
         return pointFeature;
+    }
+
+    private static String graphToJSON(Graph graph) {
+        String json = "";
+        List<SimpleFeature> features = new ArrayList();
+
+        for (Edge edge : (Collection<Edge>) graph.getEdges()) {
+            features.add(((SimpleFeature) edge.getObject()));
+        }
+        return (writeFeatures(DataUtilities.collection(features)));
+    }
+
+    private static String pathsToJSON(List<Path> paths) {
+        String json = "";
+        List<SimpleFeature> features = new ArrayList();
+        for (Path path : paths) {
+            for (Edge edge : (List<Edge>) path.getEdges()) {
+                features.add(((SimpleFeature) edge.getObject()));
+            }
+            LOGGER.info(writeFeatures(DataUtilities.collection(features)));
+        }
+        return (writeFeatures(DataUtilities.collection(features)));
+    }
+
+    private static String writeFeatures(SimpleFeatureCollection features) {
+        FeatureJSON fjson = new FeatureJSON();
+        Writer writer = new StringWriter();
+        try {
+            fjson.writeFeatureCollection(features, writer);
+        } catch (Exception e) {
+            return "{}";
+        }
+        return writer.toString();
+
     }
 
     private static List<Path> findPaths(Graph network, Node currentNode, Path currentPath) {
         List<Path> paths = new ArrayList();
-        
+
         //for each edge connected to current node 
         for (Node node : (Collection<Node>) network.getNodes()) { //find the current node in the graph (not very efficient)
             if (node.equals(currentNode)) {
@@ -168,7 +211,7 @@ public final class NetworkBuffer {
                     if (!(currentPath.contains(edge))) {
                         LOGGER.info("Checking edge to extend path ...");
                         //if path + edge less than distance
-                        if (currentPath.size() < 2) {
+                        if (currentPath.size() < 4) {
                             LOGGER.info("Exploring path beyond edge ...");
                             //append findPaths(path+edge) to list of paths
                             Path nextPath = currentPath;
@@ -176,20 +219,22 @@ public final class NetworkBuffer {
                             paths.addAll(findPaths(network, nextPath.getLast(), nextPath));
                         } else //else chop edge, append (path + chopped edge) to list of paths
                         {
-                            LOGGER.info("Adding edge to complete path ...");
+                            LOGGER.info("Adding edge to current path ...");
                             currentPath.addEdge(edge);
                             paths.add(currentPath);
                         }
 
+                    } else //the next edge is already in the path, so we add this path to paths --> this means that paths with a loop in them will be included (good), but also all subpaths? (annoying)
+                    {
+                        LOGGER.info("Adding current path");
                     }
-//                    else //the next edge is already in the path, so we add this path to paths
-//                        LOGGER.info("Adding complete path");
-//                        //paths.add(currentPath);
+                    //   paths.add(currentPath);
                 }
                 //return all paths
                 return paths;
             }
         }
+        LOGGER.info("FAIL!");
         return null;
     }
 
