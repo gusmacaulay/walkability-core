@@ -78,7 +78,7 @@ public final class NetworkBuffer {
 
         SimpleFeatureCollection networkRegion = featuresInRegion(network, pointBuffer);
         FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
-       // Graph networkGraph = networkGraphGen.getGraph();
+        // Graph networkGraph = networkGraphGen.getGraph();
         //Snap point to network
         final SpatialIndex index = new STRtree();
 
@@ -135,9 +135,9 @@ public final class NetworkBuffer {
             // System.out.println("Old network features: " + String.valueOf(networkRegion.size()));
             GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
 
-           Coordinate[] coords = 
-                    new Coordinate[]{new Coordinate(pt.x,pt.y), new Coordinate(minDistPoint.x, minDistPoint.y)};
-         
+            Coordinate[] coords =
+                    new Coordinate[]{new Coordinate(pt.x, pt.y), new Coordinate(minDistPoint.x, minDistPoint.y)};
+
             LineString snapLine = geometryFactory.createLineString(coords);
             networkGraphGen.add(buildFeatureFromGeometry(networkRegion.features().next(), snapLine));
             //feature.setDefaultGeometry(pointOfInterest);
@@ -147,11 +147,12 @@ public final class NetworkBuffer {
 //            System.out.println("New nodes: " + String.valueOf(networkGraph.getNodes().size()));
             Graph graph = networkGraphGen.getGraph();
             Path startPath = new Path();
-            Node startNode = (Node) graph.getNodes().toArray()[graph.getNodes().size() - 1]; //hmm is the snap node the last node?
-            List<Path> paths = findPaths(graph, startNode, startPath);
+            Node startNode = (Node) graph.getNodes().toArray()[3]; //hmm is the snap node the last node?
+            startPath.add(startNode);
+            List<Path> paths = findPaths(graph, startPath.getFirst(), startPath);
             LOGGER.info("Found paths: " + String.valueOf(paths.size()));
-         //   LOGGER.info(pathsToJSON(paths));
-            LOGGER.info(graphToJSON(graph));
+            LOGGER.info(pathsToJSON(paths));
+          //  LOGGER.info(graphToJSON(graph));
         }
 
 
@@ -179,11 +180,13 @@ public final class NetworkBuffer {
         String json = "";
         List<SimpleFeature> features = new ArrayList();
         for (Path path : paths) {
+            LOGGER.info("Edges: " + String.valueOf(path.getEdges()));
             for (Edge edge : (List<Edge>) path.getEdges()) {
                 features.add(((SimpleFeature) edge.getObject()));
             }
             LOGGER.info(writeFeatures(DataUtilities.collection(features)));
         }
+
         return (writeFeatures(DataUtilities.collection(features)));
     }
 
@@ -205,31 +208,43 @@ public final class NetworkBuffer {
         //for each edge connected to current node 
         for (Node node : (Collection<Node>) network.getNodes()) { //find the current node in the graph (not very efficient)
             if (node.equals(currentNode)) {
-                LOGGER.info("Found currentNode in network graph");
-                for (Edge edge : (List<Edge>) node.getEdges()) {
-                    //if edge not in path
-                    if (!(currentPath.contains(edge))) {
-                        LOGGER.info("Checking edge to extend path ...");
-                        //if path + edge less than distance
-                        if (currentPath.size() < 4) {
-                            LOGGER.info("Exploring path beyond edge ...");
-                            //append findPaths(path+edge) to list of paths
-                            Path nextPath = currentPath;
-                            nextPath.addEdge(edge);
-                            paths.addAll(findPaths(network, nextPath.getLast(), nextPath));
-                        } else //else chop edge, append (path + chopped edge) to list of paths
-                        {
-                            LOGGER.info("Adding edge to current path ...");
-                            currentPath.addEdge(edge);
-                            paths.add(currentPath);
-                        }
+                LOGGER.info("Found currentNode in network graph: " + currentNode);
+                for (Edge graphEdge : (List<Edge>) node.getEdges()) {
+                    LOGGER.info("Graph Node Edges: " + node.getEdges());
+                    LOGGER.info("Path Node Edges: " + currentPath.getEdges());
+                    for (Edge pathEdge : (List<Edge>) currentPath.getEdges()) {
+                        if (!(pathEdge.equals(graphEdge))) {
+                            LOGGER.info("Found new connected edge: " + graphEdge);
+                            if (currentPath.size() < 6) { //if path + edge less than distance
 
-                    } else //the next edge is already in the path, so we add this path to paths --> this means that paths with a loop in them will be included (good), but also all subpaths? (annoying)
-                    {
-                        LOGGER.info("Adding current path");
+                                //append findPaths(path+edge) to list of paths
+                                Path nextPath = currentPath.duplicate();
+                                nextPath.addEdge(graphEdge);
+                                LOGGER.info("Exploring path beyond new edge: " + nextPath.getEdges());
+                                paths.addAll(findPaths(network, nextPath.getLast(), nextPath));
+                            } else {//else chop edge, append (path + chopped edge) to list of paths
+                                LOGGER.info("Adding new (chopped) edge: " + graphEdge + " to current path: " + currentPath.getEdges());
+                                Path newPath = currentPath.duplicate();
+                                newPath.addEdge(graphEdge);
+                                paths.add(newPath);
+                            }
+
+                        } else {//the next edge is already in the path, so we add this path to paths --> this means that paths with a loop in them will be included (good), but also all subpaths? (annoying)
+                            LOGGER.info("Adding new (in path) edge: " + graphEdge + " to current path: " + currentPath.getEdges());
+                            Path newPath = currentPath.duplicate();
+                            newPath.addEdge(graphEdge);
+                            paths.add(newPath);
+                        }
                     }
-                    //   paths.add(currentPath);
+
+
+                    LOGGER.info("Adding new edge: " + graphEdge + " to current path: " + currentPath.getEdges());
+                   
+                    currentPath.addEdge(graphEdge);
+                    Path newPath = currentPath.duplicate();
+                    paths.add(newPath);
                 }
+
                 //return all paths
                 return paths;
             }
@@ -288,7 +303,6 @@ public final class NetworkBuffer {
 
         try {
             while (iter.hasNext()) {
-                LOGGER.info("Found a feature!");
                 Feature feature = iter.next();
                 featureGen.add(feature);
             }
