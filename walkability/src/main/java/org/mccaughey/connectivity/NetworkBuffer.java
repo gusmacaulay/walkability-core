@@ -22,11 +22,13 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
+
 import com.vividsolutions.jts.index.SpatialIndex;
 import com.vividsolutions.jts.index.strtree.STRtree;
 import com.vividsolutions.jts.linearref.LinearLocation;
 import com.vividsolutions.jts.linearref.LocationIndexedLine;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -38,8 +40,10 @@ import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geometry.jts.JTSFactoryFinder;
 import org.geotools.graph.build.feature.FeatureGraphGenerator;
 import org.geotools.graph.build.line.LineStringGraphGenerator;
+import org.geotools.graph.path.Path;
 import org.geotools.graph.structure.Edge;
 import org.geotools.graph.structure.Graph;
+import org.geotools.graph.structure.Node;
 import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.type.FeatureType;
@@ -103,7 +107,7 @@ public final class NetworkBuffer {
         Coordinate minDistPoint = null;
 
         for (LocationIndexedLine line : lines) {
-          
+
             LinearLocation here = line.project(pt); //What does project do?
             Coordinate point = line.extractPoint(here); //What does extracPoint do?
             double dist = point.distance(pt);
@@ -121,30 +125,72 @@ public final class NetworkBuffer {
         } else {
             LOGGER.info("{} - snapped by moving {}\n", pt.toString(), minDist);
             pointFeature.setDefaultGeometry(pointOfInterest);
-           // System.out.println("Old network features: " + String.valueOf(networkRegion.size()));
+            // System.out.println("Old network features: " + String.valueOf(networkRegion.size()));
             GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
 
             Coordinate[] coords =
                     new Coordinate[]{new Coordinate(0, 2), new Coordinate(2, 0), new Coordinate(8, 6)};
 
             LineString snapLine = geometryFactory.createLineString(coords);
-            networkGraphGen.add(buildFeatureFromGeometry(networkRegion.features().next(),snapLine));
+            networkGraphGen.add(buildFeatureFromGeometry(networkRegion.features().next(), snapLine));
             //feature.setDefaultGeometry(pointOfInterest);
 //            System.out.println("Added snapped node");
 //            //Graph networkGraph2 = networkGraphGen.getGraph();
 //            System.out.println("Orginal nodes: " + String.valueOf(networkRegion.size()));
 //            System.out.println("New nodes: " + String.valueOf(networkGraph.getNodes().size()));
-
+            Graph graph = networkGraphGen.getGraph();
+            Path startPath = new Path();
+            Node startNode = (Node)graph.getNodes().toArray()[graph.getNodes().size()-1]; //hmm is the snap node the last node?
+            List<Path> paths = findPaths(graph,startNode,startPath);
+            System.out.println("Found paths: " + String.valueOf(paths.size()));
         }
 
 
         //
         
-
-        
         //Follow paths out from point/node of interest, cut lines at distance
-        //create buffer of subnetwork, polygonize
+                //        List<Graph> paths = findPaths(startNode,null);
+                //create buffer of subnetwork, polygonize
+        
+        
         return pointFeature;
+    }
+
+    private static List<Path> findPaths(Graph network, Node currentNode, Path currentPath) {
+        List<Path> paths = new ArrayList();
+        
+        //for each edge connected to current node 
+        for (Node node : (Collection<Node>) network.getNodes()) { //find the current node in the graph (not very efficient)
+            if (node.equals(currentNode)) {
+                LOGGER.info("Found currentNode in network graph");
+                for (Edge edge : (List<Edge>) node.getEdges()) {
+                    //if edge not in path
+                    if (!(currentPath.contains(edge))) {
+                        LOGGER.info("Checking edge to extend path ...");
+                        //if path + edge less than distance
+                        if (currentPath.size() < 2) {
+                            LOGGER.info("Exploring path beyond edge ...");
+                            //append findPaths(path+edge) to list of paths
+                            Path nextPath = currentPath;
+                            nextPath.addEdge(edge);
+                            paths.addAll(findPaths(network, nextPath.getLast(), nextPath));
+                        } else //else chop edge, append (path + chopped edge) to list of paths
+                        {
+                            LOGGER.info("Adding edge to complete path ...");
+                            currentPath.addEdge(edge);
+                            paths.add(currentPath);
+                        }
+
+                    }
+//                    else //the next edge is already in the path, so we add this path to paths
+//                        LOGGER.info("Adding complete path");
+//                        //paths.add(currentPath);
+                }
+                //return all paths
+                return paths;
+            }
+        }
+        return null;
     }
 
     private static SimpleFeature buildFeatureFromGeometry(SimpleFeature feature, Geometry geom) {
@@ -156,7 +202,7 @@ public final class NetworkBuffer {
 //        stb.add("Connectivity", Double.class);
 //        SimpleFeatureType connectivityFeatureType = stb.buildFeatureType();
         SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(feature.getFeatureType());
-      //  sfb.addAll(feature.getAttributes());
+        //  sfb.addAll(feature.getAttributes());
         sfb.add(geom);
 
         return sfb.buildFeature(null);
@@ -175,7 +221,6 @@ public final class NetworkBuffer {
         return featureSource.getFeatures(filter);
     }
 
-    
     /**
      * Constructs a geotools Graph line network from a feature source within a
      * given region of interest

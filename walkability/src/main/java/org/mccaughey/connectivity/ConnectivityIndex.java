@@ -79,6 +79,7 @@ public final class ConnectivityIndex {
         double connectivity = countConnections(graph,roiFeature) / (area / 1000000); // converting to sq. km. -- bit dodgy should check units but assuming in metres
         sfb.add(connectivity);
         sfb.add(area);
+        
         sfb.add(countConnections(graph,roiFeature));
         SimpleFeature connectivityFeature = sfb.buildFeature(null);
 
