@@ -147,12 +147,12 @@ public final class NetworkBuffer {
 //            System.out.println("Orginal nodes: " + String.valueOf(networkRegion.size()));
 //            System.out.println("New nodes: " + String.valueOf(networkGraph.getNodes().size()));
             Graph graph = networkGraphGen.getGraph();
-            Walk startWalk = new Walk();
+            Path startPath = new Path();
             Node startNode = (Node) graph.getNodes().toArray()[0]; //hmm is the snap node the last node?
-            startWalk.add(startNode);
-            List<Walk> walks = findWalks(graph, startWalk);
-            LOGGER.info("Found paths: " + String.valueOf(walks.size()));
-            LOGGER.info(walksToJSON(walks));
+            startPath.add(startNode);
+            List<Path> paths = findPaths(graph, startPath);
+            LOGGER.info("Found paths: " + String.valueOf(paths.size()));
+            LOGGER.info(pathsToJSON(paths));
             //  LOGGER.info(graphToJSON(graph));
         }
 
@@ -181,7 +181,7 @@ public final class NetworkBuffer {
         String json = "";
         List<SimpleFeature> features = new ArrayList();
         for (Walk walk : walks) {
-            LOGGER.info("Path: " + String.valueOf(walk.getEdges()));
+            LOGGER.info("Walk: " + String.valueOf(walk.getEdges()));
             for (Edge edge : (List<Edge>) walk.getEdges()) {
                 features.add(((SimpleFeature) edge.getObject()));
             }
@@ -217,6 +217,49 @@ public final class NetworkBuffer {
 
     }
 
+     private static List<Path> findPaths(Graph network, Path currentPath) {
+        List<Path> paths = new ArrayList();
+
+        //for each edge connected to current node 
+        for (Node node : (Collection<Node>) network.getNodes()) { //find the current node in the graph (not very efficient)
+            if (node.equals(currentPath.getLast())) {
+//                LOGGER.info("Found currentNode in network graph: " + currentPath.getLast());
+                for (Edge graphEdge : (List<Edge>) node.getEdges()) {
+//                    LOGGER.info("Graph Node Edges: " + node.getEdges());
+//                    LOGGER.info("Path Node Edges: " + currentPath.getEdges());
+//                    LOGGER.info("Found new connected edge: " + graphEdge);
+                    if (currentPath.size() < 8) { //if path + edge less than distance
+
+                        //append findPaths(path+edge) to list of paths
+                        //Path nextpath = (Path)currentpath.clone();
+                        //   Path nextpath = addEdge(graphEdge, currentpath);
+                        Path nextpath = new Path();
+                        nextpath.addEdges(currentPath.getEdges());
+                        if (nextpath.addEdge(graphEdge)) {
+//                            LOGGER.info("Exploring path beyond new edge: " + nextpath.getEdges());
+                            if (nextpath.isValid())
+                                paths.addAll(findPaths(network, nextpath));
+                        }
+                    } else {//else chop edge, append (path + chopped edge) to list of paths
+//                        LOGGER.info("Adding new (chopped) edge: " + graphEdge + " to current Path: " + currentPath.getEdges());
+                        //  Path newpath = addEdge(graphEdge, currentpath);
+                        Path newpath = new Path();
+                        newpath.addEdges(currentPath.getEdges());
+                        if (newpath.addEdge(graphEdge)) {
+//                            LOGGER.info("New Path: " + newpath.getEdges());
+                            if (newpath.isValid())
+                                paths.add(newpath);
+                        }
+                    }
+                }
+                //return all paths
+                return paths;
+            }
+        }
+        LOGGER.info("FAIL!");
+        return null;
+    }
+    
     private static List<Walk> findWalks(Graph network, Walk currentWalk) {
         List<Walk> walks = new ArrayList();
 
