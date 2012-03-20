@@ -175,7 +175,7 @@ public final class NetworkBuffer {
             LOGGER.info("Graph Edges: " + graph.getEdges());
             List<Path> paths = findPaths(graph, startPath, bufferDistance);
             LOGGER.info("Found paths: " + String.valueOf(paths.size()));
-            //System.out.print(pathsToJSON(paths));
+            System.out.print(pathsToJSON(paths));
             //  LOGGER.info(graphToJSON(graph));
         }
         return pointFeature;
@@ -195,24 +195,25 @@ public final class NetworkBuffer {
     private static List<Path> findPaths(Graph network, Path currentPath, Double distance) {
         List<Path> paths = new ArrayList();
 
-        //for each edge connected to current node 
+        
         for (Node node : (Collection<Node>) network.getNodes()) { //find the current node in the graph (not very efficient)
             if (node.equals(currentPath.getLast())) {
-                //     LOGGER.info("Found Current Node in Graph");
                 for (Edge graphEdge : (List<Edge>) node.getEdges()) {
                     //      LOGGER.info("Current Node has edges: " + node.getEdges());
                     Path nextPath = new Path();
                     nextPath.addEdges(currentPath.getEdges());
                     if (nextPath.addEdge(graphEdge)) {
-                        if (pathLength(nextPath) <= distance) { //if path + edge less than distance
+                        if (pathLength(nextPath) <= distance) { //if path + edge less/equal to distance
                             //  LOGGER.info("Appended edge to path: " + nextpath.getEdges());
                             if (nextPath.isValid()) //check if valid path (no repeated nodes)
                             {   //append findPaths(path+edge) to list of paths
-                                paths.addAll(findPaths(network, nextPath, distance));
+                                if (nextPath.getLast().getDegree() == 1)
+                                    paths.add(nextPath);
+                                else
+                                    paths.addAll(findPaths(network, nextPath, distance));
                                 //        LOGGER.info("Adding edge: " + graphEdge + " ...exploring further");
-                            } else if (nextPath.isClosed()) {  //if the path happens to be a closed path then still add it - don't want to miss out on looped edges - but no need to explore path further
-                                paths.add(nextPath);
-                                //       LOGGER.info("Adding edge: " + graphEdge + " ...terminating closed walk");
+                            } else if (nextPath.isClosed()) {  //if the path happens to be a closed path then still add it - don't want to miss out on looped edges
+                                paths.add(nextPath); 
                             }
 
                         } else {//else chop edge, append (path + chopped edge) to list of paths
@@ -243,28 +244,26 @@ public final class NetworkBuffer {
 
     private static Edge chopEdge(Path path, Edge edge, Double length) {
         Node node = path.getLast();
-        Node endNode = edge.getOtherNode(node);
         Node newNode = new BasicNode();
         Edge newEdge = new BasicEdge(node, newNode);
-      //  LOGGER.info("Path Length: " + pathLength(path));
-        //LOGGER.info("New Edge ID: " + newEdge.getID());
+    
         Geometry lineGeom = ((Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry());
-       //ineGeom = Densifier.densify(lineGeom, 0.1); //0.1 metre tolerance
+        //lineGeom = Densifier.densify(lineGeom, 0.1); //0.1 metre tolerance
         LengthIndexedLine line = new LengthIndexedLine(lineGeom);
         
         if (node.equals(edge.getNodeA())) {
             Geometry newLine = line.extractLine(line.getStartIndex(), length);
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
             newEdge.setObject(newFeature);
-            Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
-            LOGGER.info("Delta Length A: " + delta);//(newLine.getLength() - length) );
+            //Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
+            //LOGGER.info("Delta Length A: " + delta);//(newLine.getLength() - length) );
             return newEdge;
         } else if (node.equals(edge.getNodeB())) {
             Geometry newLine = line.extractLine(line.getEndIndex(), -length);
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
             newEdge.setObject(newFeature);
-            Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
-             LOGGER.info("Delta Length B: " + delta);//(newLine.getLength() - length) );
+            //Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
+            // LOGGER.info("Delta Length B: " + delta);//(newLine.getLength() - length) );
             return newEdge;
         } else {
             LOGGER.error("Failed To Cut Edge");
@@ -281,7 +280,6 @@ public final class NetworkBuffer {
     }
 
     private static String graphToJSON(Graph graph) {
-        String json = "";
         List<SimpleFeature> features = new ArrayList();
 
         for (Edge edge : (Collection<Edge>) graph.getEdges()) {
