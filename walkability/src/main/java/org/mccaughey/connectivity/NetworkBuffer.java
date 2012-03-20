@@ -16,6 +16,7 @@
  */
 package org.mccaughey.connectivity;
 
+import com.vividsolutions.jts.densify.Densifier;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
@@ -174,7 +175,7 @@ public final class NetworkBuffer {
             LOGGER.info("Graph Edges: " + graph.getEdges());
             List<Path> paths = findPaths(graph, startPath, bufferDistance);
             LOGGER.info("Found paths: " + String.valueOf(paths.size()));
-            System.out.print(pathsToJSON(paths));
+            //System.out.print(pathsToJSON(paths));
             //  LOGGER.info(graphToJSON(graph));
         }
         return pointFeature;
@@ -222,7 +223,7 @@ public final class NetworkBuffer {
                             newPath.addEdges(currentPath.getEdges());
                             
                             if (newPath.addEdge(choppedEdge)) {
-                               // LOGGER.info("Path Length: " + pathLength(newPath));
+                                LOGGER.info("Path Length: " + pathLength(newPath));
                                 // LOGGER.info("Appended edge to path: " + newpath.getEdges());
                                 if (newPath.isValid()) {
                                     paths.add(newPath);
@@ -245,21 +246,28 @@ public final class NetworkBuffer {
         Node endNode = edge.getOtherNode(node);
         Node newNode = new BasicNode();
         Edge newEdge = new BasicEdge(node, newNode);
-
+      //  LOGGER.info("Path Length: " + pathLength(path));
         //LOGGER.info("New Edge ID: " + newEdge.getID());
-        LengthIndexedLine line = new LengthIndexedLine(((Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry()));
+        Geometry lineGeom = ((Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry());
+       //ineGeom = Densifier.densify(lineGeom, 0.1); //0.1 metre tolerance
+        LengthIndexedLine line = new LengthIndexedLine(lineGeom);
+        
         if (node.equals(edge.getNodeA())) {
             Geometry newLine = line.extractLine(line.getStartIndex(), length);
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
             newEdge.setObject(newFeature);
+            Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
+            LOGGER.info("Delta Length A: " + delta);//(newLine.getLength() - length) );
             return newEdge;
         } else if (node.equals(edge.getNodeB())) {
-            Geometry newLine = line.extractLine(line.getEndIndex(), length);
+            Geometry newLine = line.extractLine(line.getEndIndex(), -length);
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
             newEdge.setObject(newFeature);
+            Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
+             LOGGER.info("Delta Length B: " + delta);//(newLine.getLength() - length) );
             return newEdge;
         } else {
-            LOGGER.info("FAILED TO CHOP EDGE!!!");
+            LOGGER.error("Failed To Cut Edge");
             return null;
         }
     }
