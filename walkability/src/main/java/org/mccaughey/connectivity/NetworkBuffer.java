@@ -19,12 +19,10 @@ package org.mccaughey.connectivity;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
-
 import com.vividsolutions.jts.index.SpatialIndex;
 import com.vividsolutions.jts.index.strtree.STRtree;
+import com.vividsolutions.jts.linearref.LengthIndexedLine;
 import com.vividsolutions.jts.linearref.LinearLocation;
 import com.vividsolutions.jts.linearref.LocationIndexedLine;
 import java.io.IOException;
@@ -42,13 +40,14 @@ import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geojson.feature.FeatureJSON;
-import org.geotools.geometry.jts.JTSFactoryFinder;
 import org.geotools.graph.build.feature.FeatureGraphGenerator;
 import org.geotools.graph.build.line.LineStringGraphGenerator;
 import org.geotools.graph.path.Path;
 import org.geotools.graph.structure.Edge;
 import org.geotools.graph.structure.Graph;
 import org.geotools.graph.structure.Node;
+import org.geotools.graph.structure.basic.BasicEdge;
+import org.geotools.graph.structure.basic.BasicNode;
 import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -69,11 +68,12 @@ public final class NetworkBuffer {
     private NetworkBuffer() {
     }
 
-    public static SimpleFeature createPolygonBuffer(SimpleFeatureSource network, SimpleFeature pointFeature, Double distance) throws IOException {
+    public static SimpleFeature createPolygonBuffer(SimpleFeatureSource network, SimpleFeature pointFeature, Double bufferDistance, Double trimDistance) throws IOException {
         //Build network Graph - within bounds
+        Double maxDistance = bufferDistance + trimDistance;
         Point pointOfInterest = (Point) pointFeature.getDefaultGeometry();
 
-        Geometry pointBuffer = pointOfInterest.buffer(distance);
+        Geometry pointBuffer = pointOfInterest.buffer(maxDistance);
 
         SimpleFeatureCollection networkRegion = featuresInRegion(network, pointBuffer);
 
@@ -97,7 +97,7 @@ public final class NetworkBuffer {
 
         Coordinate pt = pointOfInterest.getCoordinate();
         Envelope search = new Envelope(pt);
-        search.expandBy(distance);
+        search.expandBy(maxDistance);
 
         /*
          * Query the spatial index for objects within the search envelope. Note
@@ -109,7 +109,7 @@ public final class NetworkBuffer {
 
         // Initialize the minimum distance found to our maximum acceptable
         // distance plus a little bit
-        double minDist = distance + 1.0e-6;
+        double minDist = maxDistance + 1.0e-6;
         Coordinate minDistPoint = null;
         LocationIndexedLine connectedLine = null;
 
@@ -153,8 +153,7 @@ public final class NetworkBuffer {
             System.out.println("New nodes: " + String.valueOf(graph.getEdges().size()));
 
             Path startPath = new Path();
-            // Node startNode = (Node) graph.getNodes().toArray()[0]; //hmm is the snap node the last node?
-            //startPath.add(startNode);
+
             for (Node node : (Collection<Node>) graph.getNodes()) {
                 if (node.getEdges().size() == 2) {
                     SimpleFeature edgeFeature1 = (SimpleFeature) (((Edge) node.getEdges().toArray()[0]).getObject());
@@ -172,9 +171,10 @@ public final class NetworkBuffer {
                     }
                 }
             }
-            List<Path> paths = findPaths(graph, startPath);
+            LOGGER.info("Graph Edges: " + graph.getEdges());
+            List<Path> paths = findPaths(graph, startPath, bufferDistance);
             LOGGER.info("Found paths: " + String.valueOf(paths.size()));
-            LOGGER.info(pathsToJSON(paths));
+            System.out.print(pathsToJSON(paths));
             //  LOGGER.info(graphToJSON(graph));
         }
         return pointFeature;
@@ -191,56 +191,85 @@ public final class NetworkBuffer {
         return writer.toString();
     }
 
-    private static List<Path> findPaths(Graph network, Path currentPath) {
+    private static List<Path> findPaths(Graph network, Path currentPath, Double distance) {
         List<Path> paths = new ArrayList();
 
         //for each edge connected to current node 
         for (Node node : (Collection<Node>) network.getNodes()) { //find the current node in the graph (not very efficient)
             if (node.equals(currentPath.getLast())) {
-                LOGGER.info("Found Current Node in Graph");
+                //     LOGGER.info("Found Current Node in Graph");
                 for (Edge graphEdge : (List<Edge>) node.getEdges()) {
-                    LOGGER.info("Current Node has edges: " + node.getEdges());
-                    if (currentPath.size() < 8) { //if path + edge less than distance
-
-                        Path nextpath = new Path();
-                        nextpath.addEdges(currentPath.getEdges());
-                        if (nextpath.addEdge(graphEdge)) {
-                            LOGGER.info("Appended edge to path: " + nextpath.getEdges());
-                            if (nextpath.isValid()) //check if valid path (no repeated nodes)
+                    //      LOGGER.info("Current Node has edges: " + node.getEdges());
+                    Path nextPath = new Path();
+                    nextPath.addEdges(currentPath.getEdges());
+                    if (nextPath.addEdge(graphEdge)) {
+                        if (pathLength(nextPath) <= distance) { //if path + edge less than distance
+                            //  LOGGER.info("Appended edge to path: " + nextpath.getEdges());
+                            if (nextPath.isValid()) //check if valid path (no repeated nodes)
                             {   //append findPaths(path+edge) to list of paths
-                                paths.addAll(findPaths(network, nextpath));
-                                LOGGER.info("Adding edge: " + graphEdge + " ...exploring further");
-                            } else if (nextpath.isClosed()) {  //if the path happens to be a closed path then still add it - don't want to miss out on looped edges - but no need to explore path further
-                                paths.add(nextpath);
-                                LOGGER.info("Adding edge: " + graphEdge + " ...terminating closed walk");
+                                paths.addAll(findPaths(network, nextPath, distance));
+                                //        LOGGER.info("Adding edge: " + graphEdge + " ...exploring further");
+                            } else if (nextPath.isClosed()) {  //if the path happens to be a closed path then still add it - don't want to miss out on looped edges - but no need to explore path further
+                                paths.add(nextPath);
+                                //       LOGGER.info("Adding edge: " + graphEdge + " ...terminating closed walk");
                             }
-                        } else {
-                            LOGGER.info("Failed to append edge to path");
-                        }
-                    } else {//else chop edge, append (path + chopped edge) to list of paths
-                        Path newpath = new Path();
-                        newpath.addEdges(currentPath.getEdges());
-                        if (newpath.addEdge(graphEdge)) {
-                            LOGGER.info("Appended edge to path: " + newpath.getEdges());
-                            if (newpath.isValid()) {
-                                paths.add(newpath);
-                                LOGGER.info(" ...terminating completed path" + newpath.getEdges());
-                            } else if (newpath.isClosed()) {  //if the path happens to be a closed path then still add it - don't want to miss out on looped edges
-                                paths.add(newpath);
-                                LOGGER.info(" ...terminating completed closed walk: " + newpath.getEdges());
+
+                        } else {//else chop edge, append (path + chopped edge) to list of paths
+                            //LOGGER.info("Long edge: " + graphEdge);
+                            Edge choppedEdge = chopEdge(currentPath, graphEdge,distance - pathLength(currentPath));
+                            // LOGGER.info("Long edge: " + graphEdge + " Chopped Edge: " + choppedEdge);
+                            Path newPath = new Path();
+                            newPath.addEdges(currentPath.getEdges());
+                            
+                            if (newPath.addEdge(choppedEdge)) {
+                               // LOGGER.info("Path Length: " + pathLength(newPath));
+                                // LOGGER.info("Appended edge to path: " + newpath.getEdges());
+                                if (newPath.isValid()) {
+                                    paths.add(newPath);
+                                    //  LOGGER.info(" ...terminating completed path" + newpath.getEdges());
+                                } else if (newPath.isClosed()) {  //if the path happens to be a closed path then still add it - don't want to miss out on looped edges
+                                    paths.add(newPath);
+                                    //  LOGGER.info(" ...terminating completed closed walk: " + newpath.getEdges());
+                                }
                             }
-                        } else {
-                            LOGGER.info("Failed to append edge to path");
                         }
                     }
                 }
-                //return all paths
-               // return paths;
             }
         }
-        paths.add(currentPath);
         return paths;
-        //return null;
+    }
+
+    private static Edge chopEdge(Path path, Edge edge, Double length) {
+        Node node = path.getLast();
+        Node endNode = edge.getOtherNode(node);
+        Node newNode = new BasicNode();
+        Edge newEdge = new BasicEdge(node, newNode);
+
+        //LOGGER.info("New Edge ID: " + newEdge.getID());
+        LengthIndexedLine line = new LengthIndexedLine(((Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry()));
+        if (node.equals(edge.getNodeA())) {
+            Geometry newLine = line.extractLine(line.getStartIndex(), length);
+            SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
+            newEdge.setObject(newFeature);
+            return newEdge;
+        } else if (node.equals(edge.getNodeB())) {
+            Geometry newLine = line.extractLine(line.getEndIndex(), length);
+            SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
+            newEdge.setObject(newFeature);
+            return newEdge;
+        } else {
+            LOGGER.info("FAILED TO CHOP EDGE!!!");
+            return null;
+        }
+    }
+
+    private static Double pathLength(Path path) {
+        Double length = 0.0;
+        for (Edge edge : (List<Edge>) path.getEdges()) {
+            length += ((Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry()).getLength();
+        }
+        return length;
     }
 
     private static String graphToJSON(Graph graph) {
@@ -257,13 +286,12 @@ public final class NetworkBuffer {
         String json = "";
         List<SimpleFeature> features = new ArrayList();
         for (Path path : paths) {
-            LOGGER.info("Path: " + String.valueOf(path.getEdges()));
+            // LOGGER.info("Path: " + path.getEdges());
             for (Edge edge : (List<Edge>) path.getEdges()) {
                 features.add(((SimpleFeature) edge.getObject()));
             }
-            //  LOGGER.info(writeFeatures(DataUtilities.collection(features)));
+            //LOGGER.info(writeFeatures(DataUtilities.collection(features)));    
         }
-
         return (writeFeatures(DataUtilities.collection(features)));
     }
 
