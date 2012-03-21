@@ -17,8 +17,25 @@
         <geotools.version>8.0-M4</geotools.version>
         <netbeans.hint.license>gpl30</netbeans.hint.license>
     </properties>
+    
+    <developers>
+        <developer>
+            <name>Angus MacAulay</name>
+            <id>gus</id>
+            <email>angus.macaulay@unimelb.edu.au</email>
+            <organization>The McCaughey Centre</organization>
+            <roles>
+                <role>Geospatial Software Engineer</role>
+            </roles>
+        </developer>
+    </developers>
 
     <dependencies>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.0.1</version>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
