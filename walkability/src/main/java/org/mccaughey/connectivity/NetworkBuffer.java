@@ -125,7 +125,7 @@ public final class NetworkBuffer {
 
         if (minDistPoint == null) {
             // No line close enough to snap the point to
-            LOGGER.info(pt + "- X");
+            LOGGER.info("No Network Feature within trim distance");
 
         } else {
             LOGGER.info("{} - snapped by moving {}\n", pt.toString(), minDist);
@@ -169,17 +169,13 @@ public final class NetworkBuffer {
                     }
                 }
             }
-            LOGGER.info("Graph Edges: " + graph.getEdges());
             List<Path> paths = findPaths(graph, startPath, bufferDistance);
             LOGGER.info("Found paths: " + String.valueOf(paths.size()));
-            //System.out.print(pathsToJSON(paths));
             SimpleFeatureType type = createFeatureType(pointFeature.getFeatureType().getCoordinateReferenceSystem());
-      
-            SimpleFeatureCollection buffers = createBufferFromPaths(paths, trimDistance,type);
-            System.out.println(writeFeatures(buffers));
-            //  LOGGER.info(graphToJSON(graph));
+            LOGGER.info("Buffering paths ...");
+            return createBufferFromPaths(paths, trimDistance,type);
         }
-        return pointFeature;
+        return null;
     }
 
      private static SimpleFeatureType createFeatureType(CoordinateReferenceSystem crs) {
@@ -198,8 +194,7 @@ public final class NetworkBuffer {
         return BUFFER;
     }
     
-    private static SimpleFeatureCollection createBufferFromPaths(List<Path> paths, Double distance, SimpleFeatureType type) {
-        List<SimpleFeature> features = new ArrayList();
+    private static SimpleFeature createBufferFromPaths(List<Path> paths, Double distance, SimpleFeatureType type) {
         Geometry all = null; 
         for (Path path : paths) {
             // LOGGER.info("Path: " + path.getEdges());
@@ -210,17 +205,9 @@ public final class NetworkBuffer {
                     all = geom;
                 else
                     all = all.union(geom);
-                         
-                
-                
-            }
-            
-            //return ((DataUtilities.collection(features)));
-            //LOGGER.info(writeFeatures(DataUtilities.collection(features)));    
+            }   
         }
-        SimpleFeature feature = buildFeatureFromGeometry(type,all);
-        features.add(feature);
-        return ((DataUtilities.collection(features)));
+        return buildFeatureFromGeometry(type,all);
     }
     
     private static String writeFeatures(SimpleFeatureCollection features) {
@@ -260,7 +247,7 @@ public final class NetworkBuffer {
                             newPath.addEdges(currentPath.getEdges());
 
                             if (newPath.addEdge(choppedEdge)) {
-                                LOGGER.info("Path Length: " + pathLength(newPath));
+                                //LOGGER.info("Path Length: " + pathLength(newPath));
                                 if (newPath.isValid()) {
                                     paths.add(newPath);
                                 } else if (newPath.isClosed()) {//if the path happens to be invalid but is a closed walk then still add it - don't want to miss out on looped edges
