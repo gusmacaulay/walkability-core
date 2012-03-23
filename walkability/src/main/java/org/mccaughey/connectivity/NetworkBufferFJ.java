@@ -118,21 +118,22 @@ public class NetworkBufferFJ extends RecursiveAction {
             }
         }
         for (Path nextPath : nextPaths) {
-            NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, serviceArea);
+            NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, new HashMap());
             buffernators.add(nbfj);
         }
         invokeAll(buffernators);
-
+        
 
         for (NetworkBufferFJ nbfj : buffernators) {
             results.add(nbfj.serviceArea);
+            serviceArea = joinServiceAreas(serviceArea,nbfj.serviceArea);
         }
     }
 
     private static HashMap joinServiceAreas(HashMap serviceAreaA, HashMap serviceAreaB) {
 
-        Set<Edge> keys = serviceAreaB.keySet();
-        for (Edge key : keys) {
+       // Set<Edge> keys = ;
+        for (Edge key : (Set<Edge>)serviceAreaB.keySet()) {
             if (serviceAreaA.containsKey(key)) {
                 Geometry geomA = (Geometry) serviceAreaA.get(key);
                 Geometry geomB = (Geometry) serviceAreaB.get(key);
@@ -150,7 +151,7 @@ public class NetworkBufferFJ extends RecursiveAction {
     private static HashMap joinServiceAreas(List<HashMap> serviceAreas) {
         HashMap serviceArea = serviceAreas.get(0);
 
-        for (HashMap otherArea : serviceAreas.subList(1, serviceAreas.size() - 1)) {
+        for (HashMap otherArea : serviceAreas.subList(1, serviceAreas.size())) {
             Set<Edge> keys = otherArea.keySet();
             for (Edge key : keys) {
                 if (serviceArea.containsKey(key)) {

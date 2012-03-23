@@ -180,16 +180,22 @@ public final class NetworkBuffer {
                 networkHash.put(node, node.getEdges());
             }
 
-            
-            serviceArea = findPaths(networkHash, startPath, bufferDistance, serviceArea);
-          //  NetworkBufferFJ nbfj = new NetworkBufferFJ(networkHash, startPath, bufferDistance, serviceArea);
-          //  nbfj.createBuffer();
-          //  serviceArea = joinServiceAreas(nbfj.results);
-           
-            double t2 = new Date().getTime();
-            double total = (t2 - t1) / 1000;
 
-            LOGGER.info("Found " + serviceArea.size() + " Edges in " + total + " seconds");
+            serviceArea = findPaths(networkHash, startPath, bufferDistance, serviceArea);
+//            NetworkBufferFJ nbfj = new NetworkBufferFJ(networkHash, startPath, bufferDistance, serviceArea);
+//            nbfj.createBuffer();
+//            double t2 = new Date().getTime();
+//            double total = (t2 - t1) / 1000;
+//            LOGGER.info("Created unjoined buffer graph in " + total + " seconds");
+//            serviceArea = nbfj.serviceArea;//joinServiceAreas(nbfj.results);
+//            double t3 = new Date().getTime();
+//            total = (t3 - t2) / 1000;
+//            LOGGER.info("Found " + serviceArea.size() + " Edges in " + total + " seconds");
+
+
+
+
+
 //            LOGGER.info("Found paths: " + String.valueOf(paths.size()));
             SimpleFeatureType type = createFeatureType(pointFeature.getFeatureType().getCoordinateReferenceSystem());
 //            LOGGER.info("Buffering paths ...");
@@ -201,9 +207,12 @@ public final class NetworkBuffer {
     }
 
     private static HashMap joinServiceAreas(List<HashMap> serviceAreas) {
+        if (serviceAreas.size() == 1) {
+            return serviceAreas.get(1);
+        }
         HashMap serviceArea = serviceAreas.get(0);
 
-        for (HashMap otherArea : serviceAreas.subList(1, serviceAreas.size() - 1)) {
+        for (HashMap otherArea : serviceAreas.subList(1, serviceAreas.size())) {
             Set<Edge> keys = otherArea.keySet();
             for (Edge key : keys) {
                 if (serviceArea.containsKey(key)) {
@@ -219,7 +228,7 @@ public final class NetworkBuffer {
         }
         return serviceArea;
     }
-    
+
     private static SimpleFeatureType createFeatureType(CoordinateReferenceSystem crs) {
 
         SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
@@ -235,30 +244,6 @@ public final class NetworkBuffer {
 
         return BUFFER;
     }
-//
-//    private static SimpleFeature createBufferFromPaths(List<Path> paths, Double distance, SimpleFeatureType type) {
-//        Geometry all = null;
-//        for (Path path : paths) {
-//            // LOGGER.info("Path: " + path.getEdges());
-//            Geometry pathGeom = null;
-//            for (Edge edge : (List<Edge>) path.getEdges()) {
-//                Geometry geometry = ((Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry());
-//                if (pathGeom == null) {
-//                    pathGeom = geometry.getGeometryN(0);
-//                } else {
-//                    pathGeom = pathGeom.union(geometry.getGeometryN(0));
-//                }
-//            }
-//            pathGeom.buffer(distance);
-//            if (all == null) {
-//                all = pathGeom.getGeometryN(0);
-//            } else {
-//                all = all.union(pathGeom.getGeometryN(0));
-//            }
-//
-//        }
-//         return buildFeatureFromGeometry(type, all);   
-//    }
 
     private static SimpleFeature createConvexHullFromEdges(HashMap serviceArea, Double distance, SimpleFeatureType type) {
         Set<Edge> edges = serviceArea.keySet();
@@ -344,41 +329,6 @@ public final class NetworkBuffer {
 
         return buildFeatureFromGeometry(type, all);
     }
-//    private static SimpleFeature createBufferFromPaths(List<Path> paths, Double distance, SimpleFeatureType type) {
-//        LineMerger lineMerger = new LineMerger();
-//        List<SimpleFeature> features = new ArrayList();
-//        for (Path path : paths) {
-//            // LOGGER.info("Path: " + path.getEdges());
-//            for (Edge edge : (List<Edge>) path.getEdges()) {
-//                features.add(((SimpleFeature) edge.getObject()));
-//            }
-//        }
-//        SimpleFeatureCollection fc = DataUtilities.collection(features);
-//        LOGGER.info("Unique Features?: " + fc.size());
-//        SimpleFeatureIterator featureIter = fc.features();
-//        Geometry[] geometries = new Geometry[fc.size()];
-//        Geometry all = null;
-//        int i = 0;
-//        while (featureIter.hasNext()) {
-//            Geometry geom = ((Geometry) featureIter.next().getDefaultGeometry()).getGeometryN(0).buffer(distance);
-//            geometries[i] = geom.getGeometryN(0).getGeometryN(0).getGeometryN(0);
-//            i++;
-////            for (int j = 0; j < geom.getNumGeometries(); j++) //split out geometry collections
-////            {
-//            if (all == null) {
-//                all = geom.getGeometryN(0);
-//            } else {
-//                all = all.union(geom.getGeometryN(0));
-//            }
-////            }
-//        }
-//        //all = all.buffer(distance);
-//        return buildFeatureFromGeometry(type, all);
-////        LOGGER.info("Created Individual Buffers: " + geometries.length);
-////        GeometryFactory gf = new GeometryFactory();
-////        GeometryCollection gc = new GeometryCollection(geometries,gf); 
-////        return buildFeatureFromGeometry(type, gc.union());
-//    }
 
     private static String writeFeatures(SimpleFeatureCollection features) {
         FeatureJSON fjson = new FeatureJSON();
@@ -470,49 +420,6 @@ public final class NetworkBuffer {
         }
         return serviceArea;
     }
-//    private static List<Path> findPaths(Graph network, Path currentPath, Double distance) {
-//        List<Path> paths = new ArrayList();
-//        if (currentPath.size() == 0) {
-//            paths.add(currentPath);
-//            return paths;
-//        }
-//        for (Node node : (Collection<Node>) network.getNodes()) { //find the current node in the graph (not very efficient)
-//            if (node.equals(currentPath.getLast())) {
-//                for (Edge graphEdge : (List<Edge>) node.getEdges()) {
-//                    //      LOGGER.info("Current Node has edges: " + node.getEdges());
-//                    Path nextPath = new Path();
-//                    nextPath.addEdges(currentPath.getEdges());
-//                    if (nextPath.addEdge(graphEdge)) {
-//                        if (pathLength(nextPath) <= distance) { //if path + edge less/equal to distance
-//                            if (nextPath.isValid()) { //check if valid path (no repeated nodes)
-//                                if (nextPath.getLast().getDegree() == 1) {
-//                                    paths.add(nextPath); //add the path if it is ended
-//                                } else if (nextPath.getLast().getDegree() > 1) {//otherwise explore the path further
-//                                    paths.addAll(findPaths(network, nextPath, distance));
-//                                }
-//                            } //else if (nextPath.isClosed()) {//if the path happens to be invalid but is a closed walk then still add it - don't want to miss out on looped edges
-////                                paths.add(nextPath);
-////                            }
-//                        } else {//else chop edge, append (path + chopped edge) to list of paths
-//                            Edge choppedEdge = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
-//                            Path newPath = new Path();
-//                            newPath.addEdges(currentPath.getEdges());
-//
-//                            if (newPath.addEdge(choppedEdge)) {
-//                                //LOGGER.info("Path Length: " + pathLength(newPath));
-//                                if (newPath.isValid()) {
-//                                    paths.add(newPath);
-//                                } //else if (newPath.isClosed()) {//if the path happens to be invalid but is a closed walk then still add it - don't want to miss out on looped edges
-////                                    paths.add(newPath);
-////                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        return paths;
-//    }
 
     private static Edge chopEdge(Path path, Edge edge, Double length) {
         Node node = path.getLast();
