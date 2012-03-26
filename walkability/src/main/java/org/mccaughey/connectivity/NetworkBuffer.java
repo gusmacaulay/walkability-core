@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.io.FileUtils;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -173,7 +174,7 @@ public final class NetworkBuffer {
                 }
             }
             // List<Path> paths = findPaths(graph, startPath, bufferDistance);
-            HashMap serviceArea = new HashMap();
+            ConcurrentHashMap serviceArea = new ConcurrentHashMap();
             HashMap networkHash = new HashMap();
             double t1 = new Date().getTime();
             for (Node node : (Collection<Node>) graph.getNodes()) {
@@ -181,16 +182,16 @@ public final class NetworkBuffer {
             }
 
 
-            serviceArea = findPaths(networkHash, startPath, bufferDistance, serviceArea);
-//            NetworkBufferFJ nbfj = new NetworkBufferFJ(networkHash, startPath, bufferDistance, serviceArea);
-//            nbfj.createBuffer();
-//            double t2 = new Date().getTime();
-//            double total = (t2 - t1) / 1000;
-//            LOGGER.info("Created unjoined buffer graph in " + total + " seconds");
-//            serviceArea = nbfj.serviceArea;//joinServiceAreas(nbfj.results);
-//            double t3 = new Date().getTime();
-//            total = (t3 - t2) / 1000;
-//            LOGGER.info("Found " + serviceArea.size() + " Edges in " + total + " seconds");
+//           serviceArea = findPaths(networkHash, startPath, bufferDistance, serviceArea);
+            NetworkBufferFJ nbfj = new NetworkBufferFJ(networkHash, startPath, bufferDistance, serviceArea);
+            nbfj.createBuffer();
+            double t2 = new Date().getTime();
+            double total = (t2 - t1) / 1000;
+            LOGGER.info("Created unjoined buffer graph in " + total + " seconds");
+            serviceArea = nbfj.serviceArea;//joinServiceAreas(nbfj.results);
+            double t3 = new Date().getTime();
+            total = (t3 - t2) / 1000;
+            LOGGER.info("Found " + serviceArea.size() + " Edges in " + total + " seconds");
 
 
 
@@ -208,9 +209,15 @@ public final class NetworkBuffer {
 
     private static HashMap joinServiceAreas(List<HashMap> serviceAreas) {
         if (serviceAreas.size() == 1) {
-            return serviceAreas.get(1);
+            return serviceAreas.get(0);
         }
+        Collections.sort(serviceAreas, new Comparator<HashMap>() {
+            public int compare(HashMap h1, HashMap h2) {
+                return h2.size() - h1.size(); // assumes you want biggest to smallest
+            }
+        });
         HashMap serviceArea = serviceAreas.get(0);
+
 
         for (HashMap otherArea : serviceAreas.subList(1, serviceAreas.size())) {
             Set<Edge> keys = otherArea.keySet();
@@ -259,7 +266,7 @@ public final class NetworkBuffer {
         return buildFeatureFromGeometry(type, bufferedConvexHull);
     }
 
-    private static SimpleFeature createBufferFromEdges(HashMap serviceArea, Double distance, SimpleFeatureType type) {
+    private static SimpleFeature createBufferFromEdges(ConcurrentHashMap serviceArea, Double distance, SimpleFeatureType type) {
         Set<Edge> edges = serviceArea.keySet();
 
         Geometry all = null;

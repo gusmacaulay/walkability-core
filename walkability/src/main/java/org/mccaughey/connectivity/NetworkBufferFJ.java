@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
@@ -46,15 +47,16 @@ public class NetworkBufferFJ extends RecursiveAction {
     HashMap network;
     Path currentPath;
     Double distance;
-    HashMap serviceArea;
-    List<HashMap> results;
+    ConcurrentHashMap serviceArea;
+    List<ConcurrentHashMap> results;
 
-    public NetworkBufferFJ(HashMap network, Path currentPath, Double distance, HashMap serviceArea) {
+    public NetworkBufferFJ(HashMap network, Path currentPath, Double distance, ConcurrentHashMap serviceArea) {
         this.network = network;
         this.currentPath = currentPath;
         this.distance = distance;
         this.serviceArea = serviceArea;
         this.results = new ArrayList();
+        // results.add(serviceArea);
     }
 
     /**
@@ -65,12 +67,14 @@ public class NetworkBufferFJ extends RecursiveAction {
         //Get the available processors, processors==threads is probably best?
         Runtime runtime = Runtime.getRuntime();
         int nProcessors = runtime.availableProcessors();
-        int nThreads = nProcessors;
+        int nThreads = nProcessors + 1;
 
         LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
         //Fork/Join handles threads for me, all I do is invoke
         ForkJoinPool fjPool = new ForkJoinPool(nThreads);
         fjPool.invoke(this);
+
+
         if (this.isCompletedAbnormally()) {
             LOGGER.error("ForkJoin connectivity calculation failed: {}", this.getException().toString());
             this.completeExceptionally(this.getException());
@@ -117,23 +121,39 @@ public class NetworkBufferFJ extends RecursiveAction {
                 }
             }
         }
-        for (Path nextPath : nextPaths) {
-            NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, new HashMap());
-            buffernators.add(nbfj);
-        }
-        invokeAll(buffernators);
-        
+        if (nextPaths.size() > 0) {
+            for (Path nextPath : nextPaths) {
+                NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, serviceArea);
+                buffernators.add(nbfj);
+            }
+            invokeAll(buffernators);
 
-        for (NetworkBufferFJ nbfj : buffernators) {
-            results.add(nbfj.serviceArea);
-            serviceArea = joinServiceAreas(serviceArea,nbfj.serviceArea);
+//            serviceArea = null;
+//            for (NetworkBufferFJ nbfj : buffernators) {
+//                if (serviceArea == null) {
+//                    serviceArea = nbfj.serviceArea;
+//                } else {
+//                    serviceArea = joinServiceAreas(serviceArea, nbfj.serviceArea);
+//                }
+//            }
         }
+        results = new ArrayList();
+        results.add(serviceArea);
+    }
+
+    private static HashMap deepCopy(HashMap serviceArea, HashMap newServiceArea) {
+        for (Edge key : (Set<Edge>) serviceArea.keySet()) {
+            newServiceArea.put(key, serviceArea.get(key));
+        }
+        return newServiceArea;
     }
 
     private static HashMap joinServiceAreas(HashMap serviceAreaA, HashMap serviceAreaB) {
 
-       // Set<Edge> keys = ;
-        for (Edge key : (Set<Edge>)serviceAreaB.keySet()) {
+        if (serviceAreaA.size() < serviceAreaB.size()) {
+            return joinServiceAreas(serviceAreaB, serviceAreaA);
+        }
+        for (Edge key : (Set<Edge>) serviceAreaB.keySet()) {
             if (serviceAreaA.containsKey(key)) {
                 Geometry geomA = (Geometry) serviceAreaA.get(key);
                 Geometry geomB = (Geometry) serviceAreaB.get(key);
@@ -168,20 +188,22 @@ public class NetworkBufferFJ extends RecursiveAction {
         return serviceArea;
     }
 
-    private static HashMap addEdge(HashMap serviceArea, Edge graphEdge, Edge newEdge) {
+    private static ConcurrentHashMap addEdge(ConcurrentHashMap serviceArea, Edge graphEdge, Edge newEdge) {
         if (serviceArea.containsKey(graphEdge)) {
             Geometry existingGeometry = (Geometry) serviceArea.get(graphEdge);
-            Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
-            if (newGeometry.contains(existingGeometry)) {
-                serviceArea.put(graphEdge, newGeometry);
-            }
+           // if (graphEdge.isVisited() == false) {
+                Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
+                if (newGeometry.contains(existingGeometry)) {
+                    serviceArea.put(graphEdge, newGeometry);
+                }
+           // }
         } else {
             serviceArea.put(graphEdge, ((SimpleFeature) newEdge.getObject()).getDefaultGeometry());
         }
         return serviceArea;
     }
 
-    private static HashMap addEdges(HashMap serviceArea, Path path, Edge graphEdge, Edge newEdge) {
+    private static ConcurrentHashMap addEdges(ConcurrentHashMap serviceArea, Path path, Edge graphEdge, Edge newEdge) {
         serviceArea = addEdges(serviceArea, path);
         serviceArea = addEdge(serviceArea, graphEdge, newEdge);
         return serviceArea;
@@ -198,9 +220,10 @@ public class NetworkBufferFJ extends RecursiveAction {
      * geometries.
      * @return
      */
-    private static HashMap addEdges(HashMap serviceArea, Path path) {
+    private static ConcurrentHashMap addEdges(ConcurrentHashMap serviceArea, Path path) {
         for (Edge edge : (List<Edge>) path.getEdges()) {
             Geometry geom = (Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry();
+           // edge.setVisited(true);
             serviceArea.put(edge, geom);
         }
         return serviceArea;
@@ -219,6 +242,7 @@ public class NetworkBufferFJ extends RecursiveAction {
             Geometry newLine = line.extractLine(line.getStartIndex(), length);
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
             newEdge.setObject(newFeature);
+           // newEdge.setVisited(false);
             //Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
             //LOGGER.info("Delta Length A: " + delta);//(newLine.getLength() - length) );
             return newEdge;
@@ -226,6 +250,7 @@ public class NetworkBufferFJ extends RecursiveAction {
             Geometry newLine = line.extractLine(line.getEndIndex(), -length);
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
             newEdge.setObject(newFeature);
+           // newEdge.setVisited(false);
             //Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
             // LOGGER.info("Delta Length B: " + delta);//(newLine.getLength() - length) );
             return newEdge;
