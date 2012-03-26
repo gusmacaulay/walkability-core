@@ -16,7 +16,6 @@
  */
 package org.mccaughey.connectivity;
 
-import com.vividsolutions.jts.algorithm.ConvexHull;
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.index.SpatialIndex;
 import com.vividsolutions.jts.index.strtree.STRtree;
@@ -175,6 +174,7 @@ public final class NetworkBuffer {
             }
             // List<Path> paths = findPaths(graph, startPath, bufferDistance);
             ConcurrentHashMap serviceArea = new ConcurrentHashMap();
+            //HashMap serviceArea = new HashMap();
             HashMap networkHash = new HashMap();
             double t1 = new Date().getTime();
             for (Node node : (Collection<Node>) graph.getNodes()) {
@@ -182,7 +182,7 @@ public final class NetworkBuffer {
             }
 
 
-//           serviceArea = findPaths(networkHash, startPath, bufferDistance, serviceArea);
+//            serviceArea = findPaths(networkHash, startPath, bufferDistance, serviceArea);
             NetworkBufferFJ nbfj = new NetworkBufferFJ(networkHash, startPath, bufferDistance, serviceArea);
             nbfj.createBuffer();
             double t2 = new Date().getTime();
@@ -192,7 +192,7 @@ public final class NetworkBuffer {
             double t3 = new Date().getTime();
             total = (t3 - t2) / 1000;
             LOGGER.info("Found " + serviceArea.size() + " Edges in " + total + " seconds");
-
+              writeNetworkFromEdges(serviceArea);
 
 
 
@@ -205,51 +205,6 @@ public final class NetworkBuffer {
             return createBufferFromEdges(serviceArea, trimDistance, type);
         }
         return null;
-    }
-
-    private static HashMap joinServiceAreas(List<HashMap> serviceAreas) {
-        if (serviceAreas.size() == 1) {
-            return serviceAreas.get(0);
-        }
-        Collections.sort(serviceAreas, new Comparator<HashMap>() {
-            public int compare(HashMap h1, HashMap h2) {
-                return h2.size() - h1.size(); // assumes you want biggest to smallest
-            }
-        });
-        HashMap serviceArea = serviceAreas.get(0);
-
-
-        for (HashMap otherArea : serviceAreas.subList(1, serviceAreas.size())) {
-            Set<Edge> keys = otherArea.keySet();
-            for (Edge key : keys) {
-                if (serviceArea.containsKey(key)) {
-                    Geometry geomA = (Geometry) otherArea.get(key);
-                    Geometry geomB = (Geometry) serviceArea.get(key);
-                    if (geomA.contains(geomB)) {
-                        serviceArea.put(key, geomA);
-                    }
-                } else {
-                    serviceArea.put(key, otherArea.get(key));
-                }
-            }
-        }
-        return serviceArea;
-    }
-
-    private static SimpleFeatureType createFeatureType(CoordinateReferenceSystem crs) {
-
-        SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
-        builder.setName("Buffer");
-        builder.setCRS(crs); // <- Coordinate reference system
-
-        // add attributes in order
-        builder.add("Buffer", Polygon.class);
-        builder.length(15).add("Name", String.class); // <- 15 chars width for name field
-
-        // build the type
-        final SimpleFeatureType BUFFER = builder.buildFeatureType();
-
-        return BUFFER;
     }
 
     private static SimpleFeature createConvexHullFromEdges(HashMap serviceArea, Double distance, SimpleFeatureType type) {
@@ -266,7 +221,22 @@ public final class NetworkBuffer {
         return buildFeatureFromGeometry(type, bufferedConvexHull);
     }
 
-    private static SimpleFeature createBufferFromEdges(ConcurrentHashMap serviceArea, Double distance, SimpleFeatureType type) {
+    private static void writeNetworkFromEdges(Map serviceArea) {
+        List<SimpleFeature> features = new ArrayList();
+        Set<Edge> edges = serviceArea.keySet();
+        for (Edge edge : edges) {
+            SimpleFeature feature = (SimpleFeature) edge.getObject();
+            feature.setDefaultGeometry(serviceArea.get(edge));
+            features.add(feature);
+        }
+        try {
+        File file = new File("/home/amacaulay/bufferNetwork.json");
+        FileUtils.writeStringToFile(file, writeFeatures(DataUtilities.collection(features)));
+        }
+        catch(Exception e) {}
+    }
+
+    private static SimpleFeature createBufferFromEdges(Map serviceArea, Double distance, SimpleFeatureType type) {
         Set<Edge> edges = serviceArea.keySet();
 
         Geometry all = null;
@@ -284,59 +254,7 @@ public final class NetworkBuffer {
         }
         return buildFeatureFromGeometry(type, all);
     }
-
-    private static SimpleFeature createBufferFromPaths(List<Path> paths, Double distance, SimpleFeatureType type) {
-        LineMerger lineMerger = new LineMerger();
-        List<SimpleFeature> features = new ArrayList();
-        for (Path path : paths) {
-            // LOGGER.info("Path: " + path.getEdges());
-            for (Edge edge : (List<Edge>) path.getEdges()) {
-                features.add(((SimpleFeature) edge.getObject()));
-            }
-        }
-        SimpleFeatureCollection fc = DataUtilities.collection(features);
-        File file = new File("/home/amacaulay/buffers.json");
-        try {
-            FileUtils.writeStringToFile(file, writeFeatures(fc));
-        } catch (Exception e) {
-        }
-        LOGGER.info("Unique Features?: " + fc.size());
-        SimpleFeatureIterator featureIter = fc.features();
-        Geometry all = null;
-        List<Geometry> geometries = new ArrayList();
-        List<Geometry> containedGeometries = new ArrayList();
-        while (featureIter.hasNext()) {
-            Geometry geom = ((Geometry) featureIter.next().getDefaultGeometry()).getGeometryN(0);
-            Boolean redundantGeom = false;
-            for (Geometry otherGeom : geometries) {
-                if (geom.contains(otherGeom)) {
-                    containedGeometries.add(otherGeom);
-                } else if (otherGeom.contains(geom)) {
-                    redundantGeom = true;
-                }
-            }
-            for (Geometry removeGeom : containedGeometries) {
-                geometries.remove(removeGeom);
-            }
-            if (!redundantGeom) {
-                geometries.add(geom);
-            }
-        }
-        LOGGER.info("Remaining Geometrires: " + geometries.size());
-        for (Geometry geom : geometries) {
-            try {
-                if (all == null) {
-                    all = geom.getGeometryN(0).buffer(distance);
-                } else if (!(all.contains(geom.getGeometryN(0).buffer(distance)))) {
-                    all = all.union(geom.getGeometryN(0).buffer(distance));
-                }
-            } catch (Exception e) {
-            }
-        }
-
-        return buildFeatureFromGeometry(type, all);
-    }
-
+   
     private static String writeFeatures(SimpleFeatureCollection features) {
         FeatureJSON fjson = new FeatureJSON();
         Writer writer = new StringWriter();
@@ -391,12 +309,16 @@ public final class NetworkBuffer {
     }
 
     private static HashMap addEdge(HashMap serviceArea, Edge graphEdge, Edge newEdge) {
-        if (serviceArea.containsKey(graphEdge)) {
+       if (serviceArea.containsKey(graphEdge)) {
             Geometry existingGeometry = (Geometry) serviceArea.get(graphEdge);
-            Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
-            if (newGeometry.contains(existingGeometry)) {
-                serviceArea.put(graphEdge, newGeometry);
-            }
+                Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
+                if (newGeometry.contains(existingGeometry)) { //
+                    serviceArea.put(graphEdge, newGeometry);
+                    return serviceArea;
+                }
+                else if (existingGeometry.disjoint(newGeometry)) { //if they are separate segments of the edge then union them
+                    serviceArea.put(graphEdge, existingGeometry.union(newGeometry));
+                }
         } else {
             serviceArea.put(graphEdge, ((SimpleFeature) newEdge.getObject()).getDefaultGeometry());
         }
@@ -465,27 +387,6 @@ public final class NetworkBuffer {
         return length;
     }
 
-    private static String graphToJSON(Graph graph) {
-        List<SimpleFeature> features = new ArrayList();
-
-        for (Edge edge : (Collection<Edge>) graph.getEdges()) {
-            features.add(((SimpleFeature) edge.getObject()));
-        }
-        return (writeFeatures(DataUtilities.collection(features)));
-    }
-
-    private static String pathsToJSON(List<Path> paths) {
-        List<SimpleFeature> features = new ArrayList();
-        for (Path path : paths) {
-            // LOGGER.info("Path: " + path.getEdges());
-            for (Edge edge : (List<Edge>) path.getEdges()) {
-                features.add(((SimpleFeature) edge.getObject()));
-            }
-            //LOGGER.info(writeFeatures(DataUtilities.collection(features)));    
-        }
-        return (writeFeatures(DataUtilities.collection(features)));
-    }
-
     private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType featureType, Geometry geom) {
 
         SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
@@ -538,5 +439,42 @@ public final class NetworkBuffer {
             iter.close();
         }
         return featureGen;
+    }
+    
+        private static String graphToJSON(Graph graph) {
+        List<SimpleFeature> features = new ArrayList();
+
+        for (Edge edge : (Collection<Edge>) graph.getEdges()) {
+            features.add(((SimpleFeature) edge.getObject()));
+        }
+        return (writeFeatures(DataUtilities.collection(features)));
+    }
+
+    private static String pathsToJSON(List<Path> paths) {
+        List<SimpleFeature> features = new ArrayList();
+        for (Path path : paths) {
+            // LOGGER.info("Path: " + path.getEdges());
+            for (Edge edge : (List<Edge>) path.getEdges()) {
+                features.add(((SimpleFeature) edge.getObject()));
+            }
+            //LOGGER.info(writeFeatures(DataUtilities.collection(features)));    
+        }
+        return (writeFeatures(DataUtilities.collection(features)));
+    }
+    
+      private static SimpleFeatureType createFeatureType(CoordinateReferenceSystem crs) {
+
+        SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+        builder.setName("Buffer");
+        builder.setCRS(crs); // <- Coordinate reference system
+
+        // add attributes in order
+        builder.add("Buffer", Polygon.class);
+        builder.length(15).add("Name", String.class); // <- 15 chars width for name field
+
+        // build the type
+        final SimpleFeatureType BUFFER = builder.buildFeatureType();
+
+        return BUFFER;
     }
 }

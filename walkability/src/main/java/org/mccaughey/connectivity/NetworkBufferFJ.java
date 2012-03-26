@@ -17,11 +17,12 @@
 package org.mccaughey.connectivity;
 
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryCollection;
+import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.linearref.LengthIndexedLine;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
@@ -48,15 +49,12 @@ public class NetworkBufferFJ extends RecursiveAction {
     Path currentPath;
     Double distance;
     ConcurrentHashMap serviceArea;
-    List<ConcurrentHashMap> results;
 
     public NetworkBufferFJ(HashMap network, Path currentPath, Double distance, ConcurrentHashMap serviceArea) {
         this.network = network;
         this.currentPath = currentPath;
         this.distance = distance;
         this.serviceArea = serviceArea;
-        this.results = new ArrayList();
-        // results.add(serviceArea);
     }
 
     /**
@@ -93,6 +91,10 @@ public class NetworkBufferFJ extends RecursiveAction {
             //      LOGGER.info("Current Node has edges: " + node.getEdges());
             Path nextPath = new Path();
             nextPath.addEdges(currentPath.getEdges());
+//            if (currentPath.getLast().getDegree() > currentPath.getLast().getEdges().size())
+//                LOGGER.info("Found closed loop? degree = " + currentPath.getLast().getDegree() + " edges = " + currentPath.getLast().getEdges().size());
+//            if (graphEdge.getNodeA().equals(graphEdge.getNodeB()))
+//                LOGGER.info("Definitely closed ...");
             if (nextPath.addEdge(graphEdge)) {
                 if (pathLength(nextPath) <= distance) { //if path + edge less/equal to distance
                     if (nextPath.isValid()) { //check if valid path (no repeated nodes)
@@ -101,9 +103,12 @@ public class NetworkBufferFJ extends RecursiveAction {
                         } else if (nextPath.getLast().getDegree() > 1) {//otherwise add to list of paths to explore further
                             nextPaths.add(nextPath);
                         }
-                    } else if (nextPath.isClosed()) {//if the path happens to be invalid but is a closed walk then still add it - don't want to miss out on looped edges
-                        serviceArea = addEdges(serviceArea, nextPath);
+//                    } else if (nextPath.isClosed()) {//if the path happens to be invalid but is a closed walk then still add it - don't want to miss out on looped edges
+//                        LOGGER.info("Is closed 1 = yes");
+//                        serviceArea = addEdges(serviceArea, nextPath);
                     }
+                    else
+                        serviceArea = addEdges(serviceArea, nextPath);
                 } else {//else chop edge, append (path + chopped edge) to list of paths
                     Edge choppedEdge = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
                     Path newPath = new Path();
@@ -111,95 +116,40 @@ public class NetworkBufferFJ extends RecursiveAction {
 
                     if (newPath.addEdge(choppedEdge)) {
                         //LOGGER.info("Path Length: " + pathLength(newPath));
-                        if (newPath.isValid()) {
+//                        if (newPath.isValid()) {
                             serviceArea = addEdges(serviceArea, currentPath, graphEdge, choppedEdge);
 
-                        } else if (newPath.isClosed()) {//if the path happens to be invalid but is a closed walk then still add it - don't want to miss out on looped edges
-                            serviceArea = addEdges(serviceArea, currentPath, graphEdge, choppedEdge);
-                        }
+//                        } else if (newPath.isClosed()) {//if the path happens to be invalid but is a closed walk then still add it - don't want to miss out on looped edges
+//                            serviceArea = addEdges(serviceArea, currentPath, graphEdge, choppedEdge);
+//                            LOGGER.info("Is closed 2 = yes");
+//                        }
                     }
                 }
             }
         }
-        if (nextPaths.size() > 0) {
-            for (Path nextPath : nextPaths) {
-                NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, serviceArea);
-                buffernators.add(nbfj);
-            }
-            invokeAll(buffernators);
-
-//            serviceArea = null;
-//            for (NetworkBufferFJ nbfj : buffernators) {
-//                if (serviceArea == null) {
-//                    serviceArea = nbfj.serviceArea;
-//                } else {
-//                    serviceArea = joinServiceAreas(serviceArea, nbfj.serviceArea);
-//                }
-//            }
+        for (Path nextPath : nextPaths) {
+            NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, serviceArea);
+            buffernators.add(nbfj);
         }
-        results = new ArrayList();
-        results.add(serviceArea);
-    }
-
-    private static HashMap deepCopy(HashMap serviceArea, HashMap newServiceArea) {
-        for (Edge key : (Set<Edge>) serviceArea.keySet()) {
-            newServiceArea.put(key, serviceArea.get(key));
-        }
-        return newServiceArea;
-    }
-
-    private static HashMap joinServiceAreas(HashMap serviceAreaA, HashMap serviceAreaB) {
-
-        if (serviceAreaA.size() < serviceAreaB.size()) {
-            return joinServiceAreas(serviceAreaB, serviceAreaA);
-        }
-        for (Edge key : (Set<Edge>) serviceAreaB.keySet()) {
-            if (serviceAreaA.containsKey(key)) {
-                Geometry geomA = (Geometry) serviceAreaA.get(key);
-                Geometry geomB = (Geometry) serviceAreaB.get(key);
-                if (geomB.contains(geomA)) {
-                    serviceAreaA.put(key, geomB);
-                }
-            } else {
-                serviceAreaA.put(key, serviceAreaB.get(key));
-            }
-        }
-
-        return serviceAreaA;
-    }
-
-    private static HashMap joinServiceAreas(List<HashMap> serviceAreas) {
-        HashMap serviceArea = serviceAreas.get(0);
-
-        for (HashMap otherArea : serviceAreas.subList(1, serviceAreas.size())) {
-            Set<Edge> keys = otherArea.keySet();
-            for (Edge key : keys) {
-                if (serviceArea.containsKey(key)) {
-                    Geometry geomA = (Geometry) otherArea.get(key);
-                    Geometry geomB = (Geometry) serviceArea.get(key);
-                    if (geomA.contains(geomB)) {
-                        serviceArea.put(key, geomA);
-                    }
-                } else {
-                    serviceArea.put(key, otherArea.get(key));
-                }
-            }
-        }
-        return serviceArea;
+        invokeAll(buffernators);
     }
 
     private static ConcurrentHashMap addEdge(ConcurrentHashMap serviceArea, Edge graphEdge, Edge newEdge) {
         if (serviceArea.containsKey(graphEdge)) {
             Geometry existingGeometry = (Geometry) serviceArea.get(graphEdge);
-           // if (graphEdge.isVisited() == false) {
-                Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
-                if (newGeometry.contains(existingGeometry)) {
-                    serviceArea.put(graphEdge, newGeometry);
-                }
-           // }
+            Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
+            
+            if (newGeometry.contains(existingGeometry)) { //
+                serviceArea.put(graphEdge, newGeometry);
+                return serviceArea;
+            } else if (!(existingGeometry.contains(newGeometry))) { //if they are separate segments of the edge then union them
+               if (newGeometry.getLength() > existingGeometry.getLength())
+                   serviceArea.put(graphEdge, newGeometry);
+            }
         } else {
             serviceArea.put(graphEdge, ((SimpleFeature) newEdge.getObject()).getDefaultGeometry());
         }
+    
         return serviceArea;
     }
 
@@ -223,7 +173,7 @@ public class NetworkBufferFJ extends RecursiveAction {
     private static ConcurrentHashMap addEdges(ConcurrentHashMap serviceArea, Path path) {
         for (Edge edge : (List<Edge>) path.getEdges()) {
             Geometry geom = (Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry();
-           // edge.setVisited(true);
+            // edge.setVisited(true);
             serviceArea.put(edge, geom);
         }
         return serviceArea;
@@ -242,17 +192,15 @@ public class NetworkBufferFJ extends RecursiveAction {
             Geometry newLine = line.extractLine(line.getStartIndex(), length);
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
             newEdge.setObject(newFeature);
-           // newEdge.setVisited(false);
-            //Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
-            //LOGGER.info("Delta Length A: " + delta);//(newLine.getLength() - length) );
+//            Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
+//            LOGGER.info("Delta Length A: " + delta);//(newLine.getLength() - length) );
             return newEdge;
         } else if (node.equals(edge.getNodeB())) {
             Geometry newLine = line.extractLine(line.getEndIndex(), -length);
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
             newEdge.setObject(newFeature);
-           // newEdge.setVisited(false);
-            //Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
-            // LOGGER.info("Delta Length B: " + delta);//(newLine.getLength() - length) );
+//            Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
+//            LOGGER.info("Delta Length B: " + delta);//(newLine.getLength() - length) );
             return newEdge;
         } else {
             LOGGER.error("Failed To Cut Edge");
