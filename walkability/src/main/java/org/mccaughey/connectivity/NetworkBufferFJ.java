@@ -17,12 +17,11 @@
 package org.mccaughey.connectivity;
 
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
-import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.linearref.LengthIndexedLine;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
@@ -45,12 +44,12 @@ import org.slf4j.LoggerFactory;
 public class NetworkBufferFJ extends RecursiveAction {
 
     static final Logger LOGGER = LoggerFactory.getLogger(NetworkBufferFJ.class);
-    HashMap network;
-    Path currentPath;
-    Double distance;
-    ConcurrentHashMap serviceArea;
+    private Map network;
+    private Path currentPath;
+    private Double distance;
+    private Map serviceArea;
 
-    public NetworkBufferFJ(HashMap network, Path currentPath, Double distance, ConcurrentHashMap serviceArea) {
+    public NetworkBufferFJ(Map network, Path currentPath, Double distance, Map serviceArea) {
         this.network = network;
         this.currentPath = currentPath;
         this.distance = distance;
@@ -61,7 +60,7 @@ public class NetworkBufferFJ extends RecursiveAction {
      * Sets up the ForkJoinPool and then calls invoke to calculate connectivity
      * for all regions available
      */
-    public void createBuffer() {
+    public Map createBuffer() {
         //Get the available processors, processors==threads is probably best?
         Runtime runtime = Runtime.getRuntime();
         int nProcessors = runtime.availableProcessors();
@@ -77,6 +76,7 @@ public class NetworkBufferFJ extends RecursiveAction {
             LOGGER.error("ForkJoin connectivity calculation failed: {}", this.getException().toString());
             this.completeExceptionally(this.getException());
         }
+        return serviceArea;
     }
 
     @Override
@@ -94,12 +94,12 @@ public class NetworkBufferFJ extends RecursiveAction {
                 if (pathLength(nextPath) <= distance) { //if path + edge less/equal to distance
                     if (nextPath.isValid()) { //check if valid path (no repeated nodes)
                         if (nextPath.getLast().getDegree() == 1) {
-                            serviceArea = addEdges(serviceArea, nextPath); //add the path if it is ended
+                            addEdges(serviceArea, nextPath); //add the path if it is ended
                         } else if (nextPath.getLast().getDegree() > 1) {//otherwise add to list of paths to explore further
                             nextPaths.add(nextPath);
                         }
                     } else {
-                        serviceArea = addEdges(serviceArea, nextPath);
+                        addEdges(serviceArea, nextPath);
                     }
                 } else {//else chop edge, append (path + chopped edge) to list of paths
 //                    if (graphEdge.getNodeA().equals(graphEdge.getNodeB())) {
@@ -110,7 +110,8 @@ public class NetworkBufferFJ extends RecursiveAction {
                     newPath.addEdges(currentPath.getEdges());
 
                     if (newPath.addEdge(choppedEdge)) {
-                        serviceArea = addEdges(serviceArea, currentPath, graphEdge, choppedEdge);
+                        addEdges(serviceArea,currentPath);
+                        addNewEdge(serviceArea,graphEdge,choppedEdge);
                     }
                 }
             }
@@ -122,29 +123,16 @@ public class NetworkBufferFJ extends RecursiveAction {
         invokeAll(buffernators);
     }
 
-    private static ConcurrentHashMap addEdge(ConcurrentHashMap serviceArea, Edge graphEdge, Edge newEdge) {
+    private static void addNewEdge(Map serviceArea, Edge graphEdge, Edge newEdge) {
         if (serviceArea.containsKey(graphEdge)) {
             Geometry existingGeometry = (Geometry) serviceArea.get(graphEdge);
             Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
-//            if (newGeometry.contains(existingGeometry)) { //
-//                serviceArea.put(graphEdge, newGeometry);
-//                return serviceArea;
-//            } else if (!(existingGeometry.contains(newGeometry))) { 
             if (newGeometry.getLength() > existingGeometry.getLength()) {
                 serviceArea.put(graphEdge, newGeometry);
             }
-            //      }
         } else {
             serviceArea.put(graphEdge, ((SimpleFeature) newEdge.getObject()).getDefaultGeometry());
         }
-
-        return serviceArea;
-    }
-
-    private static ConcurrentHashMap addEdges(ConcurrentHashMap serviceArea, Path path, Edge graphEdge, Edge newEdge) {
-        serviceArea = addEdges(serviceArea, path);
-        serviceArea = addEdge(serviceArea, graphEdge, newEdge);
-        return serviceArea;
     }
 
     /**
@@ -158,13 +146,11 @@ public class NetworkBufferFJ extends RecursiveAction {
      * geometries.
      * @return
      */
-    private static ConcurrentHashMap addEdges(ConcurrentHashMap serviceArea, Path path) {
+    private static void addEdges(Map serviceArea, Path path) {
         for (Edge edge : (List<Edge>) path.getEdges()) {
             Geometry geom = (Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry();
-            // edge.setVisited(true);
             serviceArea.put(edge, geom);
         }
-        return serviceArea;
     }
 
     private static Edge chopEdge(Path path, Edge edge, Double length) {
