@@ -88,13 +88,8 @@ public class NetworkBufferFJ extends RecursiveAction {
         ArrayList<NetworkBufferFJ> buffernators = new ArrayList();
 
         for (Edge graphEdge : (List<Edge>) network.get(currentPath.getLast())) {
-            //      LOGGER.info("Current Node has edges: " + node.getEdges());
             Path nextPath = new Path();
             nextPath.addEdges(currentPath.getEdges());
-//            if (currentPath.getLast().getDegree() > currentPath.getLast().getEdges().size())
-//                LOGGER.info("Found closed loop? degree = " + currentPath.getLast().getDegree() + " edges = " + currentPath.getLast().getEdges().size());
-//            if (graphEdge.getNodeA().equals(graphEdge.getNodeB()))
-//                LOGGER.info("Definitely closed ...");
             if (nextPath.addEdge(graphEdge)) {
                 if (pathLength(nextPath) <= distance) { //if path + edge less/equal to distance
                     if (nextPath.isValid()) { //check if valid path (no repeated nodes)
@@ -103,26 +98,19 @@ public class NetworkBufferFJ extends RecursiveAction {
                         } else if (nextPath.getLast().getDegree() > 1) {//otherwise add to list of paths to explore further
                             nextPaths.add(nextPath);
                         }
-//                    } else if (nextPath.isClosed()) {//if the path happens to be invalid but is a closed walk then still add it - don't want to miss out on looped edges
-//                        LOGGER.info("Is closed 1 = yes");
-//                        serviceArea = addEdges(serviceArea, nextPath);
-                    }
-                    else
+                    } else {
                         serviceArea = addEdges(serviceArea, nextPath);
+                    }
                 } else {//else chop edge, append (path + chopped edge) to list of paths
+//                    if (graphEdge.getNodeA().equals(graphEdge.getNodeB())) {
+//                        LOGGER.info("HMM this actually happens sometimes");
+//                    }
                     Edge choppedEdge = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
                     Path newPath = new Path();
                     newPath.addEdges(currentPath.getEdges());
 
                     if (newPath.addEdge(choppedEdge)) {
-                        //LOGGER.info("Path Length: " + pathLength(newPath));
-//                        if (newPath.isValid()) {
-                            serviceArea = addEdges(serviceArea, currentPath, graphEdge, choppedEdge);
-
-//                        } else if (newPath.isClosed()) {//if the path happens to be invalid but is a closed walk then still add it - don't want to miss out on looped edges
-//                            serviceArea = addEdges(serviceArea, currentPath, graphEdge, choppedEdge);
-//                            LOGGER.info("Is closed 2 = yes");
-//                        }
+                        serviceArea = addEdges(serviceArea, currentPath, graphEdge, choppedEdge);
                     }
                 }
             }
@@ -138,18 +126,18 @@ public class NetworkBufferFJ extends RecursiveAction {
         if (serviceArea.containsKey(graphEdge)) {
             Geometry existingGeometry = (Geometry) serviceArea.get(graphEdge);
             Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
-            
-            if (newGeometry.contains(existingGeometry)) { //
+//            if (newGeometry.contains(existingGeometry)) { //
+//                serviceArea.put(graphEdge, newGeometry);
+//                return serviceArea;
+//            } else if (!(existingGeometry.contains(newGeometry))) { 
+            if (newGeometry.getLength() > existingGeometry.getLength()) {
                 serviceArea.put(graphEdge, newGeometry);
-                return serviceArea;
-            } else if (!(existingGeometry.contains(newGeometry))) { //if they are separate segments of the edge then union them
-               if (newGeometry.getLength() > existingGeometry.getLength())
-                   serviceArea.put(graphEdge, newGeometry);
             }
+            //      }
         } else {
             serviceArea.put(graphEdge, ((SimpleFeature) newEdge.getObject()).getDefaultGeometry());
         }
-    
+
         return serviceArea;
     }
 
