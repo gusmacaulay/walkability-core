@@ -85,42 +85,48 @@ public class NetworkBufferFJ extends RecursiveAction {
             return;
         }
         List<Path> nextPaths = new ArrayList();
-        ArrayList<NetworkBufferFJ> buffernators = new ArrayList();
-
-        for (Edge graphEdge : (List<Edge>) network.get(currentPath.getLast())) {
-            Path nextPath = new Path();
-            nextPath.addEdges(currentPath.getEdges());
-            if (nextPath.addEdge(graphEdge)) {
-                if (pathLength(nextPath) <= distance) { //if path + edge less/equal to distance
-                    if (nextPath.isValid()) { //check if valid path (no repeated nodes)
-                        if (nextPath.getLast().getDegree() == 1) {
-                            addEdges(serviceArea, nextPath); //add the path if it is ended
-                        } else if (nextPath.getLast().getDegree() > 1) {//otherwise add to list of paths to explore further
-                            nextPaths.add(nextPath);
+        List<NetworkBufferFJ> buffernators = new ArrayList();
+        Node current = currentPath.getLast();
+        List<Edge> graphEdges = (List<Edge>) network.get(current);
+     //   if (graphEdges != null) {
+            for (Edge graphEdge : graphEdges) {
+                Path nextPath = new Path();
+                nextPath.addEdges(currentPath.getEdges());
+                if (nextPath.addEdge(graphEdge)) {
+                    if (pathLength(nextPath) <= distance) { //if path + edge less/equal to distance
+                        if (nextPath.isValid()) { //check if valid path (no repeated nodes)
+                            if (nextPath.getLast().getDegree() == 1) {
+                                addEdges(serviceArea, nextPath); //add the path if it is ended
+                            } else if (nextPath.getLast().getDegree() > 1) {//otherwise add to list of paths to explore further
+                                nextPaths.add(nextPath);
+                            }
+                        } else {
+                            addEdges(serviceArea, nextPath);
                         }
-                    } else {
-                        addEdges(serviceArea, nextPath);
-                    }
-                } else {//else chop edge, append (path + chopped edge) to list of paths
+                    } else {//else chop edge, append (path + chopped edge) to list of paths
 //                    if (graphEdge.getNodeA().equals(graphEdge.getNodeB())) {
 //                        LOGGER.info("HMM this actually happens sometimes");
 //                    }
-                    Edge choppedEdge = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
-                    Path newPath = new Path();
-                    newPath.addEdges(currentPath.getEdges());
+                        Edge choppedEdge = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
+                        Path newPath = new Path();
+                        newPath.addEdges(currentPath.getEdges());
 
-                    if (newPath.addEdge(choppedEdge)) {
-                        addEdges(serviceArea,currentPath);
-                        addNewEdge(serviceArea,graphEdge,choppedEdge);
+                        if (newPath.addEdge(choppedEdge)) {
+                            addEdges(serviceArea, currentPath);
+                            addNewEdge(serviceArea, graphEdge, choppedEdge);
+                        }
                     }
                 }
             }
-        }
-        for (Path nextPath : nextPaths) {
-            NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, serviceArea);
-            buffernators.add(nbfj);
-        }
-        invokeAll(buffernators);
+            for (Path nextPath : nextPaths) {
+                NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, serviceArea);
+                buffernators.add(nbfj);
+            }
+            invokeAll(buffernators);
+//        } else {
+//            LOGGER.info("No edges connected to this node?");
+//            addEdges(serviceArea, currentPath);
+//        }
     }
 
     private static void addNewEdge(Map serviceArea, Edge graphEdge, Edge newEdge) {
