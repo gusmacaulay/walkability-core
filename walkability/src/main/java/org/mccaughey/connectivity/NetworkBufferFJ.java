@@ -17,12 +17,11 @@
 package org.mccaughey.connectivity;
 
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.linearref.LengthIndexedLine;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
@@ -34,6 +33,7 @@ import org.geotools.graph.structure.basic.BasicEdge;
 import org.geotools.graph.structure.basic.BasicNode;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,12 +96,13 @@ public class NetworkBufferFJ extends RecursiveAction {
                     if (pathLength(nextPath) <= distance) { //if path + edge less/equal to distance
                         if (nextPath.isValid()) { //check if valid path (no repeated nodes)
                             if (nextPath.getLast().getDegree() == 1) {
-                                addEdges(serviceArea, nextPath); //add the path if it is ended
+                                addEdge(serviceArea, currentPath,graphEdge); //add the path if it is ended
                             } else if (nextPath.getLast().getDegree() > 1) {//otherwise add to list of paths to explore further
-                                nextPaths.add(nextPath);
+                                if (addEdge(serviceArea, currentPath,graphEdge))
+                                    nextPaths.add(nextPath);    
                             }
                         } else {
-                            addEdges(serviceArea, nextPath);
+                            addEdge(serviceArea, currentPath,graphEdge);
                         }
                     } else {//else chop edge, append (path + chopped edge) to list of paths
 //                    if (graphEdge.getNodeA().equals(graphEdge.getNodeB())) {
@@ -112,34 +113,80 @@ public class NetworkBufferFJ extends RecursiveAction {
                         newPath.addEdges(currentPath.getEdges());
 
                         if (newPath.addEdge(choppedEdge)) {
-                            addEdges(serviceArea, currentPath);
+                            //addEdges(serviceArea, currentPath);
                             addNewEdge(serviceArea, graphEdge, choppedEdge);
                         }
                     }
                 }
             }
+            
             for (Path nextPath : nextPaths) {
-                NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, serviceArea);
+                NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, serviceArea);    
                 buffernators.add(nbfj);
             }
-            invokeAll(buffernators);
+            if (buffernators.size() > 0)
+                invokeAll(buffernators);
 //        } else {
 //            LOGGER.info("No edges connected to this node?");
 //            addEdges(serviceArea, currentPath);
 //        }
     }
 
-    private static void addNewEdge(Map serviceArea, Edge graphEdge, Edge newEdge) {
-        if (serviceArea.containsKey(graphEdge)) {
-            Geometry existingGeometry = (Geometry) serviceArea.get(graphEdge);
-            Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
-            if (newGeometry.getLength() > existingGeometry.getLength()) {
-                serviceArea.put(graphEdge, newGeometry);
+    private static boolean addEdge(Map serviceArea, Path path, Edge newEdge) {
+        Double pathLength = pathLength(path);
+        SimpleFeature graphFeature = ((SimpleFeature) newEdge.getObject());
+        SimpleFeatureType edgeType = createEdgeFeatureType(graphFeature.getType().getCoordinateReferenceSystem());
+        SimpleFeature edgeFeature = buildFeatureFromGeometry(edgeType,(Geometry)graphFeature.getDefaultGeometry()); 
+        if (serviceArea.containsKey(newEdge)) {
+            SimpleFeature existingFeature = (SimpleFeature)serviceArea.get(newEdge);
+            Double minimalDistance = (Double)existingFeature.getAttribute("Distance");
+            if (minimalDistance > pathLength) {
+                edgeFeature.setAttribute("Distance",pathLength);
+                serviceArea.put(newEdge,edgeFeature);
+                return true;
             }
-        } else {
-            serviceArea.put(graphEdge, ((SimpleFeature) newEdge.getObject()).getDefaultGeometry());
+            else
+                return false;
+        }
+        else {
+            edgeFeature.setAttribute("Distance",pathLength);
+            serviceArea.put(newEdge,edgeFeature);
+            return true;
         }
     }
+    
+    private static void addNewEdge(Map serviceArea, Edge graphEdge, Edge newEdge) {
+        Double pathLength = 1600.0;
+        if (serviceArea.containsKey(graphEdge)) {
+            SimpleFeature existingFeature = (SimpleFeature)serviceArea.get(graphEdge);
+            Geometry existingGeometry = (Geometry) existingFeature.getDefaultGeometry();
+            Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
+            SimpleFeature newFeature = buildFeatureFromGeometry(existingFeature.getType(),newGeometry); 
+            newFeature.setAttribute("Distance",pathLength);
+            if (newGeometry.getLength() > existingGeometry.getLength()) {
+                serviceArea.put(graphEdge, newFeature);
+            }
+        } else {
+            SimpleFeature newFeature = (SimpleFeature) newEdge.getObject();
+            Geometry newGeometry = (Geometry) newFeature.getDefaultGeometry();
+            SimpleFeatureType edgeType = createEdgeFeatureType(newFeature.getType().getCoordinateReferenceSystem());
+            newFeature = buildFeatureFromGeometry(edgeType,newGeometry);
+            newFeature.setAttribute("Distance",pathLength);
+            serviceArea.put(graphEdge, newFeature);
+        }
+    }
+    
+//    private static void addNewEdge(Map serviceArea, Edge graphEdge, Edge newEdge) {
+//        if (serviceArea.containsKey(graphEdge)) {
+//            Geometry existingGeometry = (Geometry) serviceArea.get(graphEdge);
+//            Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
+//            if (newGeometry.getLength() > existingGeometry.getLength()) {
+//                serviceArea.put(graphEdge, newGeometry);
+//            }
+//        } else {
+//            serviceArea.put(graphEdge, ((SimpleFeature) newEdge.getObject()).getDefaultGeometry());
+//        }
+//    }
 
     /**
      * This method adds all the edges in the path to the serviceArea HashMap It
@@ -204,5 +251,20 @@ public class NetworkBufferFJ extends RecursiveAction {
         sfb.add(geom);
 
         return sfb.buildFeature(null);
+    }
+     private static SimpleFeatureType createEdgeFeatureType(CoordinateReferenceSystem crs) {
+
+        SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+        builder.setName("Edge");
+        builder.setCRS(crs); // <- Coordinate reference system
+
+        // add attributes in order
+        builder.add("Edge", LineString.class);
+        builder.length(15).add("Name", String.class); // <- 15 chars width for name field
+        builder.add("Distance", Double.class);
+        // build the type
+        SimpleFeatureType bufferType = builder.buildFeatureType();
+
+        return bufferType;
     }
 }

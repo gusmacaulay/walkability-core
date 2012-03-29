@@ -244,7 +244,7 @@ public final class NetworkBuffer {
         SimpleFeatureType type = createFeatureType(crs);
         Geometry all = null;
         for (Edge edge : edges) {
-            Geometry geom = (Geometry) serviceArea.get(edge);
+            Geometry geom = (Geometry)((SimpleFeature) serviceArea.get(edge)).getDefaultGeometry();
 
             try {
                 if (all == null) {
