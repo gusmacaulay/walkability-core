@@ -17,6 +17,7 @@
 package org.mccaughey.connectivity;
 
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.linearref.LengthIndexedLine;
 import java.util.ArrayList;
@@ -114,7 +115,7 @@ public class NetworkBufferFJ extends RecursiveAction {
 
                         if (newPath.addEdge(choppedEdge)) {
                             //addEdges(serviceArea, currentPath);
-                            addNewEdge(serviceArea, graphEdge, choppedEdge);
+                            addNewEdge(serviceArea, currentPath,graphEdge, choppedEdge);
                         }
                     }
                 }
@@ -155,17 +156,26 @@ public class NetworkBufferFJ extends RecursiveAction {
         }
     }
     
-    private static void addNewEdge(Map serviceArea, Edge graphEdge, Edge newEdge) {
-        Double pathLength = 1600.0;
+    private static void addNewEdge(Map serviceArea, Path path, Edge graphEdge, Edge newEdge) {
+        Double pathLength = pathLength(path);
         if (serviceArea.containsKey(graphEdge)) {
             SimpleFeature existingFeature = (SimpleFeature)serviceArea.get(graphEdge);
+            Double currentPathLength = (Double)existingFeature.getAttribute("Distance");
             Geometry existingGeometry = (Geometry) existingFeature.getDefaultGeometry();
             Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
             SimpleFeature newFeature = buildFeatureFromGeometry(existingFeature.getType(),newGeometry); 
             newFeature.setAttribute("Distance",pathLength);
-            if (newGeometry.getLength() > existingGeometry.getLength()) {
-                serviceArea.put(graphEdge, newFeature);
-            }
+            serviceArea.put(newEdge, newFeature);
+//            if (newGeometry.getLength() > existingGeometry.getLength()) {
+//                if (newGeometry.touches(existingGeometry)) {
+//                    serviceArea.put(graphEdge, newFeature);
+//                    return;
+//                }
+//            }
+//            else if (!(newGeometry.touches(existingGeometry))) {
+//                serviceArea.put(newEdge, newFeature);
+//            }
+                
         } else {
             SimpleFeature newFeature = (SimpleFeature) newEdge.getObject();
             Geometry newGeometry = (Geometry) newFeature.getDefaultGeometry();
