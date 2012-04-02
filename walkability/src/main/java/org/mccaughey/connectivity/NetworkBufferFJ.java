@@ -93,34 +93,38 @@ public class NetworkBufferFJ extends RecursiveAction {
   //      LOGGER.info("Current node has {} edges", current.getEdges());
     //    LOGGER.info("Current node has {} graph edges", graphEdges);
         for (Edge graphEdge : graphEdges) { //(List<Edge>)current.getEdges()) {
-            Path nextPath = new Path();
-            nextPath.addEdges(currentPath.getEdges());
+            Path nextPath = currentPath.duplicate();//new Path();
+            //nextPath.addEdges(currentPath.getEdges());
             if (nextPath.addEdge(graphEdge)) {
                 if (pathLength(nextPath) <= distance) { //if path + edge less/equal to distance
-         //           if (nextPath.isValid()) { //check if valid path (no repeated nodes)
-//                        if (nextPath.getLast().getDegree() == 1) {
-//                            addEdge(serviceArea, currentPath, graphEdge); //add the path if it is ended
-//                        } else if (nextPath.getLast().getDegree() > 1) {//otherwise add to list of paths to explore further
+                    if (nextPath.isValid()) { //check if valid path (no repeated nodes)
+                        if (nextPath.getLast().getDegree() == 1) {
+                            addEdge(serviceArea, currentPath, graphEdge); //add the path if it is ended
+                           
+                        } else if (nextPath.getLast().getDegree() > 1) {//otherwise add to list of paths to explore further
                             if (addEdge(serviceArea, currentPath, graphEdge)) {
                                 nextPaths.add(nextPath);
                             }
-                          //  else
-                             //   LOGGER.info("Did not add Edge {} terminating path", graphEdge);
-      //                  }
-     //               } //else {
-//                        addEdge(serviceArea, currentPath, graphEdge);
-//                    }
+                            else {
+                                //LOGGER.info("Did not add Edge {} terminating path", graphEdge);
+                                
+                            }
+                        }
+                    } else {
+                        addEdge(serviceArea, currentPath, graphEdge);
+                    }
                 } else {//else chop edge, append (path + chopped edge) to list of paths
 //                    if (graphEdge.getNodeA().equals(graphEdge.getNodeB())) {
 //                        LOGGER.info("HMM this actually happens sometimes");
 //                    }
                     Edge choppedEdge = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
-                    Path newPath = new Path();
-                    newPath.addEdges(currentPath.getEdges());
-
+                    Path newPath = currentPath.duplicate();
+                    //newPath.addEdges(currentPath.getEdges());
+                    
                     if (newPath.addEdge(choppedEdge)) {
                         //addEdges(serviceArea, currentPath);
                         addNewEdge(serviceArea, currentPath, graphEdge, choppedEdge);
+                       
                     }
                 }
             }

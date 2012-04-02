@@ -78,36 +78,40 @@ public final class NetworkBuffer {
         }
         Geometry pointBuffer = pointOfInterest.buffer(networkDistance + bufferDistance);
         SimpleFeatureCollection networkRegion = featuresInRegion(network, pointBuffer);
-        //Graph networkGraph = createGraphWithStartNode(nearestLine, startPath, networkRegion, pointOfInterest);
-        Graph networkGraph = buildFeatureNetwork(networkRegion).getGraph();
-     //   LOGGER.info("Graph node count: {}", networkGraph.getNodes().size());
+        Path startPath = new Path();
+        Graph networkGraph = createGraphWithStartNode(nearestLine, startPath, networkRegion, pointOfInterest);
+        LOGGER.info("StartPath {}",startPath.size());
+        //Graph networkGraph = buildFeatureNetwork(networkRegion).getGraph();
+        //   LOGGER.info("Graph node count: {}", networkGraph.getNodes().size());
         File file = new File("/home/amacaulay/graphNetwork.json");
         FileUtils.writeStringToFile(file, graphToJSON(networkGraph));
         Map networkMap = graphToMap(networkGraph);
-      //  LOGGER.info("HashMap node count: {}",networkMap.size());
-        Path startPathA = new Path();
-        Path startPathB = new Path();
-        for (Edge edge : (Collection<Edge>) networkGraph.getEdges()) {
-            SimpleFeature feature = (SimpleFeature) edge.getObject();
-            Geometry geom = (Geometry) feature.getDefaultGeometry();
-            if (geom.touches(nearestLine.extractLine(nearestLine.getStartIndex(), nearestLine.getEndIndex()))) {
-                LOGGER.info("Huzzah!");
-
-                startPathA.add(edge.getNodeA());
-                startPathB.add(edge.getNodeB());
-            }
-
-        }
+        //  LOGGER.info("HashMap node count: {}",networkMap.size());
+//        Path startPathA = new Path();
+//        Path startPathB = new Path();
+//        for (Edge edge : (Collection<Edge>) networkGraph.getEdges()) {
+//            SimpleFeature feature = (SimpleFeature) edge.getObject();
+//            Geometry geom = (Geometry) feature.getDefaultGeometry();
+//            if (geom.touches(nearestLine.extractLine(nearestLine.getStartIndex(), nearestLine.getEndIndex()))) {
+//                LOGGER.info("Huzzah!");
+//
+//                startPathA.add(edge.getNodeA());
+//                startPathB.add(edge.getNodeB());
+//            }
+//
+//        }
 
 
 
         Map serviceArea = new ConcurrentHashMap();
 
         double t1 = new Date().getTime();
-        NetworkBufferFJ nbfjA = new NetworkBufferFJ(networkMap, startPathA, networkDistance, serviceArea);
-        NetworkBufferFJ nbfjB = new NetworkBufferFJ(networkMap, startPathB, networkDistance, serviceArea);
-        nbfjA.createBuffer();
-        serviceArea = nbfjB.createBuffer();
+        NetworkBufferFJ nbfj = new NetworkBufferFJ(networkMap, startPath, networkDistance, serviceArea);
+        serviceArea = nbfj.createBuffer();
+//        NetworkBufferFJ nbfjA = new NetworkBufferFJ(networkMap, startPathA, networkDistance, serviceArea);
+//        NetworkBufferFJ nbfjB = new NetworkBufferFJ(networkMap, startPathB, networkDistance, serviceArea);
+//        nbfjA.createBuffer();
+//        serviceArea = nbfjB.createBuffer();
         double t2 = new Date().getTime();
         double total = (t2 - t1) / 1000;
         LOGGER.info("Found " + serviceArea.size() + " Edges in " + total + " seconds");
@@ -123,64 +127,175 @@ public final class NetworkBuffer {
         Geometry lineB = connectedLine.extractLine(connectedLine.project(minDistPoint), connectedLine.getEndIndex());
         Geometry originalLine = connectedLine.extractLine(connectedLine.getStartIndex(), connectedLine.getEndIndex());
 
-        GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
-
-        Coordinate[] coords =
-                new Coordinate[]{minDistPoint, pt, minDistPoint};
-        LineString newLine = geometryFactory.createLineString(coords);
-        LineString[] lines = new LineString[]{(LineString) newLine};
-        MultiLineString newMultiLine = geometryFactory.createMultiLineString(lines);
-        lines = new LineString[]{(LineString) lineA};
-        Geometry multiLineA = geometryFactory.createMultiLineString(lines);
-        lines = new LineString[]{(LineString) lineB};
-        Geometry multiLineB = geometryFactory.createMultiLineString(lines);
-        LOGGER.info("Features: " + networkRegion.size());
-        networkRegion = removeFeature(networkRegion, originalLine);
-        networkRegion.add(buildFeatureFromGeometry(networkRegion.getSchema(), newMultiLine));
-        SimpleFeature multiFeatureA = buildFeatureFromGeometry(networkRegion.getSchema(), multiLineA);
-        networkRegion.add(multiFeatureA);
-        SimpleFeature multiFeatureB = buildFeatureFromGeometry(networkRegion.getSchema(), multiLineB);
-        networkRegion.add(multiFeatureB);
-        networkRegion = removeFeature(networkRegion, originalLine);
-        LOGGER.info("Features: " + networkRegion.size());
-        FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
-
-        networkGraphGen.getGraphBuilder().addNode(new BasicNode());
-        Graph graph = networkGraphGen.getGraph();
-        LOGGER.info("Node count {}", graph.getNodes().size());
-        startPath.add(findStartNode(graph, newLine));
-        return graph;
-
-//        if ((lineB.getLength() == 0.0) || (lineA.getLength() == 0.0)) {
+//        GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
 //
-//            LOGGER.info("Line length: " + originalLine.getLength());
-//            FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
-//            //SimpleFeature featureA = buildFeatureFromGeometry(networkRegion.getSchema(), lineA);
-//            //networkGraphGen.add(featureA);
-//            Graph graph = networkGraphGen.getGraph();
-//            startPath.add(findStartNode(graph, originalLine));
-//            return graph;
-//        } else {
-//            LOGGER.info("Two edged start node");
-//            LOGGER.info("Features: " + networkRegion.size());
-//            networkRegion = removeFeature(networkRegion, originalLine);
-//            LOGGER.info("Features: " + networkRegion.size());
-//            SimpleFeature featureB = buildFeatureFromGeometry(networkRegion.getSchema(), lineB);
-//            SimpleFeature featureA = buildFeatureFromGeometry(networkRegion.getSchema(), lineA);
-//            networkRegion.add(featureB);
-//            networkRegion.add(featureA);
-//            LOGGER.info("Orignal Line d {}", lineA.getLength() + lineB.getLength() - originalLine.getLength());
-//            FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
-//            //    networkGraphGen.add(featureA);
-//            //   networkGraphGen.add(featureB);
+//        Coordinate[] coords =
+//                new Coordinate[]{minDistPoint, pt, minDistPoint};
+//        LineString newLine = geometryFactory.createLineString(coords);
+//        LineString[] lines = new LineString[]{(LineString) newLine};
+//        MultiLineString newMultiLine = geometryFactory.createMultiLineString(lines);
+//        lines = new LineString[]{(LineString) lineA};
+//        Geometry multiLineA = geometryFactory.createMultiLineString(lines);
+//        lines = new LineString[]{(LineString) lineB};
+//        Geometry multiLineB = geometryFactory.createMultiLineString(lines);
+//        LOGGER.info("Features: " + networkRegion.size());
+//        networkRegion = removeFeature(networkRegion, originalLine);
+//        networkRegion.add(buildFeatureFromGeometry(networkRegion.getSchema(), newMultiLine));
+//        SimpleFeature multiFeatureA = buildFeatureFromGeometry(networkRegion.getSchema(), multiLineA);
+//        networkRegion.add(multiFeatureA);
+//        SimpleFeature multiFeatureB = buildFeatureFromGeometry(networkRegion.getSchema(), multiLineB);
+//        networkRegion.add(multiFeatureB);
+//        networkRegion = removeFeature(networkRegion, originalLine);
+//        LOGGER.info("Features: " + networkRegion.size());
+//        FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
 //
-//            Graph graph = networkGraphGen.getGraph();
-//            startPath.add(findStartNode(graph, featureA, featureB));
-//            return graph;
+//        networkGraphGen.getGraphBuilder().addNode(new BasicNode());
+//        Graph graph = networkGraphGen.getGraph();
+//        LOGGER.info("Node count {}", graph.getNodes().size());
+//        startPath.add(findStartNode(graph, newLine));
+//        return graph;
 
-        //       }
+        if ((lineB.getLength() == 0.0) || (lineA.getLength() == 0.0)) {
+
+            LOGGER.info("Line length: " + originalLine.getLength());
+            FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
+            //SimpleFeature featureA = buildFeatureFromGeometry(networkRegion.getSchema(), lineA);
+            //networkGraphGen.add(featureA);
+            Graph graph = networkGraphGen.getGraph();
+            startPath.add(findStartNode(graph, originalLine));
+            return graph;
+        } else {
+            LOGGER.info("Two edged start node");
+//            LOGGER.info("Features: " + networkRegion.size());
+            networkRegion = removeFeature(networkRegion, originalLine);
+//            LOGGER.info("Features: " + networkRegion.size());
+           
+            PrecisionModel pm = new PrecisionModel(1);  // no decimal places
+            GeometryFactory gf = new GeometryFactory(pm);
+            lineA = gf.createLineString(lineA.getCoordinates());
+            lineB = gf.createLineString(lineB.getCoordinates());
+             LineString[] lines = new LineString[]{(LineString) lineB};
+           // MultiLineString newMultiLine = gf.createMultiLineString(lines);
+       //      LOGGER.info("Line A Geometry: {}", lineA);
+             SimpleFeatureType edgeType = createEdgeFeatureType(networkRegion.getSchema().getCoordinateReferenceSystem());
+            SimpleFeature featureB = buildFeatureFromGeometry(edgeType, lineB);
+           // lines = new LineString[]{(LineString) lineA};
+          //  newMultiLine = gf.createMultiLineString(lines);
+            SimpleFeature featureA = buildFeatureFromGeometry(edgeType, lineA);
+    //        networkRegion.add(featureB);
+   //         networkRegion.add(featureA);
+//            LOGGER.info("Features: " + networkRegion.size());
+            FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
+            networkGraphGen.add(featureA);
+            networkGraphGen.add(featureB);
+
+            Graph graph = networkGraphGen.getGraph();
+            startPath.add(findStartNode(graph, featureA, featureB));
+//            for (Edge edge : (Collection<Edge>)graph.getEdges())
+//                LOGGER.info("Edge: {}", edge);
+            return graph;
+
+        }
+    }
+    
+     /**
+     * Constructs a geotools Graph line network from a feature source
+     *
+     * @param featureCollection the network feature collection
+     * @return returns a geotools FeatureGraphGenerator based on the features
+     * within the region of interest
+     * @throws IOException
+     */
+    private static FeatureGraphGenerator buildFeatureNetwork(SimpleFeatureCollection featureCollection) {
+        //create a linear graph generator
+        LineStringGraphGenerator lineStringGen = new LineStringGraphGenerator();
+        // BasicLineGraphGenerator graphGen = new BasicLineGraphGenerator();
+        //wrap it in a feature graph generator
+        FeatureGraphGenerator featureGen = new FeatureGraphGenerator(lineStringGen);
+
+        //put all the features into  the graph generator
+        SimpleFeatureIterator iter = featureCollection.features();
+        //LOGGER.info("Features in radius " + featureCollection.size());
+        SimpleFeatureType edgeType = createEdgeFeatureType(featureCollection.getSchema().getCoordinateReferenceSystem());
+        
+        PrecisionModel pm = new PrecisionModel(1);  // no decimal places
+        GeometryFactory gf = new GeometryFactory(pm);
+        //  GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
+        try {
+            while (iter.hasNext()) {
+                SimpleFeature feature = iter.next();
+                MultiLineString mls = ((MultiLineString) (feature.getDefaultGeometry()));
+                int N = mls.getNumGeometries();
+
+                LineString lines[] = new LineString[N];
+                for (int i = 0; i < N; i++) {
+                    
+                    Coordinate[] coords = ((LineString) mls.getGeometryN(i)).getCoordinates();
+                    LineString lineString = gf.createLineString(coords);
+                 //   LOGGER.info("Geometry {}",lineString);
+                    SimpleFeature segmentFeature = buildFeatureFromGeometry(edgeType, lineString);
+                  //  LOGGER.info("Feature Geometry {}",segmentFeature.getDefaultGeometry());
+                    featureGen.add(segmentFeature);
+//                    int M = lineString.getNumPoints();
+//                    for (int j = 0; j < M-1; j++){
+//                        CoordinateSequence cs;
+//                        LineString lineStringSegment = gf.createLineString(new Coordinate[]{lineString.getCoordinateN(j),lineString.getCoordinateN(j+1)});
+//                       
+//                        SimpleFeature segmentFeature = buildFeatureFromGeometry(feature.getType(),lineStringSegment);
+//                        featureGen.add(segmentFeature);
+//                    }
+                }
+
+            }
+        } finally {
+            iter.close();
+        }
+        return featureGen;
+    }
+    
+    private static Node findStartNode(Graph graph, Geometry startLine) {
+        for (Node node : (Collection<Node>) graph.getNodes()) {
+            if (node.getEdges().size() == 3) {
+                for (Edge edge : (List<Edge>) node.getEdges()) {
+                    //if (node.getEdges().size() == 1) {
+                    //    Edge edge = (Edge)(node.getEdges().get(0));
+                    SimpleFeature edgeFeature = (SimpleFeature) edge.getObject();
+                    Geometry graphGeom = (Geometry) edgeFeature.getDefaultGeometry();
+                    if (graphGeom.buffer(1).contains(startLine)) {
+                        LOGGER.info("Found start node");
+                        return node;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
+    private static Node findStartNode(Graph graph, SimpleFeature featureA, SimpleFeature featureB) {
+        for (Node node : (Collection<Node>) graph.getNodes()) {
+//            for (Edge edge : (List<Edge>) node.getEdges()) {
+//                //LOGGER.info("Edge ID : {} Feature ID {}",((SimpleFeature)edge.getObject()).getID(),featureA.getID());
+//                if (((SimpleFeature) edge.getObject()).getID().equals(featureB.getID())) {
+//                    LOGGER.info("Found!");
+//                }
+//            }
+            if (node.getEdges().size() == 2) {
+                SimpleFeature edgeFeature1 = (SimpleFeature) (((Edge) node.getEdges().toArray()[0]).getObject());
+                SimpleFeature edgeFeature2 = (SimpleFeature) (((Edge) node.getEdges().toArray()[1]).getObject());
+               
+                if (edgeFeature1.getID().equals(featureA.getID()) && edgeFeature2.getID().equals(featureB.getID())) {
+                    LOGGER.info("Found start node edges {},{}", featureA.getDefaultGeometry(),featureB.getDefaultGeometry() );
+                    return node;
+                }
+                if (edgeFeature2.getID().equals(featureA.getID()) && edgeFeature1.getID().equals(featureB.getID())) {
+                    LOGGER.info("Found start node");
+                    return node;
+                }
+            }
+        }
+        return null;
+    }
+    
     private static Geometry getActualLine(SimpleFeatureCollection network, Geometry approximateLine) {
         SimpleFeatureIterator features = network.features();
 
@@ -208,63 +323,30 @@ public final class NetworkBuffer {
         return DataUtilities.collection(newFeatures);
     }
 
-    private static Node findStartNode(Graph graph, Geometry startLine) {
-        for (Node node : (Collection<Node>) graph.getNodes()) {
-            //   if (node.getEdges().size() == 3) {
-            for (Edge edge : (List<Edge>) node.getEdges()) {
-                //if (node.getEdges().size() == 1) {
-                //    Edge edge = (Edge)(node.getEdges().get(0));
-                SimpleFeature edgeFeature = (SimpleFeature) edge.getObject();
-                Geometry graphGeom = (Geometry) edgeFeature.getDefaultGeometry();
-                if (graphGeom.contains(startLine)) {
-                    LOGGER.info("Found start node");
-                    return node;
-                }
-            }
-            //   }
-        }
-        return null;
-    }
-
 //    private static Node findStartNode(Graph graph, Geometry startLine) {
 //        for (Node node : (Collection<Node>) graph.getNodes()) {
-//            if (node.getEdges().size() == 3) {
-//                for (Edge edge : (List<Edge>) node.getEdges()) {
-//                    //if (node.getEdges().size() == 1) {
-//                    //    Edge edge = (Edge)(node.getEdges().get(0));
-//                    SimpleFeature edgeFeature = (SimpleFeature) edge.getObject();
-//                    Geometry graphGeom = (Geometry) edgeFeature.getDefaultGeometry();
-//                    if (graphGeom.buffer(1).contains(startLine)) {
-//                        LOGGER.info("Found start node");
-//                        return node;
-//                    }
+//            //   if (node.getEdges().size() == 3) {
+//            for (Edge edge : (List<Edge>) node.getEdges()) {
+//                //if (node.getEdges().size() == 1) {
+//                //    Edge edge = (Edge)(node.getEdges().get(0));
+//                SimpleFeature edgeFeature = (SimpleFeature) edge.getObject();
+//                Geometry graphGeom = (Geometry) edgeFeature.getDefaultGeometry();
+//                if (graphGeom.contains(startLine)) {
+//                    LOGGER.info("Found start node");
+//                    return node;
 //                }
 //            }
+//            //   }
 //        }
 //        return null;
 //    }
-    private static Node findStartNode(Graph graph, SimpleFeature featureA, SimpleFeature featureB) {
-        for (Node node : (Collection<Node>) graph.getNodes()) {
-            if (node.getEdges().size() == 2) {
-                SimpleFeature edgeFeature1 = (SimpleFeature) (((Edge) node.getEdges().toArray()[0]).getObject());
-                SimpleFeature edgeFeature2 = (SimpleFeature) (((Edge) node.getEdges().toArray()[1]).getObject());
-
-                if (edgeFeature1.getID().equals(featureA.getID()) && edgeFeature2.getID().equals(featureB.getID())) {
-                    return node;
-                }
-                if (edgeFeature2.getID().equals(featureA.getID()) && edgeFeature1.getID().equals(featureB.getID())) {
-                    return node;
-                }
-            }
-        }
-        return null;
-    }
+    
 
     private static Map graphToMap(Graph graph) {
         Map networkMap = new HashMap();
         for (Node node : (Collection<Node>) graph.getNodes()) {
             //LOGGER.info("Node: " + node);
-            for (Edge edge : (List<Edge>)node.getEdges()) {
+            for (Edge edge : (List<Edge>) node.getEdges()) {
                 //LOGGER.info("Edge: {} Feature: {}",edge.getID(),((SimpleFeature)edge.getObject()).getID());
             }
             networkMap.put(node, node.getEdges());
@@ -401,21 +483,9 @@ public final class NetworkBuffer {
         stb.init(featureType);
         SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(featureType);
         sfb.add(geom);
-
         return sfb.buildFeature(null);
     }
     
-    private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType featureType, Geometry geom, String ID) {
-
-        SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
-        stb.init(featureType);
-        SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(featureType);
-        sfb.add(geom);
-        sfb.set("Name",ID);
-
-        return sfb.buildFeature(null);
-    }
-
     private static SimpleFeatureCollection featuresInRegion(SimpleFeatureSource featureSource, Geometry roi) throws IOException {
         //Construct a filter which first filters within the bbox of roi and then filters with intersections of roi
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
@@ -429,90 +499,13 @@ public final class NetworkBuffer {
         return featureSource.getFeatures(filter);
     }
 
-    /**
-     * Constructs a geotools Graph line network from a feature source
-     *
-     * @param featureCollection the network feature collection
-     * @return returns a geotools FeatureGraphGenerator based on the features
-     * within the region of interest
-     * @throws IOException
-     */
-    private static FeatureGraphGenerator buildFeatureNetwork(SimpleFeatureCollection featureCollection) {
-        //create a linear graph generator
-        LineStringGraphGenerator lineStringGen = new LineStringGraphGenerator();
-        // BasicLineGraphGenerator graphGen = new BasicLineGraphGenerator();
-        //wrap it in a feature graph generator
-        FeatureGraphGenerator featureGen = new FeatureGraphGenerator(lineStringGen);
-
-        //put all the features into  the graph generator
-        SimpleFeatureIterator iter = featureCollection.features();
-        //LOGGER.info("Features in radius " + featureCollection.size());
-        SimpleFeatureType edgeType = createEdgeFeatureType(featureCollection.getSchema().getCoordinateReferenceSystem());
-        PrecisionModel pm = new PrecisionModel(1);  // no decimal places
-        GeometryFactory gf = new GeometryFactory(pm);
-      //  GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
-        try {
-            while (iter.hasNext()) {
-                SimpleFeature feature = iter.next();
-                MultiLineString mls = ((MultiLineString)(feature.getDefaultGeometry()));
-                int N = mls.getNumGeometries();
-
-                LineString lines[] = new LineString[ N ];
-                for ( int i = 0; i < N; i++ ) {
-                    LineString lineString = (LineString)mls.getGeometryN(i);
-                    int M = lineString.getNumPoints();
-                    for (int j = 0; j < M-1; j++){
-                        CoordinateSequence cs;
-                        LineString lineStringSegment = gf.createLineString(new Coordinate[]{lineString.getCoordinateN(j),lineString.getCoordinateN(j+1)});
-                       
-                        SimpleFeature segmentFeature = buildFeatureFromGeometry(feature.getType(),lineStringSegment);
-                        featureGen.add(segmentFeature);
-                    }
-                }
-                    
-            }
-        } finally {
-            iter.close();
-        }
-        return featureGen;
-    }
-    
-      /**
-     * Constructs a geotools Graph line network from a feature source
-     *
-     * @param featureCollection the network feature collection
-     * @return returns a geotools FeatureGraphGenerator based on the features
-     * within the region of interest
-     * @throws IOException
-     */
-    private static FeatureGraphGenerator buildGeometryNetwork(SimpleFeatureCollection featureCollection) {
-        //create a linear graph generator
-        //LineStringGraphGenerator lineStringGen = new LineStringGraphGenerator();
-        BasicLineGraphGenerator graphGen = new BasicLineGraphGenerator();
-        //wrap it in a feature graph generator
-        FeatureGraphGenerator featureGen = new FeatureGraphGenerator(graphGen);
-
-        //put all the features into  the graph generator
-        FeatureIterator iter = featureCollection.features();
-        LOGGER.info("Features in radius " + featureCollection.size());
-        try {
-            while (iter.hasNext()) {
-                Feature feature = iter.next();
-                   LOGGER.info("Adding Feature {}", feature.getIdentifier());
-                featureGen.add(feature);
-            }
-        } finally {
-            iter.close();
-        }
-        return featureGen;
-    }
-    
+   
 
     private static String graphToJSON(Graph graph) {
         List<SimpleFeature> features = new ArrayList();
 
         for (Edge edge : (Collection<Edge>) graph.getEdges()) {
-         //   LOGGER.info("Node A: " + edge.getNodeA() + " Node B: " + edge.getNodeB() + " Feature " + ((SimpleFeature) edge.getObject()).getID());
+            //   LOGGER.info("Node A: " + edge.getNodeA() + " Node B: " + edge.getNodeB() + " Feature " + ((SimpleFeature) edge.getObject()).getID());
             features.add(((SimpleFeature) edge.getObject()));
         }
         return (writeFeatures(DataUtilities.collection(features)));
@@ -529,13 +522,14 @@ public final class NetworkBuffer {
         }
         return (writeFeatures(DataUtilities.collection(features)));
     }
-    
+
     private static SimpleFeatureType createEdgeFeatureType(CoordinateReferenceSystem crs) {
 
         SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
         builder.setName("Edge");
         builder.setCRS(crs); // <- Coordinate reference system
 
+        
         // add attributes in order
         builder.add("Edge", LineString.class);
         builder.length(15).add("Name", String.class); // <- 15 chars width for name field
