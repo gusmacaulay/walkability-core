@@ -90,8 +90,8 @@ public class NetworkBufferFJ extends RecursiveAction {
         Node current = currentPath.getLast();
         List<Edge> graphEdges = (List<Edge>) network.get(current);
         //   if (graphEdges != null) {
-  //      LOGGER.info("Current node has {} edges", current.getEdges());
-    //    LOGGER.info("Current node has {} graph edges", graphEdges);
+        //      LOGGER.info("Current node has {} edges", current.getEdges());
+        //    LOGGER.info("Current node has {} graph edges", graphEdges);
         for (Edge graphEdge : graphEdges) { //(List<Edge>)current.getEdges()) {
             Path nextPath = currentPath.duplicate();//new Path();
             //nextPath.addEdges(currentPath.getEdges());
@@ -100,39 +100,37 @@ public class NetworkBufferFJ extends RecursiveAction {
                     if (nextPath.isValid()) { //check if valid path (no repeated nodes)
                         if (nextPath.getLast().getDegree() == 1) {
                             addEdge(serviceArea, currentPath, graphEdge); //add the path if it is ended
-                           
+
                         } else if (nextPath.getLast().getDegree() > 1) {//otherwise add to list of paths to explore further
                             if (addEdge(serviceArea, currentPath, graphEdge)) {
                                 nextPaths.add(nextPath);
-                            }
-                            else {
+                            } else {
                                 //LOGGER.info("Did not add Edge {} terminating path", graphEdge);
-                                
                             }
                         }
                     } else {
                         addEdge(serviceArea, currentPath, graphEdge);
                     }
                 } else {//else chop edge, append (path + chopped edge) to list of paths
-//                    if (graphEdge.getNodeA().equals(graphEdge.getNodeB())) {
-//                        LOGGER.info("HMM this actually happens sometimes");
-//                    }
-                    Edge choppedEdge = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
-                    Path newPath = currentPath.duplicate();
-                    //newPath.addEdges(currentPath.getEdges());
-                    
-                    if (newPath.addEdge(choppedEdge)) {
-                        //addEdges(serviceArea, currentPath);
-                        addNewEdge(serviceArea, currentPath, graphEdge, choppedEdge);
-                       
+                    if (graphEdge.getNodeA().equals(graphEdge.getNodeB())) {
+                        addEdge(serviceArea, currentPath, graphEdge); //looped feature, add the whole thing
+                    } else {
+                        Edge choppedEdge = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
+                        Path newPath = currentPath.duplicate();
+                        //newPath.addEdges(currentPath.getEdges());
+
+                        if (newPath.addEdge(choppedEdge)) {
+                            //addEdges(serviceArea, currentPath);
+                            addNewEdge(serviceArea, currentPath, graphEdge, choppedEdge);
+
+                        }
                     }
                 }
-            }
-            else {
+            } else {
                 LOGGER.info("Failed to add edge to nextpath?");
             }
         }
-      //  LOGGER.info("Nextpaths For path {} - {}",currentPath, nextPaths.size());
+        //  LOGGER.info("Nextpaths For path {} - {}",currentPath, nextPaths.size());
         for (Path nextPath : nextPaths) {
             NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, serviceArea);
             buffernators.add(nbfj);
@@ -157,16 +155,16 @@ public class NetworkBufferFJ extends RecursiveAction {
             if (minimalDistance > pathLength) {
                 edgeFeature.setAttribute("Distance", pathLength);
                 serviceArea.put(newEdge, edgeFeature);
-          //      LOGGER.info("Adding edge {} - minimal distance {}",newEdge,pathLength);
+                //      LOGGER.info("Adding edge {} - minimal distance {}",newEdge,pathLength);
                 return true;
             } else {
-         //       LOGGER.info("NOT Adding edge {} - minimaldistance {}",newEdge,minimalDistance);
+                //       LOGGER.info("NOT Adding edge {} - minimaldistance {}",newEdge,minimalDistance);
                 return false;
             }
         } else {
             edgeFeature.setAttribute("Distance", pathLength);
             serviceArea.put(newEdge, edgeFeature);
-        //    LOGGER.info("Adding edge {} - minimal distance {}",newEdge,pathLength);
+            //    LOGGER.info("Adding edge {} - minimal distance {}",newEdge,pathLength);
             return true;
         }
     }
