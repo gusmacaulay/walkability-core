@@ -451,6 +451,16 @@ public final class NetworkBuffer {
         }
         return buildFeatureFromGeometry(type, all);
     }
+    
+     public static List<SimpleFeature> createLinesFromEdges(Map serviceArea) {
+        Set<Edge> edges = serviceArea.keySet();
+        List<SimpleFeature> features = new ArrayList();
+        
+        for (Edge edge : edges) {
+            features.add(((SimpleFeature) serviceArea.get(edge)));
+        }
+        return features;
+    }
 
     public static SimpleFeature createConvexHullFromEdges(Map serviceArea, Double distance, SimpleFeatureType type) {
         Set<Edge> edges = serviceArea.keySet();
