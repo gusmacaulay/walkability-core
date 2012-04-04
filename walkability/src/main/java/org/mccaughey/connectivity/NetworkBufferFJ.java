@@ -16,15 +16,14 @@
  */
 package org.mccaughey.connectivity;
 
-import com.vividsolutions.jts.densify.Densifier;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.linearref.LengthIndexedLine;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveAction;
+//import java.util.concurrent.ForkJoinPool;
+//import java.util.concurrent.RecursiveAction;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.graph.path.Path;
@@ -37,6 +36,8 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jsr166y.ForkJoinPool;
+import jsr166y.RecursiveAction;
 
 /**
  *
@@ -113,7 +114,7 @@ public class NetworkBufferFJ extends RecursiveAction {
                     }
                 } else {//else chop edge, append (path + chopped edge) to list of paths
                     if (graphEdge.getNodeA().equals(graphEdge.getNodeB())) {
-                        LOGGER.info("Chopping looped feature");
+                       
                        //looped feature, chopped edges from each direction
                         Edge choppedEdgeA = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
                        // graphEdge.reverse();
@@ -208,7 +209,7 @@ public class NetworkBufferFJ extends RecursiveAction {
             SimpleFeatureType edgeType = createEdgeFeatureType(newFeature.getType().getCoordinateReferenceSystem());
             newFeature = buildFeatureFromGeometry(edgeType, newGeometry);
             newFeature.setAttribute("Distance", pathLength);
-            LOGGER.info("New Geom Length: {}", newGeometry.getLength());
+           
             serviceArea.put(graphEdge, newFeature);
             
         }
@@ -251,10 +252,7 @@ public class NetworkBufferFJ extends RecursiveAction {
         Geometry lineGeom = ((Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry());
         //lineGeom = Densifier.densify(lineGeom, 1); //1 metre tolerance
         LengthIndexedLine line = new LengthIndexedLine(lineGeom);
-        if (edge.getNodeA().equals(edge.getNodeB())) {
-            LOGGER.info("CHOPPINNG LOOPED FEATURE From {}",lineGeom.getLength());
-            
-        }
+      
         if (node.equals(edge.getNodeA())) {
             Geometry newLine = line.extractLine(line.getStartIndex(), length);
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
@@ -285,10 +283,7 @@ public class NetworkBufferFJ extends RecursiveAction {
         Geometry lineGeom = ((Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry());
         //lineGeom = Densifier.densify(lineGeom, 1); //1 metre tolerance
         LengthIndexedLine line = new LengthIndexedLine(lineGeom);
-        if (edge.getNodeA().equals(edge.getNodeB())) {
-            LOGGER.info("CHOPPINNG LOOPED FEATURE From {}",lineGeom.getLength());
-            
-        }
+       
         if (node.equals(edge.getNodeA())) {
             Geometry newLine = line.extractLine(line.getEndIndex(), -length);
            

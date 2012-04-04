@@ -5,8 +5,10 @@
 package org.mccaughey.connectivity;
 
 import java.util.ArrayList;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveAction;
+//import java.util.concurrent.ForkJoinPool;
+//import java.util.concurrent.RecursiveAction;
+import jsr166y.ForkJoinPool;
+import jsr166y.RecursiveAction;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureCollections;

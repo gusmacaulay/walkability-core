@@ -133,6 +133,11 @@
             <artifactId>gt-geojson</artifactId>
             <version>${geotools.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.codehaus.jsr166-mirror</groupId>
+            <artifactId>jsr166y</artifactId>
+            <version>1.7.0</version>
+        </dependency>
     </dependencies>
   
     <repositories>
@@ -164,7 +169,7 @@
             </testResource>
         </testResources>
         <plugins>
-            <plugin>
+  <!--          <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.3.2</version>
@@ -172,7 +177,8 @@
                     <source>1.6</source>
                     <target>1.6</target>
                 </configuration>
-            </plugin>
+            </plugin> -->
+       
 
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -213,6 +219,14 @@
                             <version>2.7</version>
                         </plugin>
                     </reportPlugins>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <showDeprecation>false</showDeprecation>
                 </configuration>
             </plugin>
         </plugins>
