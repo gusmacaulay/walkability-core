@@ -68,7 +68,7 @@ public class NetworkBufferFJ extends RecursiveAction {
         int nProcessors = runtime.availableProcessors();
         int nThreads = 1;//nProcessors + 1;
 
-        LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
+       // LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
         //Fork/Join handles threads for me, all I do is invoke
         ForkJoinPool fjPool = new ForkJoinPool(nThreads);
         fjPool.invoke(this);

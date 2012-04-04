@@ -80,38 +80,12 @@ public final class NetworkBuffer {
         SimpleFeatureCollection networkRegion = featuresInRegion(network, pointBuffer);
         Path startPath = new Path();
         Graph networkGraph = createGraphWithStartNode(nearestLine, startPath, networkRegion, pointOfInterest);
-        LOGGER.info("StartPath {}",startPath.size());
-        //Graph networkGraph = buildFeatureNetwork(networkRegion).getGraph();
-        //   LOGGER.info("Graph node count: {}", networkGraph.getNodes().size());
-        File file = new File("/home/amacaulay/graphNetwork.json");
-        FileUtils.writeStringToFile(file, graphToJSON(networkGraph));
         Map networkMap = graphToMap(networkGraph);
-        //  LOGGER.info("HashMap node count: {}",networkMap.size());
-//        Path startPathA = new Path();
-//        Path startPathB = new Path();
-//        for (Edge edge : (Collection<Edge>) networkGraph.getEdges()) {
-//            SimpleFeature feature = (SimpleFeature) edge.getObject();
-//            Geometry geom = (Geometry) feature.getDefaultGeometry();
-//            if (geom.touches(nearestLine.extractLine(nearestLine.getStartIndex(), nearestLine.getEndIndex()))) {
-//                LOGGER.info("Huzzah!");
-//
-//                startPathA.add(edge.getNodeA());
-//                startPathB.add(edge.getNodeB());
-//            }
-//
-//        }
-
-
-
         Map serviceArea = new ConcurrentHashMap();
 
         double t1 = new Date().getTime();
         NetworkBufferFJ nbfj = new NetworkBufferFJ(networkMap, startPath, networkDistance, serviceArea);
         serviceArea = nbfj.createBuffer();
-//        NetworkBufferFJ nbfjA = new NetworkBufferFJ(networkMap, startPathA, networkDistance, serviceArea);
-//        NetworkBufferFJ nbfjB = new NetworkBufferFJ(networkMap, startPathB, networkDistance, serviceArea);
-//        nbfjA.createBuffer();
-//        serviceArea = nbfjB.createBuffer();
         double t2 = new Date().getTime();
         double total = (t2 - t1) / 1000;
         LOGGER.info("Found " + serviceArea.size() + " Edges in " + total + " seconds");
@@ -127,37 +101,9 @@ public final class NetworkBuffer {
         Geometry lineB = connectedLine.extractLine(connectedLine.project(minDistPoint), connectedLine.getEndIndex());
         Geometry originalLine = connectedLine.extractLine(connectedLine.getStartIndex(), connectedLine.getEndIndex());
 
-//        GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
-//
-//        Coordinate[] coords =
-//                new Coordinate[]{minDistPoint, pt, minDistPoint};
-//        LineString newLine = geometryFactory.createLineString(coords);
-//        LineString[] lines = new LineString[]{(LineString) newLine};
-//        MultiLineString newMultiLine = geometryFactory.createMultiLineString(lines);
-//        lines = new LineString[]{(LineString) lineA};
-//        Geometry multiLineA = geometryFactory.createMultiLineString(lines);
-//        lines = new LineString[]{(LineString) lineB};
-//        Geometry multiLineB = geometryFactory.createMultiLineString(lines);
-//        LOGGER.info("Features: " + networkRegion.size());
-//        networkRegion = removeFeature(networkRegion, originalLine);
-//        networkRegion.add(buildFeatureFromGeometry(networkRegion.getSchema(), newMultiLine));
-//        SimpleFeature multiFeatureA = buildFeatureFromGeometry(networkRegion.getSchema(), multiLineA);
-//        networkRegion.add(multiFeatureA);
-//        SimpleFeature multiFeatureB = buildFeatureFromGeometry(networkRegion.getSchema(), multiLineB);
-//        networkRegion.add(multiFeatureB);
-//        networkRegion = removeFeature(networkRegion, originalLine);
-//        LOGGER.info("Features: " + networkRegion.size());
-//        FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
-//
-//        networkGraphGen.getGraphBuilder().addNode(new BasicNode());
-//        Graph graph = networkGraphGen.getGraph();
-//        LOGGER.info("Node count {}", graph.getNodes().size());
-//        startPath.add(findStartNode(graph, newLine));
-//        return graph;
-
         if ((lineB.getLength() == 0.0) || (lineA.getLength() == 0.0)) {
 
-            LOGGER.info("Line length: " + originalLine.getLength());
+         //   LOGGER.info("Line length: " + originalLine.getLength());
             FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
             //SimpleFeature featureA = buildFeatureFromGeometry(networkRegion.getSchema(), lineA);
             //networkGraphGen.add(featureA);
@@ -165,7 +111,7 @@ public final class NetworkBuffer {
             startPath.add(findStartNode(graph, originalLine));
             return graph;
         } else {
-            LOGGER.info("Two edged start node");
+        //    LOGGER.info("Two edged start node");
 //            LOGGER.info("Features: " + networkRegion.size());
             networkRegion = removeFeature(networkRegion, originalLine);
 //            LOGGER.info("Features: " + networkRegion.size());
@@ -284,11 +230,11 @@ public final class NetworkBuffer {
                 SimpleFeature edgeFeature2 = (SimpleFeature) (((Edge) node.getEdges().toArray()[1]).getObject());
                
                 if (edgeFeature1.getID().equals(featureA.getID()) && edgeFeature2.getID().equals(featureB.getID())) {
-                    LOGGER.info("Found start node edges {},{}", featureA.getDefaultGeometry(),featureB.getDefaultGeometry() );
+          //         LOGGER.info("Found start node edges {},{}", featureA.getDefaultGeometry(),featureB.getDefaultGeometry() );
                     return node;
                 }
                 if (edgeFeature2.getID().equals(featureA.getID()) && edgeFeature1.getID().equals(featureB.getID())) {
-                    LOGGER.info("Found start node");
+            //        LOGGER.info("Found start node");
                     return node;
                 }
             }
@@ -322,26 +268,7 @@ public final class NetworkBuffer {
         }
         return DataUtilities.collection(newFeatures);
     }
-
-//    private static Node findStartNode(Graph graph, Geometry startLine) {
-//        for (Node node : (Collection<Node>) graph.getNodes()) {
-//            //   if (node.getEdges().size() == 3) {
-//            for (Edge edge : (List<Edge>) node.getEdges()) {
-//                //if (node.getEdges().size() == 1) {
-//                //    Edge edge = (Edge)(node.getEdges().get(0));
-//                SimpleFeature edgeFeature = (SimpleFeature) edge.getObject();
-//                Geometry graphGeom = (Geometry) edgeFeature.getDefaultGeometry();
-//                if (graphGeom.contains(startLine)) {
-//                    LOGGER.info("Found start node");
-//                    return node;
-//                }
-//            }
-//            //   }
-//        }
-//        return null;
-//    }
     
-
     private static Map graphToMap(Graph graph) {
         Map networkMap = new HashMap();
         for (Node node : (Collection<Node>) graph.getNodes()) {
@@ -390,7 +317,7 @@ public final class NetworkBuffer {
         }
 
         if (minDistPoint != null) {
-            LOGGER.info("{} - snapped by moving {}\n", pt.toString(), minDist);
+         //   LOGGER.info("{} - snapped by moving {}\n", pt.toString(), minDist);
             return connectedLine;
         }
         LOGGER.error("Failed to snap point {} to network", pt.toString());
@@ -427,7 +354,7 @@ public final class NetworkBuffer {
             features.add(feature);
         }
         try {
-            File file = new File("/home/amacaulay/bufferNetwork.json");
+            File file = new File("bufferNetwork.json");
             FileUtils.writeStringToFile(file, writeFeatures(DataUtilities.collection(features)));
         } catch (Exception e) {
         }
@@ -442,9 +369,9 @@ public final class NetworkBuffer {
 
             try {
                 if (all == null) {
-                    all = geom.getGeometryN(0).buffer(distance);
-                } else if (!(all.contains(geom.getGeometryN(0).buffer(distance)))) {
-                    all = all.union(geom.getGeometryN(0).buffer(distance));
+                    all = geom.buffer(distance);
+                } else if (!(all.contains(geom.buffer(distance)))) {
+                    all = all.union(geom.buffer(distance));
                 }
             } catch (Exception e) {
             }

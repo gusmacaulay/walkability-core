@@ -17,11 +17,9 @@
 package org.mccaughey.connectivity;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import jsr166y.ForkJoinPool;
 import jsr166y.RecursiveAction;
-import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureCollections;
@@ -55,7 +53,7 @@ public class NetworkBufferBatch extends RecursiveAction {
     public SimpleFeatureCollection createBuffers() {
         Runtime runtime = Runtime.getRuntime();
         int nProcessors = runtime.availableProcessors();
-        int nThreads = nProcessors +1;
+        int nThreads = nProcessors;
 
         LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
         //Fork/Join handles threads for me, all I do is invoke
@@ -71,9 +69,10 @@ public class NetworkBufferBatch extends RecursiveAction {
             try {
                 Map serviceArea = NetworkBuffer.findServiceArea(network, points.features().next(), distance, bufferSize);
                 if (serviceArea != null) {
-                    List<SimpleFeature> networkBuffer = NetworkBuffer.createLinesFromEdges(serviceArea);
+                    //List<SimpleFeature> networkBuffer = NetworkBuffer.createLinesFromEdges(serviceArea);
+                    SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(serviceArea, bufferSize, points.getSchema().getCoordinateReferenceSystem());
                     if (networkBuffer != null) {
-                        buffers.addAll(DataUtilities.collection(networkBuffer));
+                        buffers.add(networkBuffer); //.addAll(DataUtilities.collection(networkBuffer));
                     }
                 }
             } catch (Exception e) {
