@@ -1,0 +1,11 @@
+sim {
+    model(classname:"org.mccaughey.connectivity.NetworkBufferOMS") {
+       parameter {
+        network "file:///home/amacaulay/SRC/aurin-walkability/walkability/roads.json"
+      	points "file:///home/amacaulay/SRC/aurin-walkability/walkability/src/test/resources/Rndm100ptsProjected.json"
+	distance 1500.0
+	bufferSize 100.0
+	}	
+    }
+}
+

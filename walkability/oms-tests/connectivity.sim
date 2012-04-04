@@ -1,0 +1,9 @@
+sim {
+    model(classname:"org.mccaughey.connectivity.ConnectivityIndexOMS") {
+       parameter {
+        network "file:///home/amacaulay/SRC/aurin-walkability/walkability/src/test/resources/tasmania_roads.json"
+      	regions "file:///home/amacaulay/SRC/aurin-walkability/walkability/src/test/resources/test_regions.json"
+	}	
+    }
+}
+
