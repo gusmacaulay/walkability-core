@@ -139,7 +139,7 @@ public class NetworkBufferFJ extends RecursiveAction {
                     }
                 }
             } else {
-                LOGGER.info("Failed to add edge to nextpath?");
+                //LOGGER.info("Failed to add edge to nextpath?");
             }
         }
         //  LOGGER.info("Nextpaths For path {} - {}",currentPath, nextPaths.size());
