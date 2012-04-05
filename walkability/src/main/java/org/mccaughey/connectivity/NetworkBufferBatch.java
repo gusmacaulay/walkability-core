@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import jsr166y.ForkJoinPool;
 import jsr166y.RecursiveAction;
+import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureCollections;
@@ -38,6 +39,7 @@ public class NetworkBufferBatch extends RecursiveAction {
     SimpleFeatureSource network;
     SimpleFeatureCollection points;
     SimpleFeatureCollection buffers;
+    SimpleFeatureCollection graphs;
     Double distance;
     Double bufferSize;
 
@@ -47,9 +49,13 @@ public class NetworkBufferBatch extends RecursiveAction {
         this.distance = distance;
         this.bufferSize = bufferSize;
         this.buffers = FeatureCollections.newCollection();
+        this.graphs = FeatureCollections.newCollection();
 
     }
 
+    public SimpleFeatureCollection getGraphs() {
+        return graphs;
+    }
     public SimpleFeatureCollection createBuffers() {
         Runtime runtime = Runtime.getRuntime();
         int nProcessors = runtime.availableProcessors();
@@ -70,13 +76,15 @@ public class NetworkBufferBatch extends RecursiveAction {
                 Map serviceArea = NetworkBuffer.findServiceArea(network, points.features().next(), distance, bufferSize);
                 if (serviceArea != null) {
                     //List<SimpleFeature> networkBuffer = NetworkBuffer.createLinesFromEdges(serviceArea);
+                    SimpleFeatureCollection graph = DataUtilities.collection(NetworkBuffer.createLinesFromEdges(serviceArea));
                     SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(serviceArea, bufferSize, points.getSchema().getCoordinateReferenceSystem());
                     if (networkBuffer != null) {
                         buffers.add(networkBuffer); //.addAll(DataUtilities.collection(networkBuffer));
+                        graphs.addAll(graph);
                     }
                 }
             } catch (Exception e) {
-              //  this.completeExceptionally(e);
+                this.completeExceptionally(e);
             }
         } else { //otherwise split the points into single point arrays and invokeAll
             ArrayList<NetworkBufferBatch> buffernators = new ArrayList();
@@ -94,6 +102,7 @@ public class NetworkBufferBatch extends RecursiveAction {
               //      this.completeExceptionally(nbb.getException());
               //  }
                 buffers.addAll(nbb.buffers);
+                graphs.addAll(nbb.graphs);
             }
         }
     }
