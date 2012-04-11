@@ -71,8 +71,8 @@ public class NetworkBufferOMS {
     public URL regions;
 
     @Execute
-    public void run() throws Exception {
-//        try {
+    public void run() {
+        try {
             SimpleFeatureSource networkSource = DataUtilities.source(readFeatures(network));
             SimpleFeatureSource pointsSource = DataUtilities.source(readFeatures(points));
 
@@ -82,9 +82,9 @@ public class NetworkBufferOMS {
             FileUtils.writeStringToFile(file, writeFeatures(buffers));
             regions = file.toURI().toURL();
 
-//        } catch (Exception e) { //Can't do much here because of OMS?
-//            LOGGER.error(e.getMessage());
-//        }
+        } catch (Exception e) { //Can't do much here because of OMS?
+            LOGGER.error(e.getMessage());
+        }
     }
 
     private SimpleFeatureCollection readFeatures(URL url) throws IOException {

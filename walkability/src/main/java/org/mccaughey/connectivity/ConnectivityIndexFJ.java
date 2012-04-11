@@ -24,10 +24,14 @@ import org.slf4j.LoggerFactory;
 public class ConnectivityIndexFJ extends RecursiveAction {
 
     static final Logger LOGGER  = LoggerFactory.getLogger(ConnectivityIndexFJ.class);
-    public SimpleFeatureCollection results;
+    private SimpleFeatureCollection results;
     private final SimpleFeatureSource roadsFeatureSource;
     private final SimpleFeatureCollection regions;
 
+    public SimpleFeatureCollection getResults() {
+        return results;
+    }
+    
     /**
      * @param The road network to count connections from
      * @param regions The regions of interest to calculate connectivity in

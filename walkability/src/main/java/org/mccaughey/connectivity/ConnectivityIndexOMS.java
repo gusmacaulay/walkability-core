@@ -57,7 +57,7 @@ public class ConnectivityIndexOMS {
 
             ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(networkSource,regionSource.getFeatures());
             cifj.connectivity();
-            results = writeFeatures(cifj.results);
+            results = writeFeatures(cifj.getResults());
             LOGGER.info(results);
 //            System.out.println(results);
             

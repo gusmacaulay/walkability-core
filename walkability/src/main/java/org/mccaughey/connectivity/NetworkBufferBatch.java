@@ -36,12 +36,12 @@ import org.slf4j.LoggerFactory;
 public class NetworkBufferBatch extends RecursiveAction {
 
     static final Logger LOGGER = LoggerFactory.getLogger(NetworkBufferBatch.class);
-    SimpleFeatureSource network;
-    SimpleFeatureCollection points;
-    SimpleFeatureCollection buffers;
-    SimpleFeatureCollection graphs;
-    Double distance;
-    Double bufferSize;
+    private SimpleFeatureSource network;
+    private SimpleFeatureCollection points;
+    private SimpleFeatureCollection buffers;
+    private SimpleFeatureCollection graphs;
+    private Double distance;
+    private Double bufferSize;
 
     public NetworkBufferBatch(SimpleFeatureSource network, SimpleFeatureCollection points, Double distance, Double bufferSize) {
         this.network = network;

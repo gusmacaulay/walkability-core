@@ -50,6 +50,7 @@ public class NetworkBufferFJ extends RecursiveAction {
     private Path currentPath;
     private Double distance;
     private Map serviceArea;
+    private static String distanceAttribute = "Distance";
 
     public NetworkBufferFJ(Map network, Path currentPath, Double distance, Map serviceArea) {
         this.network = network;
@@ -64,11 +65,11 @@ public class NetworkBufferFJ extends RecursiveAction {
      */
     public Map createBuffer() {
         //Get the available processors, processors==threads is probably best?
-        Runtime runtime = Runtime.getRuntime();
-        int nProcessors = runtime.availableProcessors();
+        //Runtime runtime = Runtime.getRuntime();
+        //int nProcessors = runtime.availableProcessors();
         int nThreads = 1;//nProcessors + 1;
 
-       // LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
+        // LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
         //Fork/Join handles threads for me, all I do is invoke
         ForkJoinPool fjPool = new ForkJoinPool(nThreads);
         fjPool.invoke(this);
@@ -90,56 +91,16 @@ public class NetworkBufferFJ extends RecursiveAction {
         List<NetworkBufferFJ> buffernators = new ArrayList();
         Node current = currentPath.getLast();
         List<Edge> graphEdges = (List<Edge>) network.get(current);
-        //   if (graphEdges != null) {
-        //      LOGGER.info("Current node has {} edges", current.getEdges());
-        //    LOGGER.info("Current node has {} graph edges", graphEdges);
+
         for (Edge graphEdge : graphEdges) { //(List<Edge>)current.getEdges()) {
             Path nextPath = currentPath.duplicate();//new Path();
             //nextPath.addEdges(currentPath.getEdges());
             if (nextPath.addEdge(graphEdge)) {
                 if (pathLength(nextPath) <= distance) { //if path + edge less/equal to distance
-                    if (nextPath.isValid()) { //check if valid path (no repeated nodes)
-                        if (nextPath.getLast().getDegree() == 1) {
-                            addEdge(serviceArea, currentPath, graphEdge); //add the path if it is ended
-
-                        } else if (nextPath.getLast().getDegree() > 1) {//otherwise add to list of paths to explore further
-                            if (addEdge(serviceArea, currentPath, graphEdge)) {
-                                nextPaths.add(nextPath);
-                            } else {
-                                //LOGGER.info("Did not add Edge {} terminating path", graphEdge);
-                            }
-                        }
-                    } else {
-                        addEdge(serviceArea, currentPath, graphEdge);
-                    }
+                    addWholeEdge(nextPath, nextPaths, graphEdge);
                 } else {//else chop edge, append (path + chopped edge) to list of paths
-                    if (graphEdge.getNodeA().equals(graphEdge.getNodeB())) {
-                       
-                       //looped feature, chopped edges from each direction
-                        Edge choppedEdgeA = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
-                       // graphEdge.reverse();
-                        Edge choppedEdgeB = chopEdgeBackwards(currentPath, graphEdge, distance - pathLength(currentPath));
-                        Path newPathA = currentPath.duplicate();
-                        Path newPathB = currentPath.duplicate();
-                        if (newPathA.addEdge(choppedEdgeA)) {
-                            addNewEdge(serviceArea, currentPath, graphEdge, choppedEdgeA);
-                        }
-                        if (newPathB.addEdge(choppedEdgeB)) {
-                            addNewEdge(serviceArea, currentPath, graphEdge, choppedEdgeB);
-                        }
-                    } else {
-                        
-                        Edge choppedEdge = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
-                       // LOGGER.info("Chopped edge should be {} long",distance - pathLength(currentPath));
-                        Path newPath = currentPath.duplicate();
-                        if (newPath.addEdge(choppedEdge)) {
-                            addNewEdge(serviceArea, currentPath, graphEdge, choppedEdge);
-                        }
-                        //LOGGER.info("New path length: {}", pathLength(newPath));
-                    }
+                    addChoppedEdge(graphEdge);
                 }
-            } else {
-                //LOGGER.info("Failed to add edge to nextpath?");
             }
         }
         //  LOGGER.info("Nextpaths For path {} - {}",currentPath, nextPaths.size());
@@ -147,6 +108,7 @@ public class NetworkBufferFJ extends RecursiveAction {
             NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, serviceArea);
             buffernators.add(nbfj);
         }
+
         if (buffernators.size() > 0) {
             invokeAll(buffernators);
         }
@@ -156,6 +118,51 @@ public class NetworkBufferFJ extends RecursiveAction {
 //        }
     }
 
+    private void addWholeEdge(Path nextPath, List<Path> nextPaths, Edge graphEdge) {
+        if ((addEdge(serviceArea, currentPath, graphEdge) && (nextPath.getLast().getDegree() > 1) && nextPath.isValid())) {
+            nextPaths.add(nextPath);
+        }
+//        if (nextPath.isValid()) { //check if valid path (no repeated nodes)
+//            if (nextPath.getLast().getDegree() == 1) {
+//                addEdge(serviceArea, currentPath, graphEdge); //add the path if it is ended
+//
+//            } else if (nextPath.getLast().getDegree() > 1) {//otherwise add to list of paths to explore further
+//                if (addEdge(serviceArea, currentPath, graphEdge)) {
+//                    nextPaths.add(nextPath);
+//                }
+//            }
+//        } else {
+//            addEdge(serviceArea, currentPath, graphEdge);
+//        }
+    }
+
+    private void addChoppedEdge(Edge graphEdge) {
+        if (graphEdge.getNodeA().equals(graphEdge.getNodeB())) {
+
+            //looped feature, chopped edges from each direction
+            Edge choppedEdgeA = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
+            // graphEdge.reverse();
+            Edge choppedEdgeB = chopEdgeBackwards(currentPath, graphEdge, distance - pathLength(currentPath));
+            Path newPathA = currentPath.duplicate();
+            Path newPathB = currentPath.duplicate();
+            if (newPathA.addEdge(choppedEdgeA)) {
+                addNewEdge(serviceArea, currentPath, graphEdge, choppedEdgeA);
+            }
+            if (newPathB.addEdge(choppedEdgeB)) {
+                addNewEdge(serviceArea, currentPath, graphEdge, choppedEdgeB);
+            }
+        } else {
+
+            Edge choppedEdge = chopEdge(currentPath, graphEdge, distance - pathLength(currentPath));
+            // LOGGER.info("Chopped edge should be {} long",distance - pathLength(currentPath));
+            Path newPath = currentPath.duplicate();
+            if (newPath.addEdge(choppedEdge)) {
+                addNewEdge(serviceArea, currentPath, graphEdge, choppedEdge);
+            }
+            //LOGGER.info("New path length: {}", pathLength(newPath));
+        }
+    }
+
     private static boolean addEdge(Map serviceArea, Path path, Edge newEdge) {
         Double pathLength = pathLength(path);
         SimpleFeature graphFeature = ((SimpleFeature) newEdge.getObject());
@@ -163,9 +170,9 @@ public class NetworkBufferFJ extends RecursiveAction {
         SimpleFeature edgeFeature = buildFeatureFromGeometry(edgeType, (Geometry) graphFeature.getDefaultGeometry());
         if (serviceArea.containsKey(newEdge)) {
             SimpleFeature existingFeature = (SimpleFeature) serviceArea.get(newEdge);
-            Double minimalDistance = (Double) existingFeature.getAttribute("Distance");
+            Double minimalDistance = (Double) existingFeature.getAttribute(distanceAttribute);
             if (minimalDistance > pathLength) {
-                edgeFeature.setAttribute("Distance", pathLength);
+                edgeFeature.setAttribute(distanceAttribute, pathLength);
                 serviceArea.put(newEdge, edgeFeature);
                 //      LOGGER.info("Adding edge {} - minimal distance {}",newEdge,pathLength);
                 return true;
@@ -174,7 +181,7 @@ public class NetworkBufferFJ extends RecursiveAction {
                 return false;
             }
         } else {
-            edgeFeature.setAttribute("Distance", pathLength);
+            edgeFeature.setAttribute(distanceAttribute, pathLength);
             serviceArea.put(newEdge, edgeFeature);
             //    LOGGER.info("Adding edge {} - minimal distance {}",newEdge,pathLength);
             return true;
@@ -185,62 +192,31 @@ public class NetworkBufferFJ extends RecursiveAction {
         Double pathLength = pathLength(path);
         if (serviceArea.containsKey(graphEdge)) {
             SimpleFeature existingFeature = (SimpleFeature) serviceArea.get(graphEdge);
-           // Double currentPathLength = (Double) existingFeature.getAttribute("Distance");
+            // Double currentPathLength = (Double) existingFeature.getAttribute(distanceAttribute);
 
             Geometry existingGeometry = (Geometry) existingFeature.getDefaultGeometry();
             Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
 
             SimpleFeature newFeature = buildFeatureFromGeometry(existingFeature.getType(), newGeometry);
-            newFeature.setAttribute("Distance", pathLength);
-           
+            newFeature.setAttribute(distanceAttribute, pathLength);
+
             if (newGeometry.getLength() >= existingGeometry.getLength()) {
-               if (newGeometry.contains(existingGeometry)) {
+                if (newGeometry.contains(existingGeometry)) {
                     serviceArea.put(graphEdge, newFeature);
-               }
-               else
-                   serviceArea.put(newEdge, newFeature);
-            }// else if (!(newGeometry.contains(existingGeometry))) { //case where edges come from opposite ends
-             //   serviceArea.put(newEdge, newFeature);
-          //  }
+                } else {
+                    serviceArea.put(newEdge, newFeature);
+                }
+            }
 
         } else {
             SimpleFeature newFeature = (SimpleFeature) newEdge.getObject();
             Geometry newGeometry = (Geometry) newFeature.getDefaultGeometry();
             SimpleFeatureType edgeType = createEdgeFeatureType(newFeature.getType().getCoordinateReferenceSystem());
             newFeature = buildFeatureFromGeometry(edgeType, newGeometry);
-            newFeature.setAttribute("Distance", pathLength);
-           
-            serviceArea.put(graphEdge, newFeature);
-            
-        }
-    }
+            newFeature.setAttribute(distanceAttribute, pathLength);
 
-//    private static void addNewEdge(Map serviceArea, Edge graphEdge, Edge newEdge) {
-//        if (serviceArea.containsKey(graphEdge)) {
-//            Geometry existingGeometry = (Geometry) serviceArea.get(graphEdge);
-//            Geometry newGeometry = (Geometry) ((SimpleFeature) newEdge.getObject()).getDefaultGeometry();
-//            if (newGeometry.getLength() > existingGeometry.getLength()) {
-//                serviceArea.put(graphEdge, newGeometry);
-//            }
-//        } else {
-//            serviceArea.put(graphEdge, ((SimpleFeature) newEdge.getObject()).getDefaultGeometry());
-//        }
-//    }
-    /**
-     * This method adds all the edges in the path to the serviceArea HashMap It
-     * assumes that the path is made up of complete graph edge geometries so
-     * does not check for sub-geometries before adding to the hash map.
-     *
-     * @param serviceArea Represents the set of unique edges from all paths in
-     * the service area
-     * @param path a service area path which is made up of complete graph edge
-     * geometries.
-     * @return
-     */
-    private static void addEdges(Map serviceArea, Path path) {
-        for (Edge edge : (List<Edge>) path.getEdges()) {
-            Geometry geom = (Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry();
-            serviceArea.put(edge, geom);
+            serviceArea.put(graphEdge, newFeature);
+
         }
     }
 
@@ -252,29 +228,29 @@ public class NetworkBufferFJ extends RecursiveAction {
         Geometry lineGeom = ((Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry());
         //lineGeom = Densifier.densify(lineGeom, 1); //1 metre tolerance
         LengthIndexedLine line = new LengthIndexedLine(lineGeom);
-      
+
         if (node.equals(edge.getNodeA())) {
             Geometry newLine = line.extractLine(line.getStartIndex(), length);
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
             newEdge.setObject(newFeature);
-          //  LOGGER.info("...To {}",newLine.getLength());
-          //  Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
-         //   LOGGER.info("Delta Length A: " + delta);//(newLine.getLength() - length) );
+            //  LOGGER.info("...To {}",newLine.getLength());
+            //  Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
+            //   LOGGER.info("Delta Length A: " + delta);//(newLine.getLength() - length) );
             return newEdge;
         } else if (node.equals(edge.getNodeB())) {
             Geometry newLine = line.extractLine(line.getEndIndex(), -length);
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
             newEdge.setObject(newFeature);
-         //  LOGGER.info("...To {}",newLine.getLength());
-        //   Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
-        //    LOGGER.info("Delta Length B: " + delta);//(newLine.getLength() - length) );
+            //  LOGGER.info("...To {}",newLine.getLength());
+            //   Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
+            //    LOGGER.info("Delta Length B: " + delta);//(newLine.getLength() - length) );
             return newEdge;
         } else {
             LOGGER.error("Failed To Cut Edge");
             return null;
         }
     }
-    
+
     private static Edge chopEdgeBackwards(Path path, Edge edge, Double length) {
         Node node = path.getLast();
         Node newNode = new BasicNode();
@@ -283,23 +259,23 @@ public class NetworkBufferFJ extends RecursiveAction {
         Geometry lineGeom = ((Geometry) ((SimpleFeature) edge.getObject()).getDefaultGeometry());
         //lineGeom = Densifier.densify(lineGeom, 1); //1 metre tolerance
         LengthIndexedLine line = new LengthIndexedLine(lineGeom);
-       
+
         if (node.equals(edge.getNodeA())) {
             Geometry newLine = line.extractLine(line.getEndIndex(), -length);
-           
+
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
             newEdge.setObject(newFeature);
-          //  LOGGER.info("...To {}",newLine.getLength());
-          //  Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
-         //   LOGGER.info("Delta Length A: " + delta);//(newLine.getLength() - length) );
+            //  LOGGER.info("...To {}",newLine.getLength());
+            //  Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
+            //   LOGGER.info("Delta Length A: " + delta);//(newLine.getLength() - length) );
             return newEdge;
         } else if (node.equals(edge.getNodeB())) {
-             Geometry newLine = line.extractLine(line.getStartIndex(), length);
+            Geometry newLine = line.extractLine(line.getStartIndex(), length);
             SimpleFeature newFeature = buildFeatureFromGeometry(((SimpleFeature) edge.getObject()).getType(), newLine);
             newEdge.setObject(newFeature);
-         //  LOGGER.info("...To {}",newLine.getLength());
-        //   Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
-        //    LOGGER.info("Delta Length B: " + delta);//(newLine.getLength() - length) );
+            //  LOGGER.info("...To {}",newLine.getLength());
+            //   Double delta = 1500.0 - pathLength(path) - newLine.getLength(); 
+            //    LOGGER.info("Delta Length B: " + delta);//(newLine.getLength() - length) );
             return newEdge;
         } else {
             LOGGER.error("Failed To Cut Edge");
@@ -333,11 +309,11 @@ public class NetworkBufferFJ extends RecursiveAction {
 
         // add attributes in order
         builder.add("Edge", LineString.class);
-        builder.length(15).add("Name", String.class); // <- 15 chars width for name field
-        builder.add("Distance", Double.class);
+        builder.length(
+                15).add("Name", String.class); // <- 15 chars width for name field
+        builder.add(
+                "Distance", Double.class);
         // build the type
-        SimpleFeatureType bufferType = builder.buildFeatureType();
-
-        return bufferType;
+        return builder.buildFeatureType();
     }
 }
