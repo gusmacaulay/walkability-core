@@ -20,6 +20,7 @@ import com.vividsolutions.jts.geom.Geometry;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -46,7 +47,7 @@ public class LandUseMix {
 
     static final Logger LOGGER = LoggerFactory.getLogger(LandUseMix.class);
 
-    public static SimpleFeature summarise(SimpleFeatureSource landUse, SimpleFeature region) {
+    public static SimpleFeature summarise(SimpleFeatureSource landUse, SimpleFeature region, List<String> classifications) {
 
         try {
             Geometry regionGeom = (Geometry) region.getDefaultGeometry();
@@ -58,15 +59,18 @@ public class LandUseMix {
                 SimpleFeature parcel = parcels.next();
                 Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
                 String classification = (String) parcel.getAttribute("CATEGORY");
-                Double parcelArea = parcelGeom.intersection(regionGeom).getArea();
-                totalArea += parcelArea;
-                Double area = parcelArea;
-                if (classificationAreas.containsKey(classification)) {
-                    area = (Double) classificationAreas.get(classification) + area;
+              //  LOGGER.info("Classification: {}", classification);
+                if (classifications.contains(classification)) {
+                    Double parcelArea = parcelGeom.intersection(regionGeom).getArea();
+                    totalArea += parcelArea;
+                    Double area = parcelArea;
+                    if (classificationAreas.containsKey(classification)) {
+                        area = (Double) classificationAreas.get(classification) + area;
+                    }
+                    classificationAreas.put(classification, area);
+                
                 }
-                classificationAreas.put(classification, area);
-
-                //LOGGER.info("Area: {} Classification: {} ", area, classification);
+                
             }
             Double landUseMixMeasure = 0.0;
             Collection<Double> areas = classificationAreas.values();
@@ -79,22 +83,22 @@ public class LandUseMix {
             SimpleFeatureType landUseMixFeatureType = stb.buildFeatureType();
             SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
             sfb.addAll(region.getAttributes());
-            
+
             for (Double area : areas) {
                 Double proportion = area / totalArea;
-               // LOGGER.info("Class Area: {} Total Area: {}", area, totalArea);
+                // LOGGER.info("Class Area: {} Total Area: {}", area, totalArea);
                 landUseMixMeasure += (((proportion) * (Math.log(proportion))) / (Math.log(areas.size())));
             }
             landUseMixMeasure = -1 * landUseMixMeasure;
             sfb.add(landUseMixMeasure);
             SimpleFeature landUseMixFeature = sfb.buildFeature(null);
             return landUseMixFeature;
-           // LOGGER.info("Land Use Mix Measure: {}", landUseMixMeasure);
+            // LOGGER.info("Land Use Mix Measure: {}", landUseMixMeasure);
         } catch (IOException e) {
             LOGGER.error("Failed to select land use features in region: {}", e.getMessage());
             return null;
         }
-       // return region;
+        // return region;
     }
 
     private static SimpleFeatureCollection featuresInRegion(SimpleFeatureSource featureSource, Geometry roi) throws IOException {
