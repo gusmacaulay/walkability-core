@@ -16,10 +16,7 @@
  */
 package org.mccaughey.utilities;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.StringWriter;
-import java.io.Writer;
+import java.io.*;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.geojson.feature.FeatureJSON;
 
@@ -28,15 +25,14 @@ import org.geotools.geojson.feature.FeatureJSON;
  * @author amacaulay
  */
 public class GeoJSONUtilities {
-      public static String writeFeatures(SimpleFeatureCollection features, File file) {
+      public static void writeFeatures(SimpleFeatureCollection features, File file) {
         FeatureJSON fjson = new FeatureJSON();
-        Writer writer = new StringWriter();
         try {
-            fjson.writeFeatureCollection(features, new FileOutputStream(file));
-        } catch (Exception e) {
+            OutputStream os = new FileOutputStream(file);
+            fjson.writeFeatureCollection(features,os);
+            fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
+        } catch (IOException e) {
             System.out.println("Failed to write feature collection" + e.getMessage());
-            return "{}";
         }
-        return writer.toString();
     }
 }
