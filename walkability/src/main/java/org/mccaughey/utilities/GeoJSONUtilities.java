@@ -17,22 +17,53 @@
 package org.mccaughey.utilities;
 
 import java.io.*;
+import java.net.URL;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.feature.FeatureCollections;
+import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
+import org.opengis.feature.simple.SimpleFeature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author amacaulay
  */
 public class GeoJSONUtilities {
-      public static void writeFeatures(SimpleFeatureCollection features, File file) {
+
+    static final Logger LOGGER = LoggerFactory.getLogger(GeoJSONUtilities.class);
+
+    public static void writeFeatures(SimpleFeatureCollection features, File file) {
         FeatureJSON fjson = new FeatureJSON();
         try {
             OutputStream os = new FileOutputStream(file);
-            fjson.writeFeatureCollection(features,os);
+            fjson.writeFeatureCollection(features, os);
             fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
         } catch (IOException e) {
             System.out.println("Failed to write feature collection" + e.getMessage());
         }
+    }
+
+    public static SimpleFeature readFeature(URL url) throws IOException {
+        FeatureJSON io = new FeatureJSON();
+        return io.readFeature(url.openConnection().getInputStream());
+    }
+
+    public static SimpleFeatureCollection readFeatures(URL url) throws IOException {
+        FeatureJSON io = new FeatureJSON();
+
+        FeatureIterator<SimpleFeature> features = io.streamFeatureCollection(url.openConnection().getInputStream());
+
+        SimpleFeatureCollection collection = FeatureCollections.newCollection();
+        SimpleFeature feature;
+
+        while (features.hasNext()) {
+            LOGGER.info("Found");
+            feature = (SimpleFeature) features.next();
+            collection.add(feature);
+        }
+
+        return collection;
     }
 }

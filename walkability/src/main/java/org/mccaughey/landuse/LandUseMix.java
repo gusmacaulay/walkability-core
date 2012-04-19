@@ -59,8 +59,9 @@ public class LandUseMix {
                 SimpleFeature parcel = parcels.next();
                 Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
                 String classification = (String) parcel.getAttribute("CATEGORY");
-              //  LOGGER.info("Classification: {}", classification);
+                //  LOGGER.info("Classification: {}", classification);
                 if (classifications.contains(classification)) {
+                    //     LOGGER.info("Classification: {}", classification);
                     Double parcelArea = parcelGeom.intersection(regionGeom).getArea();
                     totalArea += parcelArea;
                     Double area = parcelArea;
@@ -68,9 +69,9 @@ public class LandUseMix {
                         area = (Double) classificationAreas.get(classification) + area;
                     }
                     classificationAreas.put(classification, area);
-                
+
                 }
-                
+
             }
             Double landUseMixMeasure = 0.0;
             Collection<Double> areas = classificationAreas.values();
@@ -86,7 +87,7 @@ public class LandUseMix {
 
             for (Double area : areas) {
                 Double proportion = area / totalArea;
-                // LOGGER.info("Class Area: {} Total Area: {}", area, totalArea);
+                //  LOGGER.info("Class Area: {} Total Area: {}", area, totalArea);
                 landUseMixMeasure += (((proportion) * (Math.log(proportion))) / (Math.log(areas.size())));
             }
             landUseMixMeasure = -1 * landUseMixMeasure;
