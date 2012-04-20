@@ -19,6 +19,7 @@ package org.mccaughey.utilities;
 import java.io.*;
 import java.net.URL;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
@@ -50,6 +51,11 @@ public class GeoJSONUtilities {
         return io.readFeature(url.openConnection().getInputStream());
     }
 
+    public static SimpleFeatureIterator getFeatureIterator(URL url) throws IOException {
+        FeatureJSON io = new FeatureJSON();
+        return (SimpleFeatureIterator)io.streamFeatureCollection(url.openConnection().getInputStream());
+    }
+    
     public static SimpleFeatureCollection readFeatures(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();
 

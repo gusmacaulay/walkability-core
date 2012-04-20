@@ -18,10 +18,8 @@ package org.mccaughey.landuse;
 
 import com.vividsolutions.jts.geom.Geometry;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import org.geotools.data.DataUtilities;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -46,6 +44,15 @@ import org.slf4j.LoggerFactory;
 public class LandUseMix {
 
     static final Logger LOGGER = LoggerFactory.getLogger(LandUseMix.class);
+
+    public static SimpleFeatureCollection summarise(SimpleFeatureSource landUse, SimpleFeatureIterator regions, List<String> classifications) {
+        List<SimpleFeature> lumFeatures = new ArrayList();
+        while (regions.hasNext()) {
+            SimpleFeature lumFeature = summarise(landUse, regions.next(), classifications);
+            lumFeatures.add(lumFeature);
+        }
+        return DataUtilities.collection(lumFeatures);
+    }
 
     public static SimpleFeature summarise(SimpleFeatureSource landUse, SimpleFeature region, List<String> classifications) {
 
@@ -73,7 +80,7 @@ public class LandUseMix {
                 }
 
             }
-            Double landUseMixMeasure = 0.0;
+
             Collection<Double> areas = classificationAreas.values();
             SimpleFeatureType sft = (SimpleFeatureType) region.getType();
             SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
@@ -85,12 +92,7 @@ public class LandUseMix {
             SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
             sfb.addAll(region.getAttributes());
 
-            for (Double area : areas) {
-                Double proportion = area / totalArea;
-                //  LOGGER.info("Class Area: {} Total Area: {}", area, totalArea);
-                landUseMixMeasure += (((proportion) * (Math.log(proportion))) / (Math.log(areas.size())));
-            }
-            landUseMixMeasure = -1 * landUseMixMeasure;
+            Double landUseMixMeasure = calculateLUM(areas, totalArea);
             sfb.add(landUseMixMeasure);
             SimpleFeature landUseMixFeature = sfb.buildFeature(null);
             return landUseMixFeature;
@@ -100,6 +102,21 @@ public class LandUseMix {
             return null;
         }
         // return region;
+    }
+
+    private static Double calculateLUM(Collection<Double> areas, Double totalArea) {
+        Double landUseMixMeasure = 0.0;
+        if (areas.size() == 1) {
+            landUseMixMeasure = 0.0;
+        } else {
+            for (Double area : areas) {
+                Double proportion = area / totalArea;
+                //  LOGGER.info("Class Area: {} Total Area: {}", area, totalArea);
+                landUseMixMeasure += (((proportion) * (Math.log(proportion))) / (Math.log(areas.size())));
+            }
+            landUseMixMeasure = -1 * landUseMixMeasure;
+        }
+        return landUseMixMeasure;
     }
 
     private static SimpleFeatureCollection featuresInRegion(SimpleFeatureSource featureSource, Geometry roi) throws IOException {
