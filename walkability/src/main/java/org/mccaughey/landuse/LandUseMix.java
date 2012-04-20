@@ -25,6 +25,7 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 
@@ -45,7 +46,7 @@ public class LandUseMix {
 
     static final Logger LOGGER = LoggerFactory.getLogger(LandUseMix.class);
 
-    public static SimpleFeatureCollection summarise(SimpleFeatureSource landUse, SimpleFeatureIterator regions, List<String> classifications) {
+    public static SimpleFeatureCollection summarise(SimpleFeatureSource landUse, FeatureIterator<SimpleFeature> regions, List<String> classifications) {
         List<SimpleFeature> lumFeatures = new ArrayList();
         while (regions.hasNext()) {
             SimpleFeature lumFeature = summarise(landUse, regions.next(), classifications);

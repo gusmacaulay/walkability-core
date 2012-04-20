@@ -39,8 +39,9 @@ public class GeoJSONUtilities {
         FeatureJSON fjson = new FeatureJSON();
         try {
             OutputStream os = new FileOutputStream(file);
+            //FIXME: CRS writes correctly but makes geojson that can't be read back properly
+           // fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
             fjson.writeFeatureCollection(features, os);
-            fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
         } catch (IOException e) {
             System.out.println("Failed to write feature collection" + e.getMessage());
         }
@@ -51,9 +52,9 @@ public class GeoJSONUtilities {
         return io.readFeature(url.openConnection().getInputStream());
     }
 
-    public static SimpleFeatureIterator getFeatureIterator(URL url) throws IOException {
+    public static FeatureIterator<SimpleFeature> getFeatureIterator(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();
-        return (SimpleFeatureIterator)io.streamFeatureCollection(url.openConnection().getInputStream());
+        return io.streamFeatureCollection(url.openConnection().getInputStream());
     }
     
     public static SimpleFeatureCollection readFeatures(URL url) throws IOException {
@@ -65,7 +66,6 @@ public class GeoJSONUtilities {
         SimpleFeature feature;
 
         while (features.hasNext()) {
-            LOGGER.info("Found");
             feature = (SimpleFeature) features.next();
             collection.add(feature);
         }
