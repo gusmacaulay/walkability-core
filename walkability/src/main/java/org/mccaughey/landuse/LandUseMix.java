@@ -87,12 +87,17 @@ public class LandUseMix {
             SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
             stb.init(sft);
             stb.setName("landUseMixFeatureType");
-            //Add the connectivity attribute
+            for(String classification : classifications) {
+                stb.add(classification, Double.class);
+            }
+            //Add the land use mix attribute
             stb.add("LandUseMixMeasure", Double.class);
             SimpleFeatureType landUseMixFeatureType = stb.buildFeatureType();
             SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
             sfb.addAll(region.getAttributes());
-
+            for(String classification : classifications) {
+                sfb.add(classificationAreas.get(classification));
+            }
             Double landUseMixMeasure = calculateLUM(areas, totalArea);
             sfb.add(landUseMixMeasure);
             SimpleFeature landUseMixFeature = sfb.buildFeature(null);
