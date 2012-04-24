@@ -28,13 +28,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Handles reading and writing of GeoJSON in and out of Geotools 
  * @author amacaulay
  */
 public class GeoJSONUtilities {
 
     static final Logger LOGGER = LoggerFactory.getLogger(GeoJSONUtilities.class);
 
+    /**
+     * Writes a SimpleFeatureCollection to file
+     * @param features The features to write out
+     * @param file The file to write to (will overwrite existing)
+     */
     public static void writeFeatures(SimpleFeatureCollection features, File file) {
         FeatureJSON fjson = new FeatureJSON();
         try {
@@ -47,16 +52,34 @@ public class GeoJSONUtilities {
         }
     }
 
+    /**
+     * Reads a single feature from GeoJSON
+     * @param url A URL pointing to a GeoJSON feature
+     * @return The feature from the URL
+     * @throws IOException 
+     */
     public static SimpleFeature readFeature(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();
         return io.readFeature(url.openConnection().getInputStream());
     }
 
+    /**
+     * Gets a FeatureIterator from a GeoJSON URL, does not need to read all the features?
+     * @param url The FeatureCollection URL
+     * @return An Iterator for the features at the URL
+     * @throws IOException 
+     */
     public static FeatureIterator<SimpleFeature> getFeatureIterator(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();
         return io.streamFeatureCollection(url.openConnection().getInputStream());
     }
     
+    /**
+     * Gets a SimpleFeatureCollection from a GeoJSON URL - reads all the features
+     * @param url The FeatureCollection URL
+     * @return The features at the URL
+     * @throws IOException 
+     */
     public static SimpleFeatureCollection readFeatures(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();
 
