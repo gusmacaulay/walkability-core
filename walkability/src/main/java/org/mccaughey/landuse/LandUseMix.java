@@ -44,10 +44,12 @@ import org.slf4j.LoggerFactory;
  *
  * @author amacaulay
  */
-public class LandUseMix {
+public final class LandUseMix {
 
     static final Logger LOGGER = LoggerFactory.getLogger(LandUseMix.class);
 
+    private LandUseMix() {
+    }
     /**
      * Calculates Land Use Mix Measure for a set of regions
      *
@@ -122,8 +124,7 @@ public class LandUseMix {
             }
             Double landUseMixMeasure = calculateLUM(areas, totalArea);
             sfb.add(landUseMixMeasure);
-            SimpleFeature landUseMixFeature = sfb.buildFeature(null);
-            return landUseMixFeature;
+            return sfb.buildFeature(null);
             // LOGGER.info("Land Use Mix Measure: {}", landUseMixMeasure);
         } catch (IOException e) {
             LOGGER.error("Failed to select land use features in region: {}", e.getMessage());

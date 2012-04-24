@@ -19,7 +19,6 @@ package org.mccaughey.utilities;
 import java.io.*;
 import java.net.URL;
 import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
@@ -28,15 +27,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Handles reading and writing of GeoJSON in and out of Geotools 
+ * Handles reading and writing of GeoJSON in and out of Geotools
+ *
  * @author amacaulay
  */
-public class GeoJSONUtilities {
+public final class GeoJSONUtilities {
 
     static final Logger LOGGER = LoggerFactory.getLogger(GeoJSONUtilities.class);
 
+    private GeoJSONUtilities() {
+    }
     /**
      * Writes a SimpleFeatureCollection to file
+     *
      * @param features The features to write out
      * @param file The file to write to (will overwrite existing)
      */
@@ -45,18 +48,19 @@ public class GeoJSONUtilities {
         try {
             OutputStream os = new FileOutputStream(file);
             //FIXME: CRS writes correctly but makes geojson that can't be read back properly
-           // fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
+            // fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
             fjson.writeFeatureCollection(features, os);
         } catch (IOException e) {
-            System.out.println("Failed to write feature collection" + e.getMessage());
+            LOGGER.error("Failed to write feature collection" + e.getMessage());
         }
     }
 
     /**
      * Reads a single feature from GeoJSON
+     *
      * @param url A URL pointing to a GeoJSON feature
      * @return The feature from the URL
-     * @throws IOException 
+     * @throws IOException
      */
     public static SimpleFeature readFeature(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();
@@ -64,21 +68,25 @@ public class GeoJSONUtilities {
     }
 
     /**
-     * Gets a FeatureIterator from a GeoJSON URL, does not need to read all the features?
+     * Gets a FeatureIterator from a GeoJSON URL, does not need to read all the
+     * features?
+     *
      * @param url The FeatureCollection URL
      * @return An Iterator for the features at the URL
-     * @throws IOException 
+     * @throws IOException
      */
     public static FeatureIterator<SimpleFeature> getFeatureIterator(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();
         return io.streamFeatureCollection(url.openConnection().getInputStream());
     }
-    
+
     /**
-     * Gets a SimpleFeatureCollection from a GeoJSON URL - reads all the features
+     * Gets a SimpleFeatureCollection from a GeoJSON URL - reads all the
+     * features
+     *
      * @param url The FeatureCollection URL
      * @return The features at the URL
-     * @throws IOException 
+     * @throws IOException
      */
     public static SimpleFeatureCollection readFeatures(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();

@@ -51,10 +51,11 @@ public class LandUseMixOMS {
     @Out
     URL resultsURL;
 
-    @Execute
+    
     /**
      * Reads in the land use layer and regions layer from given URLs, writes out results to resultsURL
      */
+    @Execute
     public void landUseMixMeasure() {
         try {
             FeatureIterator<SimpleFeature> regions = GeoJSONUtilities.getFeatureIterator(regionsURL);
