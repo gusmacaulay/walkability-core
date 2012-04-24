@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * An OMS Wrapper for Network Buffer generation
  * @author amacaulay
  */
 @Description("Generates network service areas for points on a network")
@@ -71,6 +71,9 @@ public class NetworkBufferOMS {
     public URL regions;
 
     @Execute
+    /**
+     * Reads the input network and point datasets then uses NetworkBufferBatch to generate all the network buffers and writes out to regions URL
+     */
     public void run() {
         try {
             SimpleFeatureSource networkSource = DataUtilities.source(readFeatures(network));

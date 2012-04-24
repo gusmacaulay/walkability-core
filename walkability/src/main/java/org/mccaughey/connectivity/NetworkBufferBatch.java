@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Generates network buffers for a set of points, using Fork/Join for concurrency
  * @author amacaulay
  */
 public class NetworkBufferBatch extends RecursiveAction {
@@ -43,6 +43,13 @@ public class NetworkBufferBatch extends RecursiveAction {
     private Double distance;
     private Double bufferSize;
 
+    /**
+     * Generates network buffers for a set of points
+     * @param network The network to use to generate service networks
+     * @param points The set of points of interest
+     * @param distance The distance to traverse along the network.
+     * @param bufferSize The length to buffer the service network
+     */
     public NetworkBufferBatch(SimpleFeatureSource network, SimpleFeatureCollection points, Double distance, Double bufferSize) {
         this.network = network;
         this.points = points;
@@ -53,9 +60,17 @@ public class NetworkBufferBatch extends RecursiveAction {
 
     }
 
+    /**
+     * 
+     * @return A SimpleFeatureCollection of the service area networks for all points of interest 
+     */
     public SimpleFeatureCollection getGraphs() {
         return graphs;
     }
+    /**
+     * 
+     * @return A SimpleFeatureCollection consisting of the buffered service areas for each point of interest
+     */
     public SimpleFeatureCollection createBuffers() {
         Runtime runtime = Runtime.getRuntime();
         int nProcessors = runtime.availableProcessors();
