@@ -40,7 +40,8 @@ import jsr166y.ForkJoinPool;
 import jsr166y.RecursiveAction;
 
 /**
- *
+ * A Fork/Join Network service area generator using Bread First graph traversal
+ * of a network
  * @author amacaulay
  */
 public class NetworkBufferFJ extends RecursiveAction {
@@ -52,6 +53,13 @@ public class NetworkBufferFJ extends RecursiveAction {
     private Map serviceArea;
     private static String distanceAttribute = "Distance";
 
+    /**
+     * Intialise inputs
+     * @param network Network/graph dataset
+     * @param currentPath The current path being traversed
+     * @param distance The maximum distance to traverse a path
+     * @param serviceArea The service area (set of edges)
+     */
     public NetworkBufferFJ(Map network, Path currentPath, Double distance, Map serviceArea) {
         this.network = network;
         this.currentPath = currentPath;
@@ -60,8 +68,8 @@ public class NetworkBufferFJ extends RecursiveAction {
     }
 
     /**
-     * Sets up the ForkJoinPool and then calls invoke to calculate connectivity
-     * for all regions available
+     * Sets up the ForkJoinPool and then calls invoke to find service area
+     * @return A complete service area - set of edges that belong to paths with maximum distance specified
      */
     public Map createBuffer() {
         //Get the available processors, processors==threads is probably best?
@@ -112,10 +120,6 @@ public class NetworkBufferFJ extends RecursiveAction {
         if (buffernators.size() > 0) {
             invokeAll(buffernators);
         }
-//        } else {
-//            LOGGER.info("No edges connected to this node?");
-//            addEdges(serviceArea, currentPath);
-//        }
     }
 
     private void addWholeEdge(Path nextPath, List<Path> nextPaths, Edge graphEdge) {

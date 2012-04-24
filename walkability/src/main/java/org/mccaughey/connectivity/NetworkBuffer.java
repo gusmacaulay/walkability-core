@@ -54,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Generates Network Buffers, which can be used as service areas
  *
  * @author amacaulay
  */
@@ -65,6 +66,15 @@ public final class NetworkBuffer {
     private NetworkBuffer() {
     }
 
+    /**
+     *
+     * @param network A network (eg roads) dataset
+     * @param pointFeature A point of interest used as a starting point
+     * @param networkDistance The distance to traverse along the network
+     * @param bufferDistance The distance to buffer the network to create the final region
+     * @return A network of all paths of networkDistance from the starting point (snapped to the network)
+     * @throws IOException
+     */
     public static Map findServiceArea(SimpleFeatureSource network, SimpleFeature pointFeature, Double networkDistance, Double bufferDistance) throws IOException {
 
         Point pointOfInterest = (Point) pointFeature.getDefaultGeometry();
@@ -78,14 +88,9 @@ public final class NetworkBuffer {
         Graph networkGraph = createGraphWithStartNode(nearestLine, startPath, networkRegion, pointOfInterest);
         Map networkMap = graphToMap(networkGraph);
         Map serviceArea = new ConcurrentHashMap();
-
-//        double t1 = new Date().getTime();
         NetworkBufferFJ nbfj = new NetworkBufferFJ(networkMap, startPath, networkDistance, serviceArea);
         serviceArea = nbfj.createBuffer();
-        LOGGER.info("Found " + serviceArea.size() + " Edges" );
-//        double t2 = new Date().getTime();
-//        double total = (t2 - t1) / 1000;
-//        LOGGER.info("Found " + serviceArea.size() + " Edges in " + total + " seconds");
+        LOGGER.info("Found " + serviceArea.size() + " Edges");
         writeNetworkFromEdges(serviceArea);
         return serviceArea;
     }
@@ -108,34 +113,27 @@ public final class NetworkBuffer {
             startPath.add(findStartNode(graph, originalLine));
             return graph;
         } else {
-            //    LOGGER.info("Two edged start node");
-//            LOGGER.info("Features: " + networkRegion.size());
             removeFeature(networkRegion, originalLine);
-//            LOGGER.info("Features: " + networkRegion.size());
 
-            
+
+
             GeometryFactory gf = new GeometryFactory(precision);
             lineA = gf.createLineString(lineA.getCoordinates());
             lineB = gf.createLineString(lineB.getCoordinates());
             LineString[] lines = new LineString[]{(LineString) lineB};
-            // MultiLineString newMultiLine = gf.createMultiLineString(lines);
-            //      LOGGER.info("Line A Geometry: {}", lineA);
+
             SimpleFeatureType edgeType = createEdgeFeatureType(networkRegion.getSchema().getCoordinateReferenceSystem());
             SimpleFeature featureB = buildFeatureFromGeometry(edgeType, lineB);
-            // lines = new LineString[]{(LineString) lineA};
-            //  newMultiLine = gf.createMultiLineString(lines);
+
             SimpleFeature featureA = buildFeatureFromGeometry(edgeType, lineA);
-            //        networkRegion.add(featureB);
-            //         networkRegion.add(featureA);
-//            LOGGER.info("Features: " + networkRegion.size());
+
             FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
             networkGraphGen.add(featureA);
             networkGraphGen.add(featureB);
 
             Graph graph = networkGraphGen.getGraph();
             startPath.add(findStartNode(graph, featureA, featureB));
-//            for (Edge edge : (Collection<Edge>)graph.getEdges())
-//                LOGGER.info("Edge: {}", edge);
+
             return graph;
 
         }
@@ -152,13 +150,13 @@ public final class NetworkBuffer {
     private static FeatureGraphGenerator buildFeatureNetwork(SimpleFeatureCollection featureCollection) {
         //create a linear graph generator
         LineStringGraphGenerator lineStringGen = new LineStringGraphGenerator();
-        // BasicLineGraphGenerator graphGen = new BasicLineGraphGenerator();
+       
         //wrap it in a feature graph generator
         FeatureGraphGenerator featureGen = new FeatureGraphGenerator(lineStringGen);
 
         //put all the features into  the graph generator
         SimpleFeatureIterator iter = featureCollection.features();
-        //LOGGER.info("Features in radius " + featureCollection.size());
+       
         SimpleFeatureType edgeType = createEdgeFeatureType(featureCollection.getSchema().getCoordinateReferenceSystem());
 
         GeometryFactory gf = new GeometryFactory(precision);
@@ -201,12 +199,6 @@ public final class NetworkBuffer {
 
     private static Node findStartNode(Graph graph, SimpleFeature featureA, SimpleFeature featureB) {
         for (Node node : (Collection<Node>) graph.getNodes()) {
-//            for (Edge edge : (List<Edge>) node.getEdges()) {
-//                //LOGGER.info("Edge ID : {} Feature ID {}",((SimpleFeature)edge.getObject()).getID(),featureA.getID());
-//                if (((SimpleFeature) edge.getObject()).getID().equals(featureB.getID())) {
-//                    LOGGER.info("Found!");
-//                }
-//            }
             if (node.getEdges().size() == 2) {
                 SimpleFeature edgeFeature1 = (SimpleFeature) (((Edge) node.getEdges().toArray()[0]).getObject());
                 SimpleFeature edgeFeature2 = (SimpleFeature) (((Edge) node.getEdges().toArray()[1]).getObject());
@@ -234,7 +226,6 @@ public final class NetworkBuffer {
                 newFeatures.add(feature);
             }
         }
-        //return DataUtilities.collection(newFeatures);
     }
 
     private static Map graphToMap(Graph graph) {
@@ -328,6 +319,13 @@ public final class NetworkBuffer {
         }
     }
 
+    /**
+     * Generates a buffered service area from a set of network edges
+     * @param serviceArea The set of service area edges
+     * @param distance the distance to buffer
+     * @param crs 
+     * @return A buffered service area 
+     */
     public static SimpleFeature createBufferFromEdges(Map serviceArea, Double distance, CoordinateReferenceSystem crs) {
         Set<Edge> edges = serviceArea.keySet();
         SimpleFeatureType type = createBufferFeatureType(crs);
@@ -348,6 +346,11 @@ public final class NetworkBuffer {
         return buildFeatureFromGeometry(type, all);
     }
 
+    /**
+     * Creates a line network representation of service area from set of Edges
+     * @param serviceArea The service area edges
+     * @return The edges as SimpleFeature
+     */
     public static List<SimpleFeature> createLinesFromEdges(Map serviceArea) {
         Set<Edge> edges = serviceArea.keySet();
         List<SimpleFeature> features = new ArrayList();
@@ -358,6 +361,13 @@ public final class NetworkBuffer {
         return features;
     }
 
+    /**
+     * Creates a convex hull buffer of service area
+     * @param serviceArea The set of edges
+     * @param distance The distance to buffer the service area
+     * @param type The feature type for the resulting SimpleFeature
+     * @return The Convex Hull buffered service area 
+     */
     public static SimpleFeature createConvexHullFromEdges(Map serviceArea, Double distance, SimpleFeatureType type) {
         Set<Edge> edges = serviceArea.keySet();
         GeometryCollector gc = new GeometryCollector();
@@ -414,7 +424,7 @@ public final class NetworkBuffer {
 
         // add attributes in order
         builder.add("Edge", LineString.class);
-      //  builder.add("Name", String.class); // <- 15 chars width for name field
+        //  builder.add("Name", String.class); // <- 15 chars width for name field
 
         // build the type
         return builder.buildFeatureType();
@@ -428,7 +438,7 @@ public final class NetworkBuffer {
 
         // add attributes in order
         builder.add("Buffer", Polygon.class);
-       // builder.add("Name", String.class); // <- 15 chars width for name field
+        // builder.add("Name", String.class); // <- 15 chars width for name field
 
         // build the type
         SimpleFeatureType bufferType = builder.buildFeatureType();
