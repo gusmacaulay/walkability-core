@@ -34,7 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * An OMS Wrapper for Land Use Mix
+ * 
  * @author amacaulay
  */
 @Description("Calculates Land Use Mix Measure for a given land use layer and set of regions")
@@ -51,6 +52,9 @@ public class LandUseMixOMS {
     URL resultsURL;
 
     @Execute
+    /**
+     * Reads in the land use layer and regions layer from given URLs, writes out results to resultsURL
+     */
     public void landUseMixMeasure() {
         try {
             FeatureIterator<SimpleFeature> regions = GeoJSONUtilities.getFeatureIterator(regionsURL);

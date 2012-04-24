@@ -39,6 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Calculates the Land Use Mix Measure for a given land use dataset, region/s,
+ * and a list of classifications of interest
  *
  * @author amacaulay
  */
@@ -46,6 +48,16 @@ public class LandUseMix {
 
     static final Logger LOGGER = LoggerFactory.getLogger(LandUseMix.class);
 
+    /**
+     * Calculates Land Use Mix Measure for a set of regions
+     *
+     * @param landUse The Land Use layer containing polygonal features with land
+     * use classifications
+     * @param regions A set of regions to calculate Land Use Mix for
+     * @param classifications A List of classifications of interest
+     * @return The set of regions augmented with summary of classification areas
+     * and land use mix measure as attributes
+     */
     public static SimpleFeatureCollection summarise(SimpleFeatureSource landUse, FeatureIterator<SimpleFeature> regions, List<String> classifications) {
         List<SimpleFeature> lumFeatures = new ArrayList();
         while (regions.hasNext()) {
@@ -55,6 +67,16 @@ public class LandUseMix {
         return DataUtilities.collection(lumFeatures);
     }
 
+    /**
+     * Calculates Land Use Mix Measure for a single region
+     *
+     * @param landUse The Land Use layer containing polygonal features with land
+     * use classifications
+     * @param region A region to calculate Land Use Mix for
+     * @param classifications A List of classifications of interest
+     * @return The region feature augmented with summary of classification areas
+     * and land use mix measure as attributes
+     */
     public static SimpleFeature summarise(SimpleFeatureSource landUse, SimpleFeature region, List<String> classifications) {
 
         try {
@@ -87,7 +109,7 @@ public class LandUseMix {
             SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
             stb.init(sft);
             stb.setName("landUseMixFeatureType");
-            for(String classification : classifications) {
+            for (String classification : classifications) {
                 stb.add(classification, Double.class);
             }
             //Add the land use mix attribute
@@ -95,7 +117,7 @@ public class LandUseMix {
             SimpleFeatureType landUseMixFeatureType = stb.buildFeatureType();
             SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
             sfb.addAll(region.getAttributes());
-            for(String classification : classifications) {
+            for (String classification : classifications) {
                 sfb.add(classificationAreas.get(classification));
             }
             Double landUseMixMeasure = calculateLUM(areas, totalArea);
@@ -110,6 +132,12 @@ public class LandUseMix {
         // return region;
     }
 
+    /**
+     * Calculates Land Use Mix
+     * @param areas Collection of area values for each classification
+     * @param totalArea The total area covered by all the land use classifications
+     * @return The Land Use Mix Measure
+     */
     private static Double calculateLUM(Collection<Double> areas, Double totalArea) {
         Double landUseMixMeasure = 0.0;
         if (areas.size() == 1) {
