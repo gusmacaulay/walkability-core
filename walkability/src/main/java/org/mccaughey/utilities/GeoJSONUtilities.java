@@ -55,6 +55,18 @@ public final class GeoJSONUtilities {
         }
     }
 
+    public static void writeFeature(SimpleFeature feature, File file) {
+            FeatureJSON fjson = new FeatureJSON();
+        try {
+            OutputStream os = new FileOutputStream(file);
+            //FIXME: CRS writes correctly but makes geojson that can't be read back properly
+            // fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
+            fjson.writeFeature(feature, os);
+        } catch (IOException e) {
+            LOGGER.error("Failed to write feature collection" + e.getMessage());
+        }
+    }
+    
     /**
      * Reads a single feature from GeoJSON
      *
