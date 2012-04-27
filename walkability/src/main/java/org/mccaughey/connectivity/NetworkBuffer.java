@@ -62,6 +62,7 @@ public final class NetworkBuffer {
 
     static final Logger LOGGER = LoggerFactory.getLogger(NetworkBuffer.class);
     private static PrecisionModel precision = new PrecisionModel(10);  //FIXME: should be configurable
+    
 
     private NetworkBuffer() {
     }
@@ -76,7 +77,6 @@ public final class NetworkBuffer {
      * @throws IOException
      */
     public static Map findServiceArea(SimpleFeatureSource network, SimpleFeature pointFeature, Double networkDistance, Double bufferDistance) throws IOException {
-
         Point pointOfInterest = (Point) pointFeature.getDefaultGeometry();
         LocationIndexedLine nearestLine = findNearestEdgeLine(network, networkDistance, bufferDistance, pointOfInterest);
         if (nearestLine == null) {

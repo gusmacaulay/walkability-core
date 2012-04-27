@@ -37,6 +37,7 @@ public final class GeoJSONUtilities {
 
     private GeoJSONUtilities() {
     }
+
     /**
      * Writes a SimpleFeatureCollection to file
      *
@@ -47,26 +48,31 @@ public final class GeoJSONUtilities {
         FeatureJSON fjson = new FeatureJSON();
         try {
             OutputStream os = new FileOutputStream(file);
-            //FIXME: CRS writes correctly but makes geojson that can't be read back properly
             // fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
+            fjson.setEncodeFeatureCRS(true);
             fjson.writeFeatureCollection(features, os);
         } catch (IOException e) {
             LOGGER.error("Failed to write feature collection" + e.getMessage());
         }
     }
 
+    /**
+     * Writes a single feature to file
+     * @param feature
+     * @param file 
+     */
     public static void writeFeature(SimpleFeature feature, File file) {
-            FeatureJSON fjson = new FeatureJSON();
+        FeatureJSON fjson = new FeatureJSON();
         try {
             OutputStream os = new FileOutputStream(file);
-            //FIXME: CRS writes correctly but makes geojson that can't be read back properly
-            // fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
+            fjson.setEncodeFeatureCRS(true);
+            //fjson.writeCRS(feature.getType().getCoordinateReferenceSystem(), os);
             fjson.writeFeature(feature, os);
         } catch (IOException e) {
             LOGGER.error("Failed to write feature collection" + e.getMessage());
         }
     }
-    
+
     /**
      * Reads a single feature from GeoJSON
      *
