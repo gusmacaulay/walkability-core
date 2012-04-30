@@ -49,7 +49,7 @@ public final class GeoJSONUtilities {
         try {
             OutputStream os = new FileOutputStream(file);
             // fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
-            fjson.setEncodeFeatureCRS(true);
+            //fjson.setEncodeFeatureCRS(true);
             fjson.writeFeatureCollection(features, os);
         } catch (IOException e) {
             LOGGER.error("Failed to write feature collection" + e.getMessage());
@@ -58,8 +58,9 @@ public final class GeoJSONUtilities {
 
     /**
      * Writes a single feature to file
+     *
      * @param feature
-     * @param file 
+     * @param file
      */
     public static void writeFeature(SimpleFeature feature, File file) {
         FeatureJSON fjson = new FeatureJSON();
