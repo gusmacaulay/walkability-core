@@ -75,14 +75,16 @@ public class NetworkBufferOMS {
             SimpleFeatureSource networkSource = DataUtilities.source(GeoJSONUtilities.readFeatures(network));
             SimpleFeatureSource pointsSource = DataUtilities.source(GeoJSONUtilities.readFeatures(points));
 
+            LOGGER.info("Points Source CRS: {}", pointsSource.getSchema().getCoordinateReferenceSystem());
             NetworkBufferBatch nbb = new NetworkBufferBatch(networkSource, pointsSource.getFeatures(), distance, bufferSize);
             SimpleFeatureCollection buffers = nbb.createBuffers();
-            File file = new File("service_areas_oms.json");
+            File file = new File("service_areas_oms.geojson");
             GeoJSONUtilities.writeFeatures(buffers, file);
             // FileUtils.writeStringToFile(file, writeFeatures(buffers));
             regions = file.toURI().toURL();
 
         } catch (Exception e) { //Can't do much here because of OMS?
+            e.printStackTrace();
             LOGGER.error(e.getMessage());
         }
     }

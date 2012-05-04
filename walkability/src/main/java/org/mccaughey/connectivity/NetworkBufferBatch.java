@@ -88,11 +88,13 @@ public class NetworkBufferBatch extends RecursiveAction {
     protected void compute() {
         if (points.size() == 1) { //if there is only one point compute the network region and store in buffers
             try {
-                Map serviceArea = NetworkBuffer.findServiceArea(network, points.features().next(), distance, bufferSize);
+                SimpleFeature point = points.features().next();
+                Map serviceArea = NetworkBuffer.findServiceArea(network, point, distance, bufferSize);
                 if (serviceArea != null) {
                     //List<SimpleFeature> networkBuffer = NetworkBuffer.createLinesFromEdges(serviceArea);
                     SimpleFeatureCollection graph = DataUtilities.collection(NetworkBuffer.createLinesFromEdges(serviceArea));
-                    SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(serviceArea, bufferSize, points.getSchema().getCoordinateReferenceSystem());
+                    LOGGER.info("Points CRS: {}", points.getSchema().getCoordinateReferenceSystem());
+                    SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(serviceArea, bufferSize, points.getSchema().getCoordinateReferenceSystem(),String.valueOf(point.getAttribute("UID")));
                     if (networkBuffer != null) {
                         buffers.add(networkBuffer); //.addAll(DataUtilities.collection(networkBuffer));
                         graphs.addAll(graph);

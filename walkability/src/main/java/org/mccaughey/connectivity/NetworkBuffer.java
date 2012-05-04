@@ -62,7 +62,6 @@ public final class NetworkBuffer {
 
     static final Logger LOGGER = LoggerFactory.getLogger(NetworkBuffer.class);
     private static PrecisionModel precision = new PrecisionModel(10);  //FIXME: should be configurable
-    
 
     private NetworkBuffer() {
     }
@@ -72,8 +71,10 @@ public final class NetworkBuffer {
      * @param network A network (eg roads) dataset
      * @param pointFeature A point of interest used as a starting point
      * @param networkDistance The distance to traverse along the network
-     * @param bufferDistance The distance to buffer the network to create the final region
-     * @return A network of all paths of networkDistance from the starting point (snapped to the network)
+     * @param bufferDistance The distance to buffer the network to create the
+     * final region
+     * @return A network of all paths of networkDistance from the starting point
+     * (snapped to the network)
      * @throws IOException
      */
     public static Map findServiceArea(SimpleFeatureSource network, SimpleFeature pointFeature, Double networkDistance, Double bufferDistance) throws IOException {
@@ -150,13 +151,13 @@ public final class NetworkBuffer {
     private static FeatureGraphGenerator buildFeatureNetwork(SimpleFeatureCollection featureCollection) {
         //create a linear graph generator
         LineStringGraphGenerator lineStringGen = new LineStringGraphGenerator();
-       
+
         //wrap it in a feature graph generator
         FeatureGraphGenerator featureGen = new FeatureGraphGenerator(lineStringGen);
 
         //put all the features into  the graph generator
         SimpleFeatureIterator iter = featureCollection.features();
-       
+
         SimpleFeatureType edgeType = createEdgeFeatureType(featureCollection.getSchema().getCoordinateReferenceSystem());
 
         GeometryFactory gf = new GeometryFactory(precision);
@@ -164,7 +165,8 @@ public final class NetworkBuffer {
         try {
             while (iter.hasNext()) {
                 SimpleFeature feature = iter.next();
-                MultiLineString mls = ((MultiLineString) (feature.getDefaultGeometry()));
+                Geometry mls = (Geometry) feature.getDefaultGeometry();
+                //MultiLineString mls = ((MultiLineString) (feature.getDefaultGeometry()));
                 for (int i = 0; i < mls.getNumGeometries(); i++) {
                     Coordinate[] coords = ((LineString) mls.getGeometryN(i)).getCoordinates();
                     LineString lineString = gf.createLineString(coords);
@@ -321,33 +323,53 @@ public final class NetworkBuffer {
 
     /**
      * Generates a buffered service area from a set of network edges
+     *
      * @param serviceArea The set of service area edges
      * @param distance the distance to buffer
-     * @param crs 
-     * @return A buffered service area 
+     * @param crs
+     * @return A buffered service area
      */
-    public static SimpleFeature createBufferFromEdges(Map serviceArea, Double distance, CoordinateReferenceSystem crs) {
+    public static SimpleFeature createBufferFromEdges(Map serviceArea, Double distance, CoordinateReferenceSystem crs, String ID) {
         Set<Edge> edges = serviceArea.keySet();
         SimpleFeatureType type = createBufferFeatureType(crs);
         Geometry all = null;
         for (Edge edge : edges) {
             Geometry geom = (Geometry) ((SimpleFeature) serviceArea.get(edge)).getDefaultGeometry();
-            geom = geom.getGeometryN(0).buffer(distance);
+            //LOGGER.info("GEOM TYPE: {}",geom.getGeometryType());
+            geom = geom.union();
+            //LOGGER.info("Unioned collection");
+            geom = geom.buffer(distance);
+            //LOGGER.info("Buffered geom");
             try {
+                if (all != null) {
+                    all = all.union().union();
+                }
                 if (all == null) {
                     all = geom;
-                } else if (!(all.contains(geom))) {
-                    all = all.union(geom);
+                } else if (!(all.covers(geom))) {
+                    LOGGER.info("ALL TYPE: {} GEOM TYPE: {}", all.getGeometryType(), geom.getGeometryType());
+                    if (all.intersects(geom))
+                        all = all.union(geom);
+                    else
+                        LOGGER.info("No intersection ...");
                 }
             } catch (Exception e) {
-                LOGGER.info(e.getMessage());
+                if (e.getMessage().contains("non-noded")) {
+                    LOGGER.info(e.getMessage());
+                } else {
+                    LOGGER.error(e.getMessage());
+                    e.printStackTrace();
+                    return null;
+                }
             }
         }
-        return buildFeatureFromGeometry(type, all);
+        LOGGER.info("CRS: " + type.getCoordinateReferenceSystem());
+        return buildFeatureFromGeometry(type, all, ID);
     }
 
     /**
      * Creates a line network representation of service area from set of Edges
+     *
      * @param serviceArea The service area edges
      * @return The edges as SimpleFeature
      */
@@ -363,10 +385,11 @@ public final class NetworkBuffer {
 
     /**
      * Creates a convex hull buffer of service area
+     *
      * @param serviceArea The set of edges
      * @param distance The distance to buffer the service area
      * @param type The feature type for the resulting SimpleFeature
-     * @return The Convex Hull buffered service area 
+     * @return The Convex Hull buffered service area
      */
     public static SimpleFeature createConvexHullFromEdges(Map serviceArea, Double distance, SimpleFeatureType type) {
         Set<Edge> edges = serviceArea.keySet();
@@ -394,12 +417,22 @@ public final class NetworkBuffer {
     }
 
     private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType featureType, Geometry geom) {
-
         SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
         stb.init(featureType);
         SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(featureType);
         sfb.add(geom);
         return sfb.buildFeature(null);
+    }
+
+    private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType featureType, Geometry geom, String ID) {
+
+        SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+        stb.init(featureType);
+        SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(featureType);
+        sfb.add(geom);
+        sfb.add(ID);
+
+        return sfb.buildFeature(ID);
     }
 
     private static SimpleFeatureCollection featuresInRegion(SimpleFeatureSource featureSource, Geometry roi) throws IOException {
@@ -438,7 +471,7 @@ public final class NetworkBuffer {
 
         // add attributes in order
         builder.add("Buffer", Polygon.class);
-        // builder.add("Name", String.class); // <- 15 chars width for name field
+        builder.add("UID", String.class);
 
         // build the type
         SimpleFeatureType bufferType = builder.buildFeatureType();
