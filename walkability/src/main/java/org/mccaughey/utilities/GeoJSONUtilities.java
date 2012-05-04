@@ -22,6 +22,7 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
+import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,8 @@ public final class GeoJSONUtilities {
         try {
             OutputStream os = new FileOutputStream(file);
             // fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
-            //fjson.setEncodeFeatureCRS(true);
+            LOGGER.info("CRS: {}", features.getSchema().getCoordinateReferenceSystem());
+            fjson.setEncodeFeatureCollectionCRS(true);
             fjson.writeFeatureCollection(features, os);
         } catch (IOException e) {
             LOGGER.error("Failed to write feature collection" + e.getMessage());
@@ -83,6 +85,7 @@ public final class GeoJSONUtilities {
      */
     public static SimpleFeature readFeature(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();
+        io.setEncodeFeatureCRS(true);
         return io.readFeature(url.openConnection().getInputStream());
     }
 
@@ -96,6 +99,7 @@ public final class GeoJSONUtilities {
      */
     public static FeatureIterator<SimpleFeature> getFeatureIterator(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();
+        io.setEncodeFeatureCollectionCRS(true);
         return io.streamFeatureCollection(url.openConnection().getInputStream());
     }
 
@@ -109,14 +113,13 @@ public final class GeoJSONUtilities {
      */
     public static SimpleFeatureCollection readFeatures(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();
-
+      //  io.setEncodeFeatureCollectionCRS(true);
         FeatureIterator<SimpleFeature> features = io.streamFeatureCollection(url.openConnection().getInputStream());
-
+        
         SimpleFeatureCollection collection = FeatureCollections.newCollection();
-        SimpleFeature feature;
 
         while (features.hasNext()) {
-            feature = (SimpleFeature) features.next();
+            SimpleFeature feature = (SimpleFeature) features.next();
             collection.add(feature);
         }
 
