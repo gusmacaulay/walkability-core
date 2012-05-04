@@ -47,6 +47,8 @@ public class LandUseMixOMS {
     @In
     List<String> classifications;
     @In
+    String classificationAttribute;
+    @In
     URL regionsURL;
     @Out
     URL resultsURL;
@@ -60,7 +62,7 @@ public class LandUseMixOMS {
         try {
             FeatureIterator<SimpleFeature> regions = GeoJSONUtilities.getFeatureIterator(regionsURL);
             SimpleFeatureSource landUse = DataUtilities.source(GeoJSONUtilities.readFeatures(landUseURL));
-            SimpleFeatureCollection lumRegions = LandUseMix.summarise(landUse, regions, classifications);
+            SimpleFeatureCollection lumRegions = LandUseMix.summarise(landUse, regions, classifications, classificationAttribute);
             //FIXME: need to get real URL somehow? then write to it instead of file
             File file = new File("landUseMixRegions.geojson");
             GeoJSONUtilities.writeFeatures(lumRegions, file);

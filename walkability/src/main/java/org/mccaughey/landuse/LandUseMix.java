@@ -50,6 +50,7 @@ public final class LandUseMix {
 
     private LandUseMix() {
     }
+    
     /**
      * Calculates Land Use Mix Measure for a set of regions
      *
@@ -60,10 +61,10 @@ public final class LandUseMix {
      * @return The set of regions augmented with summary of classification areas
      * and land use mix measure as attributes
      */
-    public static SimpleFeatureCollection summarise(SimpleFeatureSource landUse, FeatureIterator<SimpleFeature> regions, List<String> classifications) {
+    public static SimpleFeatureCollection summarise(SimpleFeatureSource landUse, FeatureIterator<SimpleFeature> regions, List<String> classifications, String classificationAttribute) {
         List<SimpleFeature> lumFeatures = new ArrayList();
         while (regions.hasNext()) {
-            SimpleFeature lumFeature = summarise(landUse, regions.next(), classifications);
+            SimpleFeature lumFeature = summarise(landUse, regions.next(), classifications, classificationAttribute);
             lumFeatures.add(lumFeature);
         }
         return DataUtilities.collection(lumFeatures);
@@ -79,7 +80,7 @@ public final class LandUseMix {
      * @return The region feature augmented with summary of classification areas
      * and land use mix measure as attributes
      */
-    public static SimpleFeature summarise(SimpleFeatureSource landUse, SimpleFeature region, List<String> classifications) {
+    public static SimpleFeature summarise(SimpleFeatureSource landUse, SimpleFeature region, List<String> classifications, String classificationAttribute) {
 
         try {
             Geometry regionGeom = (Geometry) region.getDefaultGeometry();
@@ -90,7 +91,7 @@ public final class LandUseMix {
             while (parcels.hasNext()) {
                 SimpleFeature parcel = parcels.next();
                 Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-                String classification = (String) parcel.getAttribute("CATEGORY");
+                String classification = String.valueOf(parcel.getAttribute(classificationAttribute));
                 //  LOGGER.info("Classification: {}", classification);
                 if (classifications.contains(classification)) {
                     //     LOGGER.info("Classification: {}", classification);
