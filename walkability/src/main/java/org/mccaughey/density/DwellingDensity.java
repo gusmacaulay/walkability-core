@@ -18,11 +18,15 @@ package org.mccaughey.density;
 
 import com.vividsolutions.jts.geom.Geometry;
 import java.io.IOException;
+import java.util.Collection;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
@@ -47,17 +51,31 @@ public final class DwellingDensity {
             
             while(dwellings.hasNext()) {
                 SimpleFeature dwelling = dwellings.next();
-                Float count = (Float)dwelling.getAttribute(densityAttribute);
+                Double count = (Double)dwelling.getAttribute(densityAttribute);
                 totalDensity += count/((Geometry)dwelling.getDefaultGeometry()).getArea();
                 
             }
             
-            return null;
+            return buildFeature(roi,totalDensity);
         } catch (IOException ioe) {
             LOGGER.error("Error selecting features in region");
             return null;
         }
         
+    }
+    
+    private static SimpleFeature buildFeature(SimpleFeature region, Double density) {
+         
+            SimpleFeatureType sft = (SimpleFeatureType) region.getType();
+            SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+            stb.init(sft);
+            stb.setName("densityFeatureType");
+            stb.add("AverageDensity", Double.class);
+            SimpleFeatureType landUseMixFeatureType = stb.buildFeatureType();
+            SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
+            sfb.addAll(region.getAttributes());
+            sfb.add(density);
+            return sfb.buildFeature(region.getID());
     }
     
     private static SimpleFeatureCollection featuresInRegion(SimpleFeatureSource featureSource, Geometry roi) throws IOException {
