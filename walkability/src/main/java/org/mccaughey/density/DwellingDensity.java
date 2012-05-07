@@ -18,11 +18,15 @@ package org.mccaughey.density;
 
 import com.vividsolutions.jts.geom.Geometry;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.opengis.feature.simple.SimpleFeature;
@@ -42,6 +46,15 @@ public final class DwellingDensity {
     static final Logger LOGGER = LoggerFactory.getLogger(DwellingDensity.class);
     
     private DwellingDensity() {
+    }
+    
+     public static SimpleFeatureCollection averageDensity(SimpleFeatureSource dwellingSource, FeatureIterator<SimpleFeature> regions,String densityAttribute) {
+        List<SimpleFeature> densityFeatures = new ArrayList();
+        while (regions.hasNext()) {
+            SimpleFeature lumFeature = averageDensity(dwellingSource, regions.next(), densityAttribute);
+            densityFeatures.add(lumFeature);
+        }
+        return DataUtilities.collection(densityFeatures);
     }
     
     public static SimpleFeature averageDensity(SimpleFeatureSource dwellingSource, SimpleFeature roi, String densityAttribute) {
