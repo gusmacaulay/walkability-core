@@ -42,13 +42,13 @@ import org.slf4j.LoggerFactory;
  * @author amacaulay
  */
 public final class DwellingDensity {
-    
+
     static final Logger LOGGER = LoggerFactory.getLogger(DwellingDensity.class);
-    
+
     private DwellingDensity() {
     }
-    
-     public static SimpleFeatureCollection averageDensity(SimpleFeatureSource dwellingSource, FeatureIterator<SimpleFeature> regions,String densityAttribute) {
+
+    public static SimpleFeatureCollection averageDensity(SimpleFeatureSource dwellingSource, FeatureIterator<SimpleFeature> regions, String densityAttribute) {
         List<SimpleFeature> densityFeatures = new ArrayList();
         while (regions.hasNext()) {
             SimpleFeature lumFeature = averageDensity(dwellingSource, regions.next(), densityAttribute);
@@ -56,48 +56,49 @@ public final class DwellingDensity {
         }
         return DataUtilities.collection(densityFeatures);
     }
-    
+
     public static SimpleFeature averageDensity(SimpleFeatureSource dwellingSource, SimpleFeature roi, String densityAttribute) {
         try {
-            SimpleFeatureIterator dwellings = featuresInRegion(dwellingSource, (Geometry) roi.getDefaultGeometry()).features();
+            SimpleFeatureIterator subRegions = featuresInRegion(dwellingSource, (Geometry) roi.getDefaultGeometry()).features();
             Double totalDensity = 0.0;
-            
-            while(dwellings.hasNext()) {
-                SimpleFeature dwelling = dwellings.next();
-                Double count = (Double)dwelling.getAttribute(densityAttribute);
-                totalDensity += count/((Geometry)dwelling.getDefaultGeometry()).getArea();
-                
+            int count = 0;
+            while (subRegions.hasNext()) {
+                SimpleFeature dwelling = subRegions.next();
+                Double population = (Double) dwelling.getAttribute(densityAttribute);
+                totalDensity += population / ((Geometry) dwelling.getDefaultGeometry()).getArea();
+                count++;
             }
-            
-            return buildFeature(roi,totalDensity);
+
+            return buildFeature(roi, totalDensity/count);
         } catch (IOException ioe) {
             LOGGER.error("Error selecting features in region");
             return null;
         }
-        
+
     }
-    
+
+  
     private static SimpleFeature buildFeature(SimpleFeature region, Double density) {
-         
-            SimpleFeatureType sft = (SimpleFeatureType) region.getType();
-            SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
-            stb.init(sft);
-            stb.setName("densityFeatureType");
-            stb.add("AverageDensity", Double.class);
-            SimpleFeatureType landUseMixFeatureType = stb.buildFeatureType();
-            SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
-            sfb.addAll(region.getAttributes());
-            sfb.add(density);
-            return sfb.buildFeature(region.getID());
+
+        SimpleFeatureType sft = (SimpleFeatureType) region.getType();
+        SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+        stb.init(sft);
+        stb.setName("densityFeatureType");
+        stb.add("AverageDensity", Double.class);
+        SimpleFeatureType landUseMixFeatureType = stb.buildFeatureType();
+        SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
+        sfb.addAll(region.getAttributes());
+        sfb.add(density);
+        return sfb.buildFeature(region.getID());
     }
-    
+
     private static SimpleFeatureCollection featuresInRegion(SimpleFeatureSource featureSource, Geometry roi) throws IOException {
         //Construct a filter which first filters within the bbox of roi and then filters with intersections of roi
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         FeatureType schema = featureSource.getSchema();
-        
+
         String geometryPropertyName = schema.getGeometryDescriptor().getLocalName();
-        
+
         Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(roi));
 
         // collection of filtered features
