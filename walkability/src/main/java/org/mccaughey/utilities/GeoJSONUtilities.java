@@ -16,39 +16,16 @@
  */
 package org.mccaughey.utilities;
 
-import au.edu.unimelb.eresearch.spring.http.converter.geojson.FeatureHttpMessageConverter;
-import au.org.aurin.gis.client.SrsHandlerClient;
-import au.org.aurin.gis.client.SrsHandlerClient;
-import au.org.aurin.security.util.SslUtil;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LinearRing;
 import java.io.*;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.factory.Hints;
-import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.geotools.referencing.CRS;
-import org.geotools.referencing.ReferencingFactoryFinder;
-import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.FeatureType;
-import org.opengis.referencing.crs.CRSAuthorityFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.StringHttpMessageConverter;
-import org.springframework.web.client.RestTemplate;
 
 /**
  * Handles reading and writing of GeoJSON in and out of Geotools
@@ -162,43 +139,5 @@ public final class GeoJSONUtilities {
         }
 
         return collection;
-    }
-
-    public static SimpleFeatureCollection washProjection(SimpleFeatureCollection features, URL projectionWasher) {
-       
-        SslUtil.trustSelfSignedSSL();
-        SrsHandlerClient srsHandlerClient = new SrsHandlerClient();
-
-        List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();
-        messageConverters.add(new StringHttpMessageConverter());
-
-        FeatureHttpMessageConverter geoJsonMessageConverter = new FeatureHttpMessageConverter();
-        geoJsonMessageConverter.setFeatureJSON(new FeatureJSON());
-        messageConverters.add(geoJsonMessageConverter);
-
-        RestTemplate nonSpringRestTemplate = new RestTemplate();
-        nonSpringRestTemplate.setMessageConverters(messageConverters);
-
-        srsHandlerClient.setRestTemplate(nonSpringRestTemplate);
-        srsHandlerClient.setUrl(projectionWasher.toString());
-
-        Feature feature = features.features().next();
-        List<SimpleFeature> featureList = new ArrayList();
-        featureList.add(features.features().next());
-        SimpleFeatureType ft = features.getSchema();
-       // DefaultFeatureCollection collection = new DefaultFeatureCollection(
-                //null,ft );
-       // collection.add(features.features().next());
-        String epsg = srsHandlerClient.lookupGrid(features);
-        LOGGER.info("Washed EPSG: {}",epsg);
-//        try {
-//            FeatureCollection featureCollection = collectionPolygon(121, -34, 4);
-//
-//            System.out.println("non-springified lookup result: "
-//                    + srsHandlerClient.lookupGrid(featureCollection));
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-         return features;
     }
 }
