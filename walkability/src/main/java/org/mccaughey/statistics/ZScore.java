@@ -18,10 +18,8 @@ package org.mccaughey.statistics;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.math.stat.descriptive.AggregateSummaryStatistics;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 import org.geotools.data.DataUtilities;
-
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
@@ -39,7 +37,10 @@ public final class ZScore {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ZScore.class);
 
-    public static SimpleFeatureCollection SumZScores(SimpleFeatureIterator features, List<String> attributes) {
+    private ZScore() {
+    }
+    
+    public static SimpleFeatureCollection sumZScores(SimpleFeatureIterator features, List<String> attributes) {
         List<SimpleFeature> results = new ArrayList();
         SummaryStatistics stats = new SummaryStatistics();
 
@@ -60,10 +61,10 @@ public final class ZScore {
         for (SimpleFeature region : results) {
             Double totalZ = 0.0;
             for (String attr : attributes) {
-                Double raw_score = (Double) region.getAttribute(attr);
-                Double z_score = (raw_score - stats.getMean()) / stats.getStandardDeviation();
-                region.setAttribute(attr + "_ZScore", z_score);
-                totalZ += z_score;
+                Double rawScore = (Double) region.getAttribute(attr);
+                Double zScore = (rawScore - stats.getMean()) / stats.getStandardDeviation();
+                region.setAttribute(attr + "_ZScore", zScore);
+                totalZ += zScore;
             }
             region.setAttribute("SumZScore", totalZ);
             LOGGER.info("Z-score: {}", totalZ);

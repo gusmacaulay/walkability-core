@@ -329,7 +329,7 @@ public final class NetworkBuffer {
      * @param crs
      * @return A buffered service area
      */
-    public static SimpleFeature createBufferFromEdges(Map serviceArea, Double distance, CoordinateReferenceSystem crs, String ID) {
+    public static SimpleFeature createBufferFromEdges(Map serviceArea, Double distance, CoordinateReferenceSystem crs, String id) {
         Set<Edge> edges = serviceArea.keySet();
         SimpleFeatureType type = createBufferFeatureType(crs);
         Geometry all = null;
@@ -348,23 +348,23 @@ public final class NetworkBuffer {
                     all = geom;
                 } else if (!(all.covers(geom))) {
                     LOGGER.info("ALL TYPE: {} GEOM TYPE: {}", all.getGeometryType(), geom.getGeometryType());
-                    if (all.intersects(geom))
+                    if (all.intersects(geom)) {
                         all = all.union(geom);
-                    else
+                    } else {
                         LOGGER.info("No intersection ...");
+                    }
                 }
             } catch (Exception e) {
                 if (e.getMessage().contains("non-noded")) {
                     LOGGER.info(e.getMessage());
                 } else {
                     LOGGER.error(e.getMessage());
-                    e.printStackTrace();
                     return null;
                 }
             }
         }
         LOGGER.info("CRS: " + type.getCoordinateReferenceSystem());
-        return buildFeatureFromGeometry(type, all, ID);
+        return buildFeatureFromGeometry(type, all, id);
     }
 
     /**
@@ -424,15 +424,15 @@ public final class NetworkBuffer {
         return sfb.buildFeature(null);
     }
 
-    private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType featureType, Geometry geom, String ID) {
+    private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType featureType, Geometry geom, String id) {
 
         SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
         stb.init(featureType);
         SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(featureType);
         sfb.add(geom);
-        sfb.add(ID);
+        sfb.add(id);
 
-        return sfb.buildFeature(ID);
+        return sfb.buildFeature(id);
     }
 
     private static SimpleFeatureCollection featuresInRegion(SimpleFeatureSource featureSource, Geometry roi) throws IOException {

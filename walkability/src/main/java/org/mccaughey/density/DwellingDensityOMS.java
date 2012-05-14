@@ -27,7 +27,6 @@ import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureIterator;
-import org.mccaughey.landuse.LandUseMix;
 import org.mccaughey.utilities.GeoJSONUtilities;
 import org.opengis.feature.simple.SimpleFeature;
 import org.slf4j.Logger;
@@ -67,7 +66,6 @@ public class DwellingDensityOMS {
             resultsURL = file.toURI().toURL();
         } catch (IOException e) {
             LOGGER.error("Failed to read input/s");
-            e.printStackTrace();
         }
     }
 }

@@ -22,7 +22,6 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
-import org.geotools.referencing.CRS;
 import org.opengis.feature.simple.SimpleFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,19 +49,17 @@ public final class GeoJSONUtilities {
         try {
             OutputStream os = new FileOutputStream(file);
             // fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
-            
-            LOGGER.info("CRS: {}",features.getSchema().getCoordinateReferenceSystem().toString());
-                    if (features.getSchema().getCoordinateReferenceSystem().toString().contains("UNIT[\"m")) {
-                        LOGGER.info("CRS in metres!"); 
-                    }
-                    else
-                        LOGGER.error("CRS not in metres");
-            try {
-                LOGGER.info("CRS ID: {} ??", CRS.lookupIdentifier(features.getSchema().getCoordinateReferenceSystem(), true));
-                URL srsHandlerClientURL = new URL("https://dev-api.aurin.org.au/aurin-srs-handler/");
-             //   features = washProjection(features, srsHandlerClientURL);
-            } catch (Exception e) {
+
+            LOGGER.info("CRS: {}", features.getSchema().getCoordinateReferenceSystem().toString());
+            if (features.getSchema().getCoordinateReferenceSystem().toString().contains("UNIT[\"m")) {
+                LOGGER.info("CRS in metres!");
+            } else {
+                LOGGER.error("CRS not in metres");
             }
+//            try {
+//                LOGGER.info("CRS ID: {} ??", CRS.lookupIdentifier(features.getSchema().getCoordinateReferenceSystem(), true));
+//            } catch (Exception e) {
+//            }
 
             fjson.setEncodeFeatureCollectionBounds(true);
             fjson.setEncodeFeatureCollectionCRS(true);

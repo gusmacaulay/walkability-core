@@ -313,8 +313,7 @@ public class NetworkBufferFJ extends RecursiveAction {
 
         // add attributes in order
         builder.add("Edge", LineString.class);
-        builder.length(
-                15).add("Name", String.class); // <- 15 chars width for name field
+        builder.add("Name", String.class); // <- 15 chars width for name field
         builder.add(
                 "Distance", Double.class);
         // build the type

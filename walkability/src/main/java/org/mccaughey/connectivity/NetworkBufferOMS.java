@@ -84,7 +84,6 @@ public class NetworkBufferOMS {
             regions = file.toURI().toURL();
 
         } catch (Exception e) { //Can't do much here because of OMS?
-            e.printStackTrace();
             LOGGER.error(e.getMessage());
         }
     }

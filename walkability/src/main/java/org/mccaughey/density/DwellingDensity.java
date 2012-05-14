@@ -19,7 +19,6 @@ package org.mccaughey.density;
 import com.vividsolutions.jts.geom.Geometry;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
