@@ -16,40 +16,64 @@
  */
 package org.mccaughey.statistics;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.math.stat.descriptive.AggregateSummaryStatistics;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
+import org.geotools.data.DataUtilities;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  *
  * @author amacaulay
  */
 public final class ZScore {
-    
+
     static final Logger LOGGER = LoggerFactory.getLogger(ZScore.class);
-    
-    public static void SumZScores(SimpleFeatureIterator features, List<String> attributes) {
-        
-        AggregateSummaryStatistics aggregate = new AggregateSummaryStatistics();
+
+    public static SimpleFeatureCollection SumZScores(SimpleFeatureIterator features, List<String> attributes) {
+
+        List<SimpleFeature> results = new ArrayList();
+
         SummaryStatistics stats = new SummaryStatistics();
         try {
-            while(features.hasNext()) {
-                 stats.addValue((Double)features.next().getAttribute(attributes.get(0)));
+            while (features.hasNext()) {
+                SimpleFeature region = features.next();
+                stats.addValue((Double) region.getAttribute(attributes.get(0)));
+                results.add(buildFeature(region, 0.0));
             }
-            Double raw_score = 0.5;
-            Double z_score = (raw_score - stats.getMean())/stats.getStandardDeviation();
-            LOGGER.info("Z-score: {}", z_score);
-        }
-        finally {
+            for (SimpleFeature region : results) {
+                Double raw_score = (Double) region.getAttribute(attributes.get(0));
+                Double z_score = (raw_score - stats.getMean()) / stats.getStandardDeviation();
+                region.setAttribute("SumZScore", z_score);
+                LOGGER.info("Z-score: {}", z_score);
+            }
+        } finally {
             features.close();
         }
-        
-     //  return features;
+
+        return DataUtilities.collection(results);
+    }
+
+    private static SimpleFeature buildFeature(SimpleFeature region, Double ZScore) {
+
+        SimpleFeatureType sft = (SimpleFeatureType) region.getType();
+        SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+        stb.init(sft);
+        stb.setName("statisticsFeatureType");
+        stb.add("SumZScore", Double.class);
+        SimpleFeatureType landUseMixFeatureType = stb.buildFeatureType();
+        SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
+        sfb.addAll(region.getAttributes());
+        sfb.add(ZScore);
+        return sfb.buildFeature(region.getID());
     }
 }
