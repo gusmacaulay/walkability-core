@@ -21,7 +21,7 @@ import java.util.List;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.opengis.feature.simple.SimpleFeature;
@@ -40,7 +40,7 @@ public final class ZScore {
     private ZScore() {
     }
     
-    public static SimpleFeatureCollection sumZScores(SimpleFeatureIterator features, List<String> attributes) {
+    public static SimpleFeatureCollection sumZScores(FeatureIterator<SimpleFeature> features, List<String> attributes) {
         List<SimpleFeature> results = new ArrayList();
         SummaryStatistics stats = new SummaryStatistics();
 
