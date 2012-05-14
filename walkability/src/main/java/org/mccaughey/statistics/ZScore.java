@@ -40,40 +40,53 @@ public final class ZScore {
     static final Logger LOGGER = LoggerFactory.getLogger(ZScore.class);
 
     public static SimpleFeatureCollection SumZScores(SimpleFeatureIterator features, List<String> attributes) {
-
         List<SimpleFeature> results = new ArrayList();
-
         SummaryStatistics stats = new SummaryStatistics();
+
         try {
+            //Build up summary statistics for each attribute accross all features
             while (features.hasNext()) {
                 SimpleFeature region = features.next();
-                stats.addValue((Double) region.getAttribute(attributes.get(0)));
-                results.add(buildFeature(region, 0.0));
-            }
-            for (SimpleFeature region : results) {
-                Double raw_score = (Double) region.getAttribute(attributes.get(0));
-                Double z_score = (raw_score - stats.getMean()) / stats.getStandardDeviation();
-                region.setAttribute("SumZScore", z_score);
-                LOGGER.info("Z-score: {}", z_score);
+                for (String attr : attributes) {
+                    stats.addValue((Double) region.getAttribute(attr));
+                }
+                results.add(buildFeature(region, attributes));
             }
         } finally {
             features.close();
         }
 
+        //Calculate Z-Score for each attribute in each feature and also sum the z-scores for the set of attributes 
+        for (SimpleFeature region : results) {
+            Double totalZ = 0.0;
+            for (String attr : attributes) {
+                Double raw_score = (Double) region.getAttribute(attr);
+                Double z_score = (raw_score - stats.getMean()) / stats.getStandardDeviation();
+                region.setAttribute(attr + "_ZScore", z_score);
+                totalZ += z_score;
+            }
+            region.setAttribute("SumZScore", totalZ);
+            LOGGER.info("Z-score: {}", totalZ);
+        }
+
         return DataUtilities.collection(results);
     }
 
-    private static SimpleFeature buildFeature(SimpleFeature region, Double ZScore) {
+    private static SimpleFeature buildFeature(SimpleFeature region, List<String> attributes) {
 
         SimpleFeatureType sft = (SimpleFeatureType) region.getType();
         SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
         stb.init(sft);
         stb.setName("statisticsFeatureType");
+        for (String attr : attributes) {
+            stb.add(attr + "_ZScore", Double.class);
+        }
         stb.add("SumZScore", Double.class);
-        SimpleFeatureType landUseMixFeatureType = stb.buildFeatureType();
-        SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
+        SimpleFeatureType statsFT = stb.buildFeatureType();
+        SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(statsFT);
         sfb.addAll(region.getAttributes());
-        sfb.add(ZScore);
+
         return sfb.buildFeature(region.getID());
+
     }
 }
