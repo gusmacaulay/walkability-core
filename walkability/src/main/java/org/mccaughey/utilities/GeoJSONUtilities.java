@@ -50,19 +50,16 @@ public final class GeoJSONUtilities {
             OutputStream os = new FileOutputStream(file);
             // fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(), os);
 
-            LOGGER.info("CRS: {}", features.getSchema().getCoordinateReferenceSystem().toString());
-            if (features.getSchema().getCoordinateReferenceSystem().toString().contains("UNIT[\"m")) {
-                LOGGER.info("CRS in metres!");
-            } else {
-                LOGGER.error("CRS not in metres");
-            }
-//            try {
-//                LOGGER.info("CRS ID: {} ??", CRS.lookupIdentifier(features.getSchema().getCoordinateReferenceSystem(), true));
-//            } catch (Exception e) {
+//            LOGGER.info("CRS: {}", features.getSchema().getCoordinateReferenceSystem().toString());
+//            if (features.getSchema().getCoordinateReferenceSystem().toString().contains("UNIT[\"m")) {
+//                LOGGER.info("CRS in metres!");
+//            } else {
+//                LOGGER.error("CRS not in metres");
 //            }
-
-            fjson.setEncodeFeatureCollectionBounds(true);
-            fjson.setEncodeFeatureCollectionCRS(true);
+            if (features.getSchema().getCoordinateReferenceSystem() != null) {
+                fjson.setEncodeFeatureCollectionBounds(true);
+                fjson.setEncodeFeatureCollectionCRS(true);
+            }
             fjson.writeFeatureCollection(features, os);
         } catch (IOException e) {
             LOGGER.error("Failed to write feature collection" + e.getMessage());

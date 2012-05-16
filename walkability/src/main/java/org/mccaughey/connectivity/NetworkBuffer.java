@@ -333,37 +333,44 @@ public final class NetworkBuffer {
         Set<Edge> edges = serviceArea.keySet();
         SimpleFeatureType type = createBufferFeatureType(crs);
         Geometry all = null;
-        for (Edge edge : edges) {
-            Geometry geom = (Geometry) ((SimpleFeature) serviceArea.get(edge)).getDefaultGeometry();
-            //LOGGER.info("GEOM TYPE: {}",geom.getGeometryType());
-            geom = geom.union();
-            //LOGGER.info("Unioned collection");
-            geom = geom.buffer(distance);
-            //LOGGER.info("Buffered geom");
-            try {
-                if (all != null) {
-                    all = all.union().union();
-                }
-                if (all == null) {
-                    all = geom;
-                } else if (!(all.covers(geom))) {
-                    LOGGER.info("ALL TYPE: {} GEOM TYPE: {}", all.getGeometryType(), geom.getGeometryType());
-                    if (all.intersects(geom)) {
-                        all = all.union(geom);
+        //int loopcount = 0;
+        while (edges.size() > 0) {
+         //   LOGGER.info("loopcount: {}",loopcount++);
+            Set<Edge> unjoined = new HashSet();
+            for (Edge edge : edges) {
+                Geometry geom = (Geometry) ((SimpleFeature) serviceArea.get(edge)).getDefaultGeometry();
+                //LOGGER.info("GEOM TYPE: {}",geom.getGeometryType());
+                geom = geom.union();
+                //LOGGER.info("Unioned collection");
+                geom = geom.buffer(distance);
+                //LOGGER.info("Buffered geom");
+                try {
+                    if (all != null) {
+                        all = all.union().union();
+                    }
+                    if (all == null) {
+                        all = geom;
+                    } else if (!(all.covers(geom))) {
+                        //LOGGER.info("ALL TYPE: {} GEOM TYPE: {}", all.getGeometryType(), geom.getGeometryType());
+                        if (all.intersects(geom)) {
+                            all = all.union(geom);
+                        } else {
+                            //LOGGER.info("No intersection ...");
+                            unjoined.add(edge);
+                        }
+                    }
+                } catch (Exception e) {
+                    if (e.getMessage().contains("non-noded")) {
+                        LOGGER.info(e.getMessage());
                     } else {
-                        LOGGER.info("No intersection ...");
+                        LOGGER.error(e.getMessage());
+                        //return null;
                     }
                 }
-            } catch (Exception e) {
-                if (e.getMessage().contains("non-noded")) {
-                    LOGGER.info(e.getMessage());
-                } else {
-                    LOGGER.error(e.getMessage());
-                    return null;
-                }
             }
+            edges = unjoined;
         }
-        LOGGER.info("CRS: " + type.getCoordinateReferenceSystem());
+       // LOGGER.info("CRS: " + type.getCoordinateReferenceSystem());
         return buildFeatureFromGeometry(type, all, id);
     }
 

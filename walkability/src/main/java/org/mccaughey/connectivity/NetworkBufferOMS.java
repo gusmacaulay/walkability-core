@@ -75,9 +75,13 @@ public class NetworkBufferOMS {
             SimpleFeatureSource networkSource = DataUtilities.source(GeoJSONUtilities.readFeatures(network));
             SimpleFeatureSource pointsSource = DataUtilities.source(GeoJSONUtilities.readFeatures(points));
 
-            LOGGER.info("Points Source CRS: {}", pointsSource.getSchema().getCoordinateReferenceSystem());
+       //     LOGGER.info("Points Source CRS: {}", pointsSource.getSchema().getCoordinateReferenceSystem());
             NetworkBufferBatch nbb = new NetworkBufferBatch(networkSource, pointsSource.getFeatures(), distance, bufferSize);
             SimpleFeatureCollection buffers = nbb.createBuffers();
+            
+//            if (buffers.getSchema().getCoordinateReferenceSystem() == null) {
+//                LOGGER.error("NULL buffers fail");
+//            }
             File file = new File("service_areas_oms.geojson");
             GeoJSONUtilities.writeFeatures(buffers, file);
             // FileUtils.writeStringToFile(file, writeFeatures(buffers));
@@ -85,6 +89,7 @@ public class NetworkBufferOMS {
 
         } catch (Exception e) { //Can't do much here because of OMS?
             LOGGER.error(e.getMessage());
+           // e.printStackTrace();
         }
     }
 }
