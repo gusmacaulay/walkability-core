@@ -69,6 +69,7 @@ public class LandUseMixOMS {
             resultsURL = file.toURI().toURL();
         } catch (IOException e) {
             LOGGER.error("Failed to read input/s");
+            e.printStackTrace();
         }
     }
 }

@@ -16,7 +16,10 @@
  */
 package org.mccaughey.connectivity;
 
-import java.io.*;
+import au.org.aurin.data.store.client.DataStoreClient;
+import au.org.aurin.data.store.client.DataStoreClientImpl;
+import au.org.aurin.security.util.SslUtil;
+import java.io.File;
 import java.net.URL;
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
@@ -82,14 +85,21 @@ public class NetworkBufferOMS {
 //            if (buffers.getSchema().getCoordinateReferenceSystem() == null) {
 //                LOGGER.error("NULL buffers fail");
 //            }
+            
+            SslUtil.trustSelfSignedSSL();
+            DataStoreClient store = new DataStoreClientImpl();
+            store.setUrl("https://dev-api.aurin.org.au/datastore/");
+            regions = new URL(store.createStorageLocation());
+            LOGGER.info("New geojson resource {}", regions);
             File file = new File("service_areas_oms.geojson");
-            GeoJSONUtilities.writeFeatures(buffers, file);
-            // FileUtils.writeStringToFile(file, writeFeatures(buffers));
-            regions = file.toURI().toURL();
+            GeoJSONUtilities.writeFeatures(buffers, regions);
+            
+            //regions = file.toURI().toURL();
+            LOGGER.info("Regions uploaded to {}", regions);
 
         } catch (Exception e) { //Can't do much here because of OMS?
             LOGGER.error(e.getMessage());
-           // e.printStackTrace();
+            e.printStackTrace();
         }
     }
 }

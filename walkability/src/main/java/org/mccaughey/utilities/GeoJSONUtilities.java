@@ -16,7 +16,11 @@
  */
 package org.mccaughey.utilities;
 
+import au.org.aurin.data.store.client.DataStoreClient;
+import au.org.aurin.data.store.client.DataStoreClientImpl;
+import au.org.aurin.security.util.SslUtil;
 import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.FeatureCollections;
@@ -61,9 +65,34 @@ public final class GeoJSONUtilities {
                 fjson.setEncodeFeatureCollectionCRS(true);
             }
             fjson.writeFeatureCollection(features, os);
+            os.close();
         } catch (IOException e) {
             LOGGER.error("Failed to write feature collection" + e.getMessage());
         }
+    }
+
+    public static void writeFeatures(SimpleFeatureCollection features, URL url) {
+        DataStoreClient store = new DataStoreClientImpl();
+        FeatureJSON fjson = new FeatureJSON();
+
+        ByteArrayOutputStream sos = new ByteArrayOutputStream();
+        try {
+            fjson.writeFeatureCollection(features, sos);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        store.storeGeoJsonData(url.toString(), sos.toString());
+//        try {
+//            HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
+//            httpCon.setDoOutput(true);
+//            httpCon.setRequestMethod("PUT");
+//            OutputStreamWriter out = new OutputStreamWriter(
+//                    httpCon.getOutputStream());
+//            fjson.writeFeatureCollection(features, out);
+//            out.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     /**
@@ -93,7 +122,7 @@ public final class GeoJSONUtilities {
      */
     public static SimpleFeature readFeature(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();
-        io.setEncodeFeatureCRS(true);
+        //  io.setEncodeFeatureCRS(true);
         return io.readFeature(url.openConnection().getInputStream());
     }
 
@@ -106,8 +135,10 @@ public final class GeoJSONUtilities {
      * @throws IOException
      */
     public static FeatureIterator<SimpleFeature> getFeatureIterator(URL url) throws IOException {
+        LOGGER.info("Reading features from URL {}", url);
         FeatureJSON io = new FeatureJSON();
-        io.setEncodeFeatureCollectionCRS(true);
+        SslUtil.trustSelfSignedSSL();
+        //     io.setEncodeFeatureCollectionCRS(true);
         return io.streamFeatureCollection(url.openConnection().getInputStream());
     }
 
@@ -121,9 +152,9 @@ public final class GeoJSONUtilities {
      */
     public static SimpleFeatureCollection readFeatures(URL url) throws IOException {
         FeatureJSON io = new FeatureJSON();
-        io.setEncodeFeatureCollectionCRS(true);
+        //   io.setEncodeFeatureCollectionCRS(true);
 
-        LOGGER.info("READ CRS: {}", io.readCRS(url.openConnection().getInputStream()));
+        //  LOGGER.info("READ CRS: {}", io.readCRS(url.openConnection().getInputStream()));
         FeatureIterator<SimpleFeature> features = io.streamFeatureCollection(url.openConnection().getInputStream());
         SimpleFeatureCollection collection = FeatureCollections.newCollection();
 
