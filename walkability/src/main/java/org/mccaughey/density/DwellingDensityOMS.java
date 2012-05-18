@@ -22,6 +22,7 @@ import java.net.URL;
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
+import oms3.annotations.Name;
 import oms3.annotations.Out;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author amacaulay
  */
+@Name("dwellingdensity")
 @Description("Calculates Average Density for a given region population count layer and set of regions of interest")
 public class DwellingDensityOMS {
     static final Logger LOGGER = LoggerFactory.getLogger(DwellingDensityOMS.class);

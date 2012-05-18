@@ -23,6 +23,7 @@ import java.util.List;
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
+import oms3.annotations.Name;
 import oms3.annotations.Out;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -38,6 +39,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author amacaulay
  */
+@Name("landmix")
 @Description("Calculates Land Use Mix Measure for a given land use layer and set of regions")
 public class LandUseMixOMS {
 

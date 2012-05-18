@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author amacaulay
  */
+@Name("connectivity")
 @Description("Calculates Connectivity for a given network and region")
 public class ConnectivityIndexOMS {
 
