@@ -33,6 +33,9 @@ public class ConnectivityIndexOMS {
      */
     @In
     public URL regions;
+    
+    @In
+    public URL dataStore;
     /**
      * The resulting connectivity
      */
@@ -53,10 +56,10 @@ public class ConnectivityIndexOMS {
             ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(networkSource, regionSource.getFeatures());
             cifj.connectivity();
 
-            File file = new File("connectivity_regions_oms.geojson");
-            GeoJSONUtilities.writeFeatures(cifj.getResults(), file);
+         //   File file = new File("connectivity_regions_oms.geojson");
+            results = GeoJSONUtilities.writeFeatures(cifj.getResults(), dataStore);
             // FileUtils.writeStringToFile(file, writeFeatures(buffers));
-            results = file.toURI().toURL();
+            //results = file.toURI().toURL();
             LOGGER.info(results.toString());
 //            System.out.println(results);
 

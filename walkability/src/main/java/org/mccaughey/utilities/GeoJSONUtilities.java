@@ -71,17 +71,27 @@ public final class GeoJSONUtilities {
         }
     }
 
-    public static void writeFeatures(SimpleFeatureCollection features, URL url) {
+    public static URL writeFeatures(SimpleFeatureCollection features, URL dataStore) {
+        SslUtil.trustSelfSignedSSL();
         DataStoreClient store = new DataStoreClientImpl();
-        FeatureJSON fjson = new FeatureJSON();
-
-        ByteArrayOutputStream sos = new ByteArrayOutputStream();
+        store.setUrl("https://dev-api.aurin.org.au/datastore/");
         try {
+            URL featuresURL = new URL(store.createStorageLocation());
+            LOGGER.info("New geojson resource {}", featuresURL);
+
+            FeatureJSON fjson = new FeatureJSON();
+
+            ByteArrayOutputStream sos = new ByteArrayOutputStream();
+
             fjson.writeFeatureCollection(features, sos);
+            String urlString = featuresURL.toString();
+            store.storeGeoJsonData(urlString, sos.toString());
+            return featuresURL;
         } catch (Exception e) {
             e.printStackTrace();
         }
-        store.storeGeoJsonData(url.toString(), sos.toString());
+        return null; //FIXME: add proper error handling
+
 //        try {
 //            HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
 //            httpCon.setDoOutput(true);

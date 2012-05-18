@@ -61,8 +61,14 @@ public class NetworkBufferOMS {
      */
     @In
     public Double bufferSize;
+    
     /**
-     * The resulting regions
+     * The data store url
+     */
+    @In
+    public URL dataStore;
+    /**
+     * The resulting regions url
      */
     @Out
     public URL regions;
@@ -86,13 +92,9 @@ public class NetworkBufferOMS {
 //                LOGGER.error("NULL buffers fail");
 //            }
             
-            SslUtil.trustSelfSignedSSL();
-            DataStoreClient store = new DataStoreClientImpl();
-            store.setUrl("https://dev-api.aurin.org.au/datastore/");
-            regions = new URL(store.createStorageLocation());
-            LOGGER.info("New geojson resource {}", regions);
-            File file = new File("service_areas_oms.geojson");
-            GeoJSONUtilities.writeFeatures(buffers, regions);
+          
+          //  File file = new File("service_areas_oms.geojson");
+            regions = GeoJSONUtilities.writeFeatures(buffers, dataStore);
             
             //regions = file.toURI().toURL();
             LOGGER.info("Regions uploaded to {}", regions);
