@@ -23,6 +23,7 @@ import java.util.List;
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
+import oms3.annotations.Name;
 import oms3.annotations.Out;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.FeatureIterator;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author amacaulay
  */
+@Name("zscore")
 @Description("For a given list of attributes and a set of features, calculates the z score for each attribute and sums the z scores")
 public class ZScoreOMS {
 
