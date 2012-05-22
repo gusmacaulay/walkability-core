@@ -43,13 +43,13 @@ import org.slf4j.LoggerFactory;
 public class DwellingDensityOMS {
     static final Logger LOGGER = LoggerFactory.getLogger(DwellingDensityOMS.class);
     @In
-    URL populationURL;
+    public URL populationURL;
     @In
-    String countAttribute;
+    public String countAttribute;
     @In
-    URL regionsURL;
+    public URL regionsURL;
     @Out
-    URL resultsURL;
+    public URL resultsURL;
     
      /**
      * Reads in the population count layer and regions layer from given URLs, writes out average density results to resultsURL

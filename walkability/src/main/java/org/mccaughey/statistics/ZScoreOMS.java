@@ -43,11 +43,11 @@ public class ZScoreOMS {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ZScoreOMS.class);
     @In
-    List<String> attributes;
+    public List<String> attributes;
     @In
-    URL regionsURL;
+    public URL regionsURL;
     @Out
-    URL resultsURL;
+    public URL resultsURL;
 
     /**
      * For a given list of attributes and a set of features, calculates the z

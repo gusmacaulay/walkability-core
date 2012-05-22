@@ -45,15 +45,15 @@ public class LandUseMixOMS {
 
     static final Logger LOGGER = LoggerFactory.getLogger(LandUseMixOMS.class);
     @In
-    URL landUseURL;
+    public URL landUseURL;
     @In
-    List<String> classifications;
+    public List<String> classifications;
     @In
-    String classificationAttribute;
+    public String classificationAttribute;
     @In
-    URL regionsURL;
+    public URL regionsURL;
     @Out
-    URL resultsURL;
+    public URL resultsURL;
 
     
     /**

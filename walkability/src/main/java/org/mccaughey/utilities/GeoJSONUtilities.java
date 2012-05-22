@@ -60,10 +60,10 @@ public final class GeoJSONUtilities {
 //            } else {
 //                LOGGER.error("CRS not in metres");
 //            }
-            if (features.getSchema().getCoordinateReferenceSystem() != null) {
-                fjson.setEncodeFeatureCollectionBounds(true);
-                fjson.setEncodeFeatureCollectionCRS(true);
-            }
+//            if (features.getSchema().getCoordinateReferenceSystem() != null) {
+//                fjson.setEncodeFeatureCollectionBounds(true);
+//                fjson.setEncodeFeatureCollectionCRS(true);
+//            }
             fjson.writeFeatureCollection(features, os);
             os.close();
         } catch (IOException e) {
