@@ -188,6 +188,9 @@
                     <argLine>-Xms1024m -Xmx1024m</argLine> 
                     <testFailureIgnore>false</testFailureIgnore>
                     <skip>false</skip>
+                    <excludes>
+                        <exclude>**/*Integration*.java</exclude>
+                    </excludes>
                     <includes>
                         <include>**/*.java</include>
                     </includes>
