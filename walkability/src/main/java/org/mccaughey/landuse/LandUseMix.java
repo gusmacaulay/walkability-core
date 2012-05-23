@@ -96,6 +96,7 @@ public final class LandUseMix {
                 if (classifications.contains(classification)) {
                     //     LOGGER.info("Classification: {}", classification);
                     Double parcelArea = parcelGeom.intersection(regionGeom).getArea();
+                    LOGGER.info("Parcel Area:, {}", parcelArea);
                     totalArea += parcelArea;
                     Double area = parcelArea;
                     if (classificationAreas.containsKey(classification)) {
@@ -121,7 +122,10 @@ public final class LandUseMix {
             SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
             sfb.addAll(region.getAttributes());
             for (String classification : classifications) {
-                sfb.add(classificationAreas.get(classification));
+                Double area = (Double)classificationAreas.get(classification);
+                if (area == null)
+                    area = 0d;
+                sfb.add(area);
             }
             Double landUseMixMeasure = calculateLUM(areas, totalArea);
             sfb.add(landUseMixMeasure);
