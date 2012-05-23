@@ -96,7 +96,7 @@ public final class LandUseMix {
                 if (classifications.contains(classification)) {
                     //     LOGGER.info("Classification: {}", classification);
                     Double parcelArea = parcelGeom.intersection(regionGeom).getArea();
-                    LOGGER.info("Parcel Area:, {}", parcelArea);
+                  //  LOGGER.info("Parcel Area:, {}", parcelArea);
                     totalArea += parcelArea;
                     Double area = parcelArea;
                     if (classificationAreas.containsKey(classification)) {
