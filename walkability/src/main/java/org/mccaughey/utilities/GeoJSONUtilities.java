@@ -42,13 +42,7 @@ public final class GeoJSONUtilities {
     private GeoJSONUtilities() {
     }
 
-    /**
-     * Writes a SimpleFeatureCollection to file
-     *
-     * @param features The features to write out
-     * @param file The file to write to (will overwrite existing)
-     */
-    public static void writeFeatures(SimpleFeatureCollection features, File file) {
+    private static void writeFeatures(SimpleFeatureCollection features, File file) {
         FeatureJSON fjson = new FeatureJSON();
         try {
             OutputStream os = new FileOutputStream(file);
@@ -71,38 +65,44 @@ public final class GeoJSONUtilities {
         }
     }
 
-    public static URL writeFeatures(SimpleFeatureCollection features, URL dataStore) {
+    /**
+     * Writes a SimpleFeatureCollection to a URL as geojson
+     *
+     * @param features The features to write out
+     * @param file The URL to write to (will overwrite existing)
+     */
+    public static URL writeFeatures(SimpleFeatureCollection features, URL dataStoreURL) {
         SslUtil.trustSelfSignedSSL();
         DataStoreClient store = new DataStoreClientImpl();
-        store.setUrl("https://dev-api.aurin.org.au/datastore/");
+        String dataStore = dataStoreURL.toString();
+
+        //"https://dev-api.aurin.org.au/datastore/");
+        URL featuresURL = null;
         try {
-            URL featuresURL = new URL(store.createStorageLocation());
-            LOGGER.info("New geojson resource {}", featuresURL);
+            //LOGGER.info("DATA STORE: {}", dataStore);
+            if (dataStore.toLowerCase().startsWith("file:/")) {
+                LOGGER.info("Writing to File resource");
+                featuresURL = dataStoreURL;
+                writeFeatures(features, new File(dataStoreURL.toURI()));
+            } else {
+                store.setUrl(dataStore);
 
-            FeatureJSON fjson = new FeatureJSON();
+                featuresURL = new URL(store.createStorageLocation());
+                LOGGER.info("New geojson resource {}", featuresURL);
 
-            ByteArrayOutputStream sos = new ByteArrayOutputStream();
+                FeatureJSON fjson = new FeatureJSON();
 
-            fjson.writeFeatureCollection(features, sos);
-            String urlString = featuresURL.toString();
-            store.storeGeoJsonData(urlString, sos.toString());
+                ByteArrayOutputStream sos = new ByteArrayOutputStream();
+
+                fjson.writeFeatureCollection(features, sos);
+                String urlString = featuresURL.toString();
+                store.storeGeoJsonData(urlString, sos.toString());
+            }
             return featuresURL;
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null; //FIXME: add proper error handling
-
-//        try {
-//            HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
-//            httpCon.setDoOutput(true);
-//            httpCon.setRequestMethod("PUT");
-//            OutputStreamWriter out = new OutputStreamWriter(
-//                    httpCon.getOutputStream());
-//            fjson.writeFeatureCollection(features, out);
-//            out.close();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
     }
 
     /**

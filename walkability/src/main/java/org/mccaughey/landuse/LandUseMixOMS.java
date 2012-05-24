@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An OMS Wrapper for Land Use Mix
- * 
+ *
  * @author amacaulay
  */
 @Name("landmix")
@@ -54,10 +54,15 @@ public class LandUseMixOMS {
     public URL regionsURL;
     @Out
     public URL resultsURL;
-
-    
     /**
-     * Reads in the land use layer and regions layer from given URLs, writes out results to resultsURL
+     * Resource to write the output to
+     */
+    @In
+    public URL outputDataStore;
+
+    /**
+     * Reads in the land use layer and regions layer from given URLs, writes out
+     * results to resultsURL
      */
     @Execute
     public void landUseMixMeasure() {
@@ -67,7 +72,7 @@ public class LandUseMixOMS {
             SimpleFeatureCollection lumRegions = LandUseMix.summarise(landUse, regions, classifications, classificationAttribute);
             //FIXME: need to get real URL somehow? then write to it instead of file
             File file = new File("landUseMixRegions.geojson");
-            GeoJSONUtilities.writeFeatures(lumRegions, file);
+            GeoJSONUtilities.writeFeatures(lumRegions, outputDataStore);
             resultsURL = file.toURI().toURL();
         } catch (IOException e) {
             LOGGER.error("Failed to read input/s");

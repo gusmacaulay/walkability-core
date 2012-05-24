@@ -63,17 +63,17 @@ public class NetworkBufferOMS {
      */
     @In
     public Double bufferSize;
-    
     /**
      * The data store url
      */
     @In
-    public URL dataStore;
+    public URL outputDataStore;
     /**
      * The resulting regions url
      */
     @Out
     public URL regions;
+ 
 
     /**
      * Reads the input network and point datasets then uses NetworkBufferBatch
@@ -86,18 +86,18 @@ public class NetworkBufferOMS {
             SimpleFeatureSource networkSource = DataUtilities.source(GeoJSONUtilities.readFeatures(network));
             SimpleFeatureSource pointsSource = DataUtilities.source(GeoJSONUtilities.readFeatures(points));
 
-       //     LOGGER.info("Points Source CRS: {}", pointsSource.getSchema().getCoordinateReferenceSystem());
+            //     LOGGER.info("Points Source CRS: {}", pointsSource.getSchema().getCoordinateReferenceSystem());
             NetworkBufferBatch nbb = new NetworkBufferBatch(networkSource, pointsSource.getFeatures(), distance, bufferSize);
             SimpleFeatureCollection buffers = nbb.createBuffers();
-            
+
 //            if (buffers.getSchema().getCoordinateReferenceSystem() == null) {
 //                LOGGER.error("NULL buffers fail");
 //            }
-            
-          
-          //  File file = new File("service_areas_oms.geojson");
-            regions = GeoJSONUtilities.writeFeatures(buffers, dataStore);
-            
+
+
+            //  File file = new File("service_areas_oms.geojson");
+            regions = GeoJSONUtilities.writeFeatures(buffers, outputDataStore);
+
             //regions = file.toURI().toURL();
             LOGGER.info("Regions uploaded to {}", regions);
 

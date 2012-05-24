@@ -48,6 +48,11 @@ public class ZScoreOMS {
     public URL regionsURL;
     @Out
     public URL resultsURL;
+    /**
+     * The data store url
+     */
+    @In
+    public URL outputDataStore;
 
     /**
      * For a given list of attributes and a set of features, calculates the z
@@ -63,7 +68,7 @@ public class ZScoreOMS {
 
             //FIXME: need to get real URL somehow? then write to it instead of file
             File file = new File("zScoreRegions.geojson");
-            GeoJSONUtilities.writeFeatures(statisticsRegions, file);
+            GeoJSONUtilities.writeFeatures(statisticsRegions, outputDataStore);
             resultsURL = file.toURI().toURL();
         } catch (IOException e) {
             LOGGER.error("Failed to read input/s");
