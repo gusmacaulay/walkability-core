@@ -123,8 +123,9 @@ public final class LandUseMix {
             sfb.addAll(region.getAttributes());
             for (String classification : classifications) {
                 Double area = (Double)classificationAreas.get(classification);
-                if (area == null)
+                if (area == null) {
                     area = 0d;
+                }
                 sfb.add(area);
             }
             Double landUseMixMeasure = calculateLUM(areas, totalArea);
