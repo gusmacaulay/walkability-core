@@ -112,7 +112,8 @@ public final class GeoJSONUtilities {
 			}
 			return featuresURL;
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error(e.getMessage());
+			//e.printStackTrace();
 		}
 		return null; // FIXME: add proper error handling
 	}

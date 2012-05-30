@@ -75,8 +75,8 @@ public class LandUseMixOMS {
             GeoJSONUtilities.writeFeatures(lumRegions, outputDataStore);
             resultsURL = file.toURI().toURL();
         } catch (IOException e) {
-            LOGGER.error("Failed to read input/s");
-            e.printStackTrace();
+            LOGGER.error("Failed to read input/s: {}",e.getMessage());
+       //     e.printStackTrace();
         }
     }
 }

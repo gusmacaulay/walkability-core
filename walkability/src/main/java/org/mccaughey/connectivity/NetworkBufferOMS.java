@@ -101,7 +101,7 @@ public class NetworkBufferOMS {
 
         } catch (Exception e) { //Can't do much here because of OMS?
             LOGGER.error(e.getMessage());
-            e.printStackTrace();
+            //e.printStackTrace();
         }
     }
 }
