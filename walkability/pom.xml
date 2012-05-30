@@ -123,11 +123,11 @@
             <artifactId>gt-process</artifactId>
             <version>${geotools.version}</version>
         </dependency>
-       <dependency>
+  <!--      <dependency>
 			<groupId>au.org.aurin</groupId>
 			<artifactId>oms3</artifactId>
 			<version>1.0</version>
-		</dependency>
+		</dependency> -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
