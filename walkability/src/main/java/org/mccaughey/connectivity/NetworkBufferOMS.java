@@ -16,16 +16,14 @@
  */
 package org.mccaughey.connectivity;
 
-import au.org.aurin.data.store.client.DataStoreClient;
-import au.org.aurin.data.store.client.DataStoreClientImpl;
-import au.org.aurin.security.util.SslUtil;
-import java.io.File;
 import java.net.URL;
+
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
 import oms3.annotations.Name;
 import oms3.annotations.Out;
+
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
