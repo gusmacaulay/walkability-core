@@ -474,7 +474,10 @@ public final class NetworkBuffer {
 
         SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
         builder.setName("Buffer");
-        builder.setCRS(crs); // <- Coordinate reference system
+        if (crs != null) {
+        	builder.setCRS(crs); // <- Coordinate reference system
+        }
+        
 
         // add attributes in order
         builder.add("Buffer", Polygon.class);

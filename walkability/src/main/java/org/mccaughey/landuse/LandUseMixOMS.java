@@ -71,9 +71,9 @@ public class LandUseMixOMS {
             SimpleFeatureSource landUse = DataUtilities.source(GeoJSONUtilities.readFeatures(landUseURL));
             SimpleFeatureCollection lumRegions = LandUseMix.summarise(landUse, regions, classifications, classificationAttribute);
             //FIXME: need to get real URL somehow? then write to it instead of file
-            File file = new File("landUseMixRegions.geojson");
-            GeoJSONUtilities.writeFeatures(lumRegions, outputDataStore);
-            resultsURL = file.toURI().toURL();
+         // File file = new File("landUseMixRegions.geojson");
+            resultsURL = GeoJSONUtilities.writeFeatures(lumRegions, outputDataStore);
+            
         } catch (IOException e) {
             LOGGER.error("Failed to read input/s: {}",e.getMessage());
        //     e.printStackTrace();

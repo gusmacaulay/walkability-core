@@ -68,9 +68,9 @@ public class DwellingDensityOMS {
             SimpleFeatureCollection densityRegions = DwellingDensity.averageDensity(populationSource, regions,countAttribute);
         
             //FIXME: need to get real URL somehow? then write to it instead of file
-            File file = new File("landUseMixRegions.geojson");
-            GeoJSONUtilities.writeFeatures(densityRegions, outputDataStore);
-            resultsURL = file.toURI().toURL();
+            //File file = new File("landUseMixRegions.geojson");
+            resultsURL = GeoJSONUtilities.writeFeatures(densityRegions, outputDataStore);
+            
         } catch (IOException e) {
             LOGGER.error("Failed to read input/s");
         }
