@@ -44,14 +44,33 @@ import org.slf4j.LoggerFactory;
 public class LandUseMixOMS {
 
     static final Logger LOGGER = LoggerFactory.getLogger(LandUseMixOMS.class);
+    /**
+     * URL containing geojson representation of Land Use regions.
+     */
     @In
     public URL landUseURL;
+    
+    /**
+     * A List of classification categories to use in the Land Use Mix calculation
+     */
     @In
     public List<String> classifications;
+    
+    /**
+     * The attribute (column) containing the classification categories
+     */
     @In
     public String classificationAttribute;
+    
+    /**
+     * The set of regions to calculate Land Use Mix for
+     */
     @In
     public URL regionsURL;
+    
+    /**
+     * The location of the resulting dataset (GeoJSON)
+     */
     @Out
     public URL resultsURL;
     /**
