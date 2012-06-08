@@ -42,10 +42,20 @@ import org.slf4j.LoggerFactory;
 public class ZScoreOMS {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ZScoreOMS.class);
+    /**
+     * Attributes to calculate z-score for
+     */
     @In
     public List<String> attributes;
+    
+    /**
+     * Regions of interest (GeoJSON)
+     */
     @In
     public URL regionsURL;
+    /**
+     * Resulting regions with z-scores for each attribute and sum of z-scores across attributes
+     */
     @Out
     public URL resultsURL;
     /**

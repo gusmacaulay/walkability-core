@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Calculates average density across a set of regions intersecting a region of interest
  * @author amacaulay
  */
 public final class DwellingDensity {
@@ -47,16 +47,23 @@ public final class DwellingDensity {
     private DwellingDensity() {
     }
 
-    public static SimpleFeatureCollection averageDensity(SimpleFeatureSource dwellingSource, FeatureIterator<SimpleFeature> regions, String densityAttribute) {
+    /**
+     * Calculates average density for regions
+     * @param populationSource The set of regions with a population attribute 
+     * @param regions The regions of interest
+     * @param populationAttribute The attribute containing the population value
+     * @return
+     */
+    public static SimpleFeatureCollection averageDensity(SimpleFeatureSource populationSource, FeatureIterator<SimpleFeature> regions, String populationAttribute) {
         List<SimpleFeature> densityFeatures = new ArrayList();
         while (regions.hasNext()) {
-            SimpleFeature lumFeature = averageDensity(dwellingSource, regions.next(), densityAttribute);
+            SimpleFeature lumFeature = averageDensity(populationSource, regions.next(), populationAttribute);
             densityFeatures.add(lumFeature);
         }
         return DataUtilities.collection(densityFeatures);
     }
 
-    public static SimpleFeature averageDensity(SimpleFeatureSource dwellingSource, SimpleFeature roi, String densityAttribute) {
+    private static SimpleFeature averageDensity(SimpleFeatureSource dwellingSource, SimpleFeature roi, String densityAttribute) {
         try {
             SimpleFeatureIterator subRegions = featuresInRegion(dwellingSource, (Geometry) roi.getDefaultGeometry()).features();
             Double totalDensity = 0.0;

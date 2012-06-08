@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Calculates the z-score and sum of z-scores for regions of interest and a list of attributes  
  * @author amacaulay
  */
 public final class ZScore {
@@ -39,7 +39,13 @@ public final class ZScore {
 
     private ZScore() {
     }
-    
+
+    /**
+     * Calculates z-score and sum of z-scores
+     * @param features Regions of interest
+     * @param attributes Attributes to calculate z-scores for
+     * @return
+     */
     public static SimpleFeatureCollection sumZScores(FeatureIterator<SimpleFeature> features, List<String> attributes) {
         List<SimpleFeature> results = new ArrayList();
         SummaryStatistics stats = new SummaryStatistics();

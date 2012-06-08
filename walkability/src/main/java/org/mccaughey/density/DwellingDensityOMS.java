@@ -42,12 +42,27 @@ import org.slf4j.LoggerFactory;
 @Description("Calculates Average Density for a given region population count layer and set of regions of interest")
 public class DwellingDensityOMS {
     static final Logger LOGGER = LoggerFactory.getLogger(DwellingDensityOMS.class);
+    /**
+     * A URL pointing to a GeoJSON representation of regions with a population attribute
+     */
     @In
     public URL populationURL;
+    
+    /**
+     * The attribute to use for population
+     */
     @In
     public String countAttribute;
+    
+    /**
+     * The input regions to calculate desnity for
+     */
     @In
     public URL regionsURL;
+    
+    /**
+     * The resulting regions with average density calculated
+     */
     @Out
     public URL resultsURL;
     /**
