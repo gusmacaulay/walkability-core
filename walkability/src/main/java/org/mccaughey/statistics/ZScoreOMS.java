@@ -77,9 +77,9 @@ public class ZScoreOMS {
             SimpleFeatureCollection statisticsRegions = ZScore.sumZScores(regions, attributes);
 
             //FIXME: need to get real URL somehow? then write to it instead of file
-            File file = new File("zScoreRegions.geojson");
-            GeoJSONUtilities.writeFeatures(statisticsRegions, outputDataStore);
-            resultsURL = file.toURI().toURL();
+           // File file = new File("zScoreRegions.geojson");
+            resultsURL = GeoJSONUtilities.writeFeatures(statisticsRegions, outputDataStore);
+            
         } catch (IOException e) {
             LOGGER.error("Failed to read input/s");
         }

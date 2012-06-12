@@ -177,7 +177,7 @@ public final class GeoJSONUtilities {
 	 */
 	public static SimpleFeatureCollection readFeatures(URL url) throws IOException {
 		FeatureJSON io = new FeatureJSON();
-		io.setEncodeFeatureCollectionCRS(true);
+		//io.setEncodeFeatureCollectionCRS(true);
 
 		LOGGER.info("READING GeoJSON from {}", url);
 		// io.readCRS(url.openConnection().getInputStream()));
