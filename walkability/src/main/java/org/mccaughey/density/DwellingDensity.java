@@ -71,7 +71,8 @@ public final class DwellingDensity {
             while (subRegions.hasNext()) {
                 SimpleFeature dwelling = subRegions.next();
                 Double population = (Double) dwelling.getAttribute(densityAttribute);
-                totalDensity += population / ((Geometry) dwelling.getDefaultGeometry()).getArea();
+                Double area =  ((Geometry) dwelling.getDefaultGeometry()).getArea()/1000000; //FIXME: Use geotools unit conversion!
+                totalDensity += population / area;
                 count++;
             }
 
