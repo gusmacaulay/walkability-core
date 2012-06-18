@@ -16,10 +16,17 @@
  */
 package org.mccaughey.spatial;
 
+import java.io.IOException;
 import java.net.URL;
 
 import oms3.annotations.Execute;
 
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.factory.CommonFactoryFinder;
+import org.mccaughey.utilities.GeoJSONUtilities;
+import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.filter.Filter;
+import org.opengis.filter.FilterFactory2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +46,18 @@ public class IntersectionOMS {
 	 
 	 @Execute
 	 public void intersection() {
-		 
+		 try {
+			 SimpleFeature roi = GeoJSONUtilities.readFeature(regionOfInterest);
+			 SimpleFeatureCollection features = GeoJSONUtilities.readFeatures(featuresOfInterest);
+			 FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+		     String geometryPropertyName = features.getSchema().getGeometryDescriptor().getLocalName();
+			 Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(roi.getDefaultGeometry())); 
+			 SimpleFeatureCollection intersectingFeatures = features.subCollection(filter);
+			 LOGGER.info("Found {} intersecting features", intersectingFeatures.size());
+			 results = GeoJSONUtilities.writeFeatures(intersectingFeatures,dataStore);
+		 }
+		 catch(IOException e) {
+			 LOGGER.equals("Failed to read input datasets");
+		 }
 	 }
 }
