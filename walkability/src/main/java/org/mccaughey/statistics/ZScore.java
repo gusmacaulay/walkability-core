@@ -17,7 +17,10 @@
 package org.mccaughey.statistics;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -48,14 +51,19 @@ public final class ZScore {
      */
     public static SimpleFeatureCollection sumZScores(FeatureIterator<SimpleFeature> features, List<String> attributes) {
         List<SimpleFeature> results = new ArrayList();
-        SummaryStatistics stats = new SummaryStatistics();
-
+        //SummaryStatistics stats = new SummaryStatistics();
+        
+        Map<String,SummaryStatistics> stats = new HashMap();
+        for (String attr: attributes) {
+        	SummaryStatistics s = new SummaryStatistics();
+        	stats.put(attr,s);
+        }
         try {
-            //Build up summary statistics for each attribute accross all features
+            //Build up summary statistics for each attribute across all features
             while (features.hasNext()) {
                 SimpleFeature region = features.next();
                 for (String attr : attributes) {
-                    stats.addValue((Double) region.getAttribute(attr));
+                    stats.get(attr).addValue((Double) region.getAttribute(attr));
                 }
                 results.add(buildFeature(region, attributes));
             }
@@ -68,7 +76,7 @@ public final class ZScore {
             Double totalZ = 0.0;
             for (String attr : attributes) {
                 Double rawScore = (Double) region.getAttribute(attr);
-                Double zScore = (rawScore - stats.getMean()) / stats.getStandardDeviation();
+                Double zScore = (rawScore - stats.get(attr).getMean()) / stats.get(attr).getStandardDeviation();
                 region.setAttribute(attr + "_ZScore", zScore);
                 totalZ += zScore;
             }
