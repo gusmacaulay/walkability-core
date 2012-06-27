@@ -67,11 +67,11 @@ public final class DwellingDensity {
         try {
             SimpleFeatureIterator subRegions = featuresInRegion(dwellingSource, (Geometry) roi.getDefaultGeometry()).features();
             Double totalDensity = 0.0;
-            int count = 0;
+            Double count = 0.0;
             while (subRegions.hasNext()) {
                 SimpleFeature dwelling = subRegions.next();
                 Double population = (Double) dwelling.getAttribute(densityAttribute);
-                Double area =  ((Geometry) dwelling.getDefaultGeometry()).getArea()/1000000; //FIXME: Use geotools unit conversion!
+                Double area =  ((Geometry) dwelling.getDefaultGeometry()).getArea()/10000; //FIXME: Use geotools unit conversion!
                 totalDensity += population / area;
                 count++;
             }

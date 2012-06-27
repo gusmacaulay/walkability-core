@@ -81,10 +81,13 @@ public class NetworkBufferOMS {
     public void run() {
         try {
 
+        	LOGGER.info("Reading in network...");
             SimpleFeatureSource networkSource = DataUtilities.source(GeoJSONUtilities.readFeatures(network));
+            LOGGER.info("Reading in points...");
             SimpleFeatureSource pointsSource = DataUtilities.source(GeoJSONUtilities.readFeatures(points));
 
             //     LOGGER.info("Points Source CRS: {}", pointsSource.getSchema().getCoordinateReferenceSystem());
+            LOGGER.info("Generate network service areas...");
             NetworkBufferBatch nbb = new NetworkBufferBatch(networkSource, pointsSource.getFeatures(), distance, bufferSize);
             SimpleFeatureCollection buffers = nbb.createBuffers();
 

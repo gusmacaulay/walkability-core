@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.net.URL;
 
 import oms3.annotations.Execute;
+import oms3.annotations.In;
+import oms3.annotations.Out;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.factory.CommonFactoryFinder;
@@ -39,9 +41,13 @@ public class IntersectionOMS {
 
 	 static final Logger LOGGER = LoggerFactory.getLogger(IntersectionOMS.class);
 	 
+	 @In
 	 URL regionOfInterest;
+	 @In
 	 URL featuresOfInterest;
+	 @In
 	 URL dataStore;
+	 @Out
 	 URL results;
 	 
 	 @Execute
