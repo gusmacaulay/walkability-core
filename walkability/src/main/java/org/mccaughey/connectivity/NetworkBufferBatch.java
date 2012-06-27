@@ -81,7 +81,7 @@ public class NetworkBufferBatch extends RecursiveAction {
 	public SimpleFeatureCollection createBuffers() {
 		Runtime runtime = Runtime.getRuntime();
 		int nProcessors = runtime.availableProcessors();
-		int nThreads = 1;//nProcessors;
+		int nThreads = nProcessors;
 
 		LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
 		// Fork/Join handles threads for me, all I do is invoke
