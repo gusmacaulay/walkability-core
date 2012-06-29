@@ -184,7 +184,7 @@
 				<version>2.8</version>
 				<configuration>
 					<forkMode>pertest</forkMode>
-					<argLine>-Xms1024m -Xmx1024m</argLine>
+					<argLine>-Xms8192m -Xmx8192m</argLine>
 					<testFailureIgnore>false</testFailureIgnore>
 					<skip>false</skip>
 					<excludes>
