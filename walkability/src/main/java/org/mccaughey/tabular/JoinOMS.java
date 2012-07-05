@@ -1,11 +1,15 @@
 package org.mccaughey.tabular;
 
+import groovy.sql.GroovyResultSetExtension;
+import groovy.sql.Sql;
+
 import java.net.URL;
 
 import oms3.annotations.Execute;
 import oms3.annotations.In;
 import oms3.annotations.Out;
 
+import org.codehaus.groovy.runtime.MethodClosure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +30,17 @@ public class JoinOMS {
 
 	@Execute
 	public void join() {
+		try {
+			Sql db = Sql.newInstance("jdbc:h2:mem:temp", "org.h2.Driver");
+			db.execute("create table test as select * from csvread('test.csv')");
+			db.eachRow("select * from test",new MethodClosure(this,"printRow"));
+		} catch (Exception e) {
+			LOGGER.error("Failed to create in memory database: {}", e.getMessage());
+		}
 		result = tableA;
+	}
+	
+	private void printRow(GroovyResultSetExtension row) {
+		LOGGER.info(row.toString());
 	}
 }
