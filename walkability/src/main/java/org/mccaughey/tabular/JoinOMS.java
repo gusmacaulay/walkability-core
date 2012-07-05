@@ -25,6 +25,9 @@ public class JoinOMS {
 	@In
 	String columnName;
 
+	@In 
+	URL dataStore;
+	
 	@Out
 	URL result;
 
@@ -32,15 +35,18 @@ public class JoinOMS {
 	public void join() {
 		try {
 			Sql db = Sql.newInstance("jdbc:h2:mem:temp", "org.h2.Driver");
-			db.execute("create table test as select * from csvread('test.csv')");
-			db.eachRow("select * from test",new MethodClosure(this,"printRow"));
+			db.execute("create table testA as select * from csvread('"+tableA.toString()+"')");
+			db.execute("create table testB as select * from csvread('"+tableB.toString()+"')");
+			db.execute("CALL csvwrite('"+dataStore.toString()+"','select * from testA join testB on testA.a = testB.a')");
+			db.eachRow("select * from testA join testB on testA.a = testB.a",new MethodClosure(this,"printRow"));
 		} catch (Exception e) {
 			LOGGER.error("Failed to create in memory database: {}", e.getMessage());
 		}
-		result = tableA;
+		result = dataStore;
 	}
 	
 	private void printRow(GroovyResultSetExtension row) {
+		
 		LOGGER.info(row.toString());
 	}
 }
