@@ -375,8 +375,8 @@ public final class NetworkBuffer {
 					if (e.getMessage().contains("non-noded")) {
 						LOGGER.info(e.getMessage());
 					} else {
-						LOGGER.error(e.getMessage());
-						// return null;
+						LOGGER.error("Failed to create buffer from network: " + e.getMessage());
+						return null;
 					}
 				}
 			}

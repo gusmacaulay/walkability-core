@@ -68,7 +68,7 @@ public class NetworkBufferBatch extends RecursiveAction {
 		this.bufferSize = bufferSize;
 		this.buffers = FeatureCollections.newCollection();
 		this.graphs = FeatureCollections.newCollection();
-		this.pointsPerThread = 1000;
+		this.pointsPerThread = 125;
 	}
 
 	/**
@@ -102,27 +102,31 @@ public class NetworkBufferBatch extends RecursiveAction {
 			// network region and store in buffers
 			LOGGER.info("Computing buffers for {} points", points.size());
 			SimpleFeatureIterator features = points.features();
+			int count = 0;
 			try {
 				while (features.hasNext()) {
-					SimpleFeature point = features.next();
-					//LOGGER.info("+");
-					Map serviceArea = NetworkBuffer.findServiceArea(network, point, distance, bufferSize);
-					if (serviceArea != null) {
-						// List<SimpleFeature> networkBuffer =
-						// NetworkBuffer.createLinesFromEdges(serviceArea);
-						SimpleFeatureCollection graph = DataUtilities.collection(NetworkBuffer.createLinesFromEdges(serviceArea));
-						//LOGGER.info("Points CRS: {}", points.getSchema().getCoordinateReferenceSystem());
-						SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(serviceArea, bufferSize, points.getSchema().getCoordinateReferenceSystem(), String.valueOf(point.getID()));
-						if (networkBuffer != null) {
-							buffers.add(networkBuffer); // .addAll(DataUtilities.collection(networkBuffer));
-							graphs.addAll(graph);
+					try {
+						LOGGER.info("Buffer count {}", ++count);
+						SimpleFeature point = features.next();
+						//LOGGER.info("+");
+						Map serviceArea = NetworkBuffer.findServiceArea(network, point, distance, bufferSize);
+						if (serviceArea != null) {
+							// List<SimpleFeature> networkBuffer =
+							// NetworkBuffer.createLinesFromEdges(serviceArea);
+							SimpleFeatureCollection graph = DataUtilities.collection(NetworkBuffer.createLinesFromEdges(serviceArea));
+							//LOGGER.info("Points CRS: {}", points.getSchema().getCoordinateReferenceSystem());
+							SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(serviceArea, bufferSize, points.getSchema().getCoordinateReferenceSystem(), String.valueOf(point.getID()));
+							if (networkBuffer != null) {
+								buffers.add(networkBuffer); // .addAll(DataUtilities.collection(networkBuffer));
+								graphs.addAll(graph);
+							}
 						}
+					} catch (Exception e) {
+						LOGGER.error("Buffer creation failed for some reason, {}", e.getMessage());
+						e.printStackTrace();
 					}
 				}
-				LOGGER.info("Completed {} buffers",points.size());
-			} catch (Exception e) {
-				LOGGER.error("Buffer creation failed for some reason, {}", e.getMessage());
-				this.completeExceptionally(e);
+				LOGGER.info("Completed {} buffers", points.size());
 			} finally {
 				features.close();
 			}
@@ -133,14 +137,14 @@ public class NetworkBufferBatch extends RecursiveAction {
 			try {
 				SimpleFeatureCollection pointsSubCollection = FeatureCollections.newCollection();
 				int count = 0;
-				while (features.hasNext()) {// && (count < 500)) {
+				while (features.hasNext() && (count < 10000)) {
+					SimpleFeature feature = (SimpleFeature) features.next();
+					pointsSubCollection.add(feature);
 					if (pointsSubCollection.size() == this.pointsPerThread) {
 						NetworkBufferBatch nbb = new NetworkBufferBatch(network, pointsSubCollection, distance, bufferSize);
 						buffernators.add(nbb);
 						pointsSubCollection = FeatureCollections.newCollection();
 					}
-					SimpleFeature feature = (SimpleFeature) features.next();
-					pointsSubCollection.add(feature);
 					count++;
 				}
 				if (pointsSubCollection.size() > 0) {

@@ -84,7 +84,7 @@ public class NetworkBufferFJ extends RecursiveAction {
 		//Get the available processors, processors==threads is probably best?
 		//Runtime runtime = Runtime.getRuntime();
 		//int nProcessors = runtime.availableProcessors();
-		int nThreads = 1;//nProcessors + 1;
+	/*	int nThreads = 1;//nProcessors + 1;
 
 		// LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
 		//Fork/Join handles threads for me, all I do is invoke
@@ -93,7 +93,8 @@ public class NetworkBufferFJ extends RecursiveAction {
 			fjPool.invoke(this);
 		} catch (NullPointerException e) {
 			LOGGER.error("Failed to invoke buffer computation, {}", e.getMessage());
-		}
+		}*/
+		compute();
 		return serviceArea;
 	}
 
@@ -121,12 +122,13 @@ public class NetworkBufferFJ extends RecursiveAction {
 		//  LOGGER.info("Nextpaths For path {} - {}",currentPath, nextPaths.size());
 		for (Path nextPath : nextPaths) {
 			NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance, serviceArea);
-			buffernators.add(nbfj);
+			//buffernators.add(nbfj);
+			this.serviceArea = nbfj.createBuffer();
 		}
 
-		if (buffernators.size() > 0) {
-			invokeAll(buffernators);
-		}
+		//if (buffernators.size() > 0) {
+		//	invokeAll(buffernators);
+		//}
 	}
 
 	private void addWholeEdge(Path nextPath, List<Path> nextPaths, Edge graphEdge) {
