@@ -4,6 +4,7 @@ import groovy.sql.GroovyResultSetExtension;
 import groovy.sql.Sql;
 
 import java.net.URL;
+import java.text.MessageFormat;
 
 import oms3.annotations.Execute;
 import oms3.annotations.In;
@@ -35,9 +36,9 @@ public class JoinOMS {
 	public void join() {
 		try {
 			Sql db = Sql.newInstance("jdbc:h2:mem:temp", "org.h2.Driver");
-			db.execute("create table testA as select * from csvread('"+tableA.toString()+"')");
-			db.execute("create table testB as select * from csvread('"+tableB.toString()+"')");
-			db.execute("CALL csvwrite('"+dataStore.toString()+"','select * from testA join testB on testA.a = testB.a')");
+			db.execute(String.format("create table testA as select * from csvread('%s')",tableA.toString()));
+			db.execute(String.format("create table testB as select * from csvread('%s')",tableB.toString()));
+			db.execute(String.format("CALL csvwrite('%s','select * from testA join testB on testA.a = testB.a')",dataStore));
 			db.eachRow("select * from testA join testB on testA.a = testB.a",new MethodClosure(this,"printRow"));
 		} catch (Exception e) {
 			LOGGER.error("Failed to create in memory database: {}", e.getMessage());
