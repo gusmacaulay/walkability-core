@@ -16,7 +16,6 @@
  */
 package org.mccaughey.utilities;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -90,26 +89,26 @@ public final class GeoJSONUtilities {
 		URL featuresURL = null;
 		try {
 			// LOGGER.info("DATA STORE: {}", dataStore);
-			if (dataStore.toLowerCase().startsWith("file:/")) {
+			//if (dataStore.toLowerCase().startsWith("file:/")) {
 				LOGGER.info("Writing to File resource {}", dataStore);
 				featuresURL = dataStoreURL;
 				writeFeatures(features, new File(dataStoreURL.toURI()));
 				return dataStoreURL;
-			} else {
-				store.setUrl(dataStore);
-
-				featuresURL = new URL(store.createStorageLocation());
-				LOGGER.info("New geojson resource {}", featuresURL);
-
-				FeatureJSON fjson = new FeatureJSON();
-
-				ByteArrayOutputStream sos = new ByteArrayOutputStream();
-
-				fjson.writeFeatureCollection(features, sos);
-				String urlString = featuresURL.toString();
-				store.storeGeoJsonData(urlString, sos.toString());
-			}
-			return featuresURL;
+//			} else {
+//				store.setUrl(dataStore);
+//
+//				featuresURL = new URL(store.createStorageLocation());
+//				LOGGER.info("New geojson resource {}", featuresURL);
+//
+//				FeatureJSON fjson = new FeatureJSON();
+//
+//				ByteArrayOutputStream sos = new ByteArrayOutputStream();
+//
+//				fjson.writeFeatureCollection(features, sos);
+//				String urlString = featuresURL.toString();
+//				store.storeGeoJsonData(urlString, sos.toString());
+//			}
+//			return featuresURL;
 		} catch (Exception e) {
 			LOGGER.error(e.getMessage());
 			//e.printStackTrace();
