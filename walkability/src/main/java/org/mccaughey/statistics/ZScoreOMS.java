@@ -16,15 +16,16 @@
  */
 package org.mccaughey.statistics;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
 import oms3.annotations.Name;
 import oms3.annotations.Out;
+
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.mccaughey.utilities.GeoJSONUtilities;

@@ -1,16 +1,13 @@
 package org.mccaughey.tabular;
 
-import groovy.sql.GroovyResultSetExtension;
 import groovy.sql.Sql;
 
 import java.net.URL;
-import java.text.MessageFormat;
 
 import oms3.annotations.Execute;
 import oms3.annotations.In;
 import oms3.annotations.Out;
 
-import org.codehaus.groovy.runtime.MethodClosure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,15 +36,16 @@ public class JoinOMS {
 			db.execute(String.format("create table testA as select * from csvread('%s')",tableA.toString()));
 			db.execute(String.format("create table testB as select * from csvread('%s')",tableB.toString()));
 			db.execute(String.format("CALL csvwrite('%s','select * from testA join testB on testA.a = testB.a')",dataStore));
-			db.eachRow("select * from testA join testB on testA.a = testB.a",new MethodClosure(this,"printRow"));
+		//	db.eachRow("select * from testA join testB on testA.a = testB.a",new MethodClosure(this,"printRow"));
+		//	db.e
 		} catch (Exception e) {
 			LOGGER.error("Failed to create in memory database: {}", e.getMessage());
 		}
 		result = dataStore;
 	}
 	
-	private void printRow(GroovyResultSetExtension row) {
+	//private void printRow(GroovyResultSetExtension row) {
 		
-		LOGGER.info(row.toString());
-	}
+	//	LOGGER.info(row.toString());
+	//}
 }

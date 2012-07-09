@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import jsr166y.ForkJoinPool;
 import jsr166y.RecursiveAction;
 
 import org.geotools.feature.simple.SimpleFeatureBuilder;
@@ -104,7 +103,7 @@ public class NetworkBufferFJ extends RecursiveAction {
 			return;
 		}
 		List<Path> nextPaths = new ArrayList();
-		List<NetworkBufferFJ> buffernators = new ArrayList();
+		//List<NetworkBufferFJ> buffernators = new ArrayList();
 		Node current = currentPath.getLast();
 		List<Edge> graphEdges = (List<Edge>) network.get(current);
 
