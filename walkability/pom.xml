@@ -46,8 +46,6 @@
 			<artifactId>slf4j-api</artifactId>
 			<version>1.6.1</version>
 		</dependency>
-		<!-- <dependency> <groupId>org.slf4j</groupId> <artifactId>slf4j-simple</artifactId> 
-			<version>1.6.1</version> </dependency> -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -120,8 +118,6 @@
 			<artifactId>gt-process</artifactId>
 			<version>${geotools.version}</version>
 		</dependency>
-		<!-- <dependency> <groupId>au.org.aurin</groupId> <artifactId>oms3</artifactId> 
-			<version>1.0</version> </dependency> -->
 		<dependency>
 			<groupId>org.jgrasstools</groupId>
 			<artifactId>jgt-oms3</artifactId>
@@ -142,11 +138,6 @@
 			<artifactId>jsr166y</artifactId>
 			<version>1.7.0</version>
 		</dependency>
-<!-- 		<dependency> -->
-<!-- 			<groupId>au.org.aurin</groupId> -->
-<!-- 			<artifactId>aurin-data-store-client</artifactId> -->
-<!-- 			<version>0.0.1-SNAPSHOT</version> -->
-<!-- 		</dependency> -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
@@ -156,6 +147,11 @@
 			<groupId>junit-addons</groupId>
 			<artifactId>junit-addons</artifactId>
 			<version>1.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.skyscreamer</groupId>
+			<artifactId>jsonassert</artifactId>
+			<version>1.0.0</version>
 		</dependency>
 	</dependencies>
 	<repositories>
