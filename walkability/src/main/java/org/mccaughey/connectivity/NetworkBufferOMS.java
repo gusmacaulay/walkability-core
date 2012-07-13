@@ -18,6 +18,8 @@ package org.mccaughey.connectivity;
 
 import java.net.URL;
 
+import javax.sql.DataSource;
+
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
@@ -45,12 +47,12 @@ public class NetworkBufferOMS {
      * The road network to count connections from
      */
     @In
-    public URL network;
+    public SimpleFeatureSource network;
     /**
      * The points of interest
      */
     @In
-    public URL points;
+    public SimpleFeatureSource points;
     /**
      * The network distance for the service areas (maximum walk distance)
      */
@@ -61,16 +63,12 @@ public class NetworkBufferOMS {
      */
     @In
     public Double bufferSize;
-    /**
-     * The data store url
-     */
-    @In
-    public URL outputDataStore;
+ 
     /**
      * The resulting regions url
      */
     @Out
-    public URL regions;
+    public SimpleFeatureSource regions;
  
 
     /**
@@ -82,9 +80,9 @@ public class NetworkBufferOMS {
         try {
 
         	LOGGER.info("Reading in network...");
-            SimpleFeatureSource networkSource = DataUtilities.source(GeoJSONUtilities.readFeatures(network));
+            SimpleFeatureSource networkSource = network;
             LOGGER.info("Reading in points...");
-            SimpleFeatureSource pointsSource = DataUtilities.source(GeoJSONUtilities.readFeatures(points));
+            SimpleFeatureSource pointsSource = points;
 
             //     LOGGER.info("Points Source CRS: {}", pointsSource.getSchema().getCoordinateReferenceSystem());
             LOGGER.info("Generate network service areas...");
@@ -97,7 +95,7 @@ public class NetworkBufferOMS {
 
 
             //  File file = new File("service_areas_oms.geojson");
-            regions = GeoJSONUtilities.writeFeatures(buffers, outputDataStore);
+            regions = DataUtilities.source(buffers);
 
             //regions = file.toURI().toURL();
             LOGGER.info("Regions uploaded to {}", regions);
