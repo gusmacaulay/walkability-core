@@ -49,7 +49,7 @@ public class LandUseMixOMS {
      * URL containing geojson representation of Land Use regions.
      */
     @In
-    public URL landUseURL;
+    public SimpleFeatureSource landUseSource;
     
     /**
      * A List of classification categories to use in the Land Use Mix calculation
@@ -67,18 +67,14 @@ public class LandUseMixOMS {
      * The set of regions to calculate Land Use Mix for
      */
     @In
-    public URL regionsURL;
+    public SimpleFeatureSource regionsSource;
     
     /**
      * The location of the resulting dataset (GeoJSON)
      */
     @Out
-    public URL resultsURL;
-    /**
-     * Resource to write the output to
-     */
-    @In
-    public URL outputDataStore;
+    public SimpleFeatureSource resultsSource;
+
 
     /**
      * Reads in the land use layer and regions layer from given URLs, writes out
@@ -87,12 +83,10 @@ public class LandUseMixOMS {
     @Execute
     public void landUseMixMeasure() {
         try {
-            FeatureIterator<SimpleFeature> regions = GeoJSONUtilities.getFeatureIterator(regionsURL);
-            SimpleFeatureSource landUse = DataUtilities.source(GeoJSONUtilities.readFeatures(landUseURL));
+            FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures().features();
+            SimpleFeatureSource landUse = landUseSource;
             SimpleFeatureCollection lumRegions = LandUseMix.summarise(landUse, regions, classifications, classificationAttribute);
-            //FIXME: need to get real URL somehow? then write to it instead of file
-         // File file = new File("landUseMixRegions.geojson");
-            resultsURL = GeoJSONUtilities.writeFeatures(lumRegions, outputDataStore);
+            resultsSource = DataUtilities.source(lumRegions);
             
         } catch (IOException e) {
             LOGGER.error("Failed to read input/s: {}",e.getMessage());

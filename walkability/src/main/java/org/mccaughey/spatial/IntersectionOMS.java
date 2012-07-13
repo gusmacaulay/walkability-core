@@ -23,7 +23,9 @@ import oms3.annotations.Execute;
 import oms3.annotations.In;
 import oms3.annotations.Out;
 
+import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.mccaughey.utilities.GeoJSONUtilities;
 import org.opengis.feature.simple.SimpleFeature;
@@ -42,25 +44,23 @@ public class IntersectionOMS {
 	 static final Logger LOGGER = LoggerFactory.getLogger(IntersectionOMS.class);
 	 
 	 @In
-	 URL regionOfInterest;
+	 SimpleFeature regionOfInterest;
 	 @In
-	 URL featuresOfInterest;
-	 @In
-	 URL dataStore;
+	 SimpleFeatureSource featuresOfInterest;
 	 @Out
-	 URL results;
+	 SimpleFeatureSource results;
 	 
 	 @Execute
 	 public void intersection() {
 		 try {
-			 SimpleFeature roi = GeoJSONUtilities.readFeature(regionOfInterest);
-			 SimpleFeatureCollection features = GeoJSONUtilities.readFeatures(featuresOfInterest);
+			 
+			 SimpleFeatureCollection features = featuresOfInterest.getFeatures();
 			 FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		     String geometryPropertyName = features.getSchema().getGeometryDescriptor().getLocalName();
-			 Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(roi.getDefaultGeometry())); 
+			 Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(regionOfInterest.getDefaultGeometry())); 
 			 SimpleFeatureCollection intersectingFeatures = features.subCollection(filter);
 			 LOGGER.info("Found {} intersecting features", intersectingFeatures.size());
-			 results = GeoJSONUtilities.writeFeatures(intersectingFeatures,dataStore);
+			 results = DataUtilities.source(intersectingFeatures);
 		 }
 		 catch(IOException e) {
 			 LOGGER.equals("Failed to read input datasets");

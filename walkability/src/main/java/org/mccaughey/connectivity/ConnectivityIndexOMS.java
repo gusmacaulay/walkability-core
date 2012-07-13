@@ -28,24 +28,18 @@ public class ConnectivityIndexOMS {
      * The road network to count connections from
      */
     @In
-    public URL network;
+    public SimpleFeatureSource network;
     /**
      * The region if interest
      */
     @In
-    public URL regions;
-    
-    /**
-     * Resource to write the output to
-     */
-    @In
-    public URL outputDataStore;
-    
+    public SimpleFeatureSource regions;
+        
     /**
      * The resulting connectivity
      */
     @Out
-    public URL results;
+    public SimpleFeatureSource results;
 
     /**
      * Processes the featureSource network and region to calculate connectivity
@@ -55,17 +49,17 @@ public class ConnectivityIndexOMS {
     @Execute
     public void run() {
         try {
-            SimpleFeatureSource networkSource = DataUtilities.source(GeoJSONUtilities.readFeatures(network));
-            SimpleFeatureSource regionSource = DataUtilities.source(GeoJSONUtilities.readFeatures(regions));
+            SimpleFeatureSource networkSource = network;
+            SimpleFeatureSource regionSource = regions;
 
             ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(networkSource, regionSource.getFeatures());
             cifj.connectivity();
 
          //   File file = new File("connectivity_regions_oms.geojson");
-            results = GeoJSONUtilities.writeFeatures(cifj.getResults(), outputDataStore);
+            results = DataUtilities.source(cifj.getResults());
             // FileUtils.writeStringToFile(file, writeFeatures(buffers));
             //results = file.toURI().toURL();
-            LOGGER.info(results.toString());
+       
 //            System.out.println(results);
 
         } catch (Exception e) { //Can't do much here because of OMS?

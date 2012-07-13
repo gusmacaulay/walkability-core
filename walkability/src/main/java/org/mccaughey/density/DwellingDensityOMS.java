@@ -47,7 +47,7 @@ public class DwellingDensityOMS {
      * A URL pointing to a GeoJSON representation of regions with a population attribute
      */
     @In
-    public URL populationURL;
+    public SimpleFeatureSource populationSource;
     
     /**
      * The attribute to use for population
@@ -59,18 +59,13 @@ public class DwellingDensityOMS {
      * The input regions to calculate desnity for
      */
     @In
-    public URL regionsURL;
+    public SimpleFeatureSource regionsSource;
     
     /**
      * The resulting regions with average density calculated
      */
     @Out
-    public URL resultsURL;
-    /**
-     * Resource to write the output to
-     */
-    @In
-    public URL outputDataStore;
+    public SimpleFeatureSource resultsSource;
     
      /**
      * Reads in the population count layer and regions layer from given URLs, writes out average density results to resultsURL
@@ -78,14 +73,14 @@ public class DwellingDensityOMS {
     @Execute
     public void averageDensity() {
         try {
-            SimpleFeatureSource populationSource = DataUtilities.source(GeoJSONUtilities.readFeatures(populationURL));
-            FeatureIterator<SimpleFeature> regions = GeoJSONUtilities.getFeatureIterator(regionsURL);
+         
+            FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures().features();
             
             SimpleFeatureCollection densityRegions = DwellingDensity.averageDensity(populationSource, regions,countAttribute);
         
             //FIXME: need to get real URL somehow? then write to it instead of file
             //File file = new File("landUseMixRegions.geojson");
-            resultsURL = GeoJSONUtilities.writeFeatures(densityRegions, outputDataStore);
+            resultsSource = DataUtilities.source(densityRegions);
             
         } catch (IOException e) {
             LOGGER.error("Failed to read input/s");

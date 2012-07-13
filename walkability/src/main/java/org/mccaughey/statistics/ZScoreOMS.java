@@ -17,7 +17,6 @@
 package org.mccaughey.statistics;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.List;
 
 import oms3.annotations.Description;
@@ -26,9 +25,10 @@ import oms3.annotations.In;
 import oms3.annotations.Name;
 import oms3.annotations.Out;
 
+import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureIterator;
-import org.mccaughey.utilities.GeoJSONUtilities;
 import org.opengis.feature.simple.SimpleFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,17 +53,12 @@ public class ZScoreOMS {
      * Regions of interest (GeoJSON)
      */
     @In
-    public URL regionsURL;
+    public SimpleFeatureSource regionsSource;
     /**
      * Resulting regions with z-scores for each attribute and sum of z-scores across attributes
      */
     @Out
-    public URL resultsURL;
-    /**
-     * The data store url
-     */
-    @In
-    public URL outputDataStore;
+    public SimpleFeatureSource resultsSource;
 
     /**
      * For a given list of attributes and a set of features, calculates the z
@@ -73,13 +68,11 @@ public class ZScoreOMS {
     @Execute
     public void sumOfZScores() {
         try {
-            FeatureIterator<SimpleFeature> regions = GeoJSONUtilities.getFeatureIterator(regionsURL);
+            FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures().features();
 
             SimpleFeatureCollection statisticsRegions = ZScore.sumZScores(regions, attributes);
 
-            //FIXME: need to get real URL somehow? then write to it instead of file
-           // File file = new File("zScoreRegions.geojson");
-            resultsURL = GeoJSONUtilities.writeFeatures(statisticsRegions, outputDataStore);
+            resultsSource = DataUtilities.source(statisticsRegions);
             
         } catch (IOException e) {
             LOGGER.error("Failed to read input/s");
