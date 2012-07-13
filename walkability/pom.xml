@@ -142,11 +142,11 @@
 			<artifactId>jsr166y</artifactId>
 			<version>1.7.0</version>
 		</dependency>
-		<dependency>
-			<groupId>au.org.aurin</groupId>
-			<artifactId>aurin-data-store-client</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
+<!-- 		<dependency> -->
+<!-- 			<groupId>au.org.aurin</groupId> -->
+<!-- 			<artifactId>aurin-data-store-client</artifactId> -->
+<!-- 			<version>0.0.1-SNAPSHOT</version> -->
+<!-- 		</dependency> -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>

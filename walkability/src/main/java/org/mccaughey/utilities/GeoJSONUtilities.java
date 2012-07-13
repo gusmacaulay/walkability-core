@@ -30,9 +30,9 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import au.org.aurin.data.store.client.DataStoreClient;
-import au.org.aurin.data.store.client.DataStoreClientImpl;
-import au.org.aurin.security.util.SslUtil;
+//import au.org.aurin.data.store.client.DataStoreClient;
+//import au.org.aurin.data.store.client.DataStoreClientImpl;
+//import au.org.aurin.security.util.SslUtil;
 
 /**
  * Handles reading and writing of GeoJSON in and out of Geotools
@@ -82,8 +82,8 @@ public final class GeoJSONUtilities {
 	 *            The URL to write to (will overwrite existing)
 	 */
 	public static URL writeFeatures(SimpleFeatureCollection features, URL dataStoreURL) {
-		SslUtil.trustSelfSignedSSL();
-		DataStoreClient store = new DataStoreClientImpl();
+//		SslUtil.trustSelfSignedSSL();
+//		DataStoreClient store = new DataStoreClientImpl();
 		String dataStore = dataStoreURL.toString();
 
 		URL featuresURL = null;
@@ -160,7 +160,7 @@ public final class GeoJSONUtilities {
 	public static FeatureIterator<SimpleFeature> getFeatureIterator(URL url) throws IOException {
 		LOGGER.info("Reading features from URL {}", url);
 		FeatureJSON io = new FeatureJSON();
-		SslUtil.trustSelfSignedSSL();
+	//	SslUtil.trustSelfSignedSSL();
 		io.setEncodeFeatureCollectionCRS(true);
 		return io.streamFeatureCollection(url.openConnection().getInputStream());
 	}
