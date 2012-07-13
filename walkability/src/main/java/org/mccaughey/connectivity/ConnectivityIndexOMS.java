@@ -4,12 +4,14 @@
  */
 package org.mccaughey.connectivity;
 
-import java.io.*;
-import java.net.URL;
-import oms3.annotations.*;
+import oms3.annotations.Description;
+import oms3.annotations.Execute;
+import oms3.annotations.In;
+import oms3.annotations.Name;
+import oms3.annotations.Out;
+
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureSource;
-import org.mccaughey.utilities.GeoJSONUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

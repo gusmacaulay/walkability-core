@@ -17,7 +17,6 @@
 package org.mccaughey.density;
 
 import java.io.IOException;
-import java.net.URL;
 
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
@@ -29,7 +28,6 @@ import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureIterator;
-import org.mccaughey.utilities.GeoJSONUtilities;
 import org.opengis.feature.simple.SimpleFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -13,6 +13,11 @@ import org.codehaus.groovy.runtime.MethodClosure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Performs a join on two tables - this should be refactored so it can handle spatial and non-spatial datasets
+ * @author amacaulay
+ *
+ */
 public class JoinOMS {
 	static final Logger LOGGER = LoggerFactory.getLogger(JoinOMS.class);
 
@@ -31,6 +36,9 @@ public class JoinOMS {
 	@Out
 	URL result;
 
+	/**
+	 * Performs a join using and in memory h2 database and groovy sql.
+	 */
 	@Execute
 	public void join() {
 		try {

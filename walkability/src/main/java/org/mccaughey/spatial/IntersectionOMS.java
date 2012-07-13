@@ -17,7 +17,6 @@
 package org.mccaughey.spatial;
 
 import java.io.IOException;
-import java.net.URL;
 
 import oms3.annotations.Execute;
 import oms3.annotations.In;
@@ -27,7 +26,6 @@ import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
-import org.mccaughey.utilities.GeoJSONUtilities;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
@@ -35,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 
+ * Finds all intersecting features in a region of interest.
  * @author amacaulay
  *
  */
@@ -50,6 +48,9 @@ public class IntersectionOMS {
 	 @Out
 	 SimpleFeatureSource results;
 	 
+	 /**
+	  * Finds all intersecting features in a region of interest - uses geotools filter.
+	  */
 	 @Execute
 	 public void intersection() {
 		 try {
