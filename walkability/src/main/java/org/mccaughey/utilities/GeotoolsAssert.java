@@ -33,6 +33,7 @@ public final class GeotoolsAssert {
 				SimpleFeature featureB = iteratorB.next();
 				SimpleFeature featureA = mapA.get(featureB.getID());
 				//Test Geometry area equivalence
+			//	System.out.println("Geometry Name: " + featureA.getDefaultGeometryProperty().getName());
 				Geometry geomB = (Geometry) (featureB.getDefaultGeometry());
 				Geometry geomA = (Geometry) (featureA.getDefaultGeometry());
 				Long areaA = Math.round(geomB.getArea() / 1000); //TODO: improve accuracy
@@ -43,7 +44,7 @@ public final class GeotoolsAssert {
 				//Test properties (excluding geometry) equivalence --> A can be a *subset* of B, comparison is not symetrical
 				for (Property p : featureA.getProperties()) {
 					if (p.getName() != featureA.getDefaultGeometryProperty().getName()) {
-						System.out.println(("Comparing " + p.toString()));
+					//	System.out.println(("Comparing " + p.toString()));
 						LOGGER.info("A {}, B {}.", p.getValue(), featureB.getProperty(p.getName()).getValue());
 						Assert.assertEquals(p.getValue().toString(), featureB.getProperty(p.getName().getLocalPart()).getValue().toString());
 					}

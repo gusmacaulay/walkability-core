@@ -113,6 +113,7 @@ public final class LandUseMix {
             SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
             stb.init(sft);
             stb.setName("landUseMixFeatureType");
+            
             for (String classification : classifications) {
                 stb.add(classification, Double.class);
             }
@@ -130,7 +131,7 @@ public final class LandUseMix {
             }
             Double landUseMixMeasure = calculateLUM(areas, totalArea);
             sfb.add(landUseMixMeasure);
-            return sfb.buildFeature(null);
+            return sfb.buildFeature(region.getID());
             // LOGGER.info("Land Use Mix Measure: {}", landUseMixMeasure);
         } catch (IOException e) {
             LOGGER.error("Failed to select land use features in region: {}", e.getMessage());
