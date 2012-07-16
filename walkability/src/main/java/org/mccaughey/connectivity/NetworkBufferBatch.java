@@ -67,7 +67,7 @@ public class NetworkBufferBatch extends RecursiveAction {
 		this.bufferSize = bufferSize;
 		this.buffers = FeatureCollections.newCollection();
 		this.graphs = FeatureCollections.newCollection();
-		this.pointsPerThread = 125;
+		this.pointsPerThread = 1; //TODO: make this dynamic
 	}
 
 	/**
