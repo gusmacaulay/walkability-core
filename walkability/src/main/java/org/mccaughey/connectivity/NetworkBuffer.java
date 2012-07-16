@@ -497,7 +497,7 @@ public final class NetworkBuffer {
 		}
 
 		// add attributes in order
-		builder.add("Buffer", Polygon.class);
+		builder.add("geometry", Polygon.class);
 		builder.add("UID", String.class);
 
 		// build the type
