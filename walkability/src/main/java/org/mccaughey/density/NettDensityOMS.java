@@ -10,6 +10,7 @@ import oms3.annotations.Out;
 
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
@@ -64,6 +65,7 @@ public class NettDensityOMS {
 			FeatureIterator<SimpleFeature> regions = regionsOfInterest.getFeatures().features();
 			SimpleFeatureCollection intersectingFeatures = DataUtilities.collection(new SimpleFeature[0]);
 			SimpleFeatureCollection dissolvedParcels = DataUtilities.collection(new SimpleFeature[0]);
+			SimpleFeatureCollection pipFeatures = DataUtilities.collection(new SimpleFeature[0]);
 			try {
 				while (regions.hasNext()) {
 					SimpleFeature regionOfInterest = regions.next();
@@ -71,16 +73,16 @@ public class NettDensityOMS {
 					intersectingFeatures = intersection(parcels, regionOfInterest);
 
 					//Do an point in polygon intersection parcel/service with residential points
-
+					pipFeatures.addAll(pipIntersection(residentialPoints.getFeatures(),DataUtilities.source(intersectingFeatures)));
 					//Dissolve parcel/service intersection
 					LOGGER.info("Attempting Dissolvv ...");
 					dissolvedParcels.add(dissolve(intersectingFeatures, regionOfInterest));
 					//Dissolve parcel/residential intersection
-
+					
 					//Calculate proportion(density) of parcel/service:parcel/residential
 				}
 				System.out.print("Processing Complete...");
-				resultsSource = DataUtilities.source(dissolvedParcels);
+				resultsSource = DataUtilities.source(pipFeatures);
 				System.out.println("Found features" + dissolvedParcels.size());
 
 			} catch (Exception e) {
@@ -134,13 +136,27 @@ public class NettDensityOMS {
 		return sfb.buildFeature(id);
 	}
 
-	private SimpleFeatureCollection intersection(SimpleFeatureSource featuresOfInterest, SimpleFeature regionOfInterest) throws IOException {
+	private SimpleFeatureCollection pipIntersection(SimpleFeatureCollection points, SimpleFeatureSource regions) throws IOException {
+		SimpleFeatureIterator pointsIter = points.features();
+		SimpleFeatureCollection pipFeatures = DataUtilities.collection(new SimpleFeature[0]);
+		try {
+			while(pointsIter.hasNext()) {
+				SimpleFeature point = pointsIter.next();
+				pipFeatures.addAll(intersection(regions,point));
+			}
+			return pipFeatures;
+		} finally {
+			pointsIter.close();
+		}
+	}
+	
+	private SimpleFeatureCollection intersection(SimpleFeatureSource featuresOfInterest, SimpleFeature intersectingFeature) throws IOException {
 
 		SimpleFeatureCollection features = featuresOfInterest.getFeatures();
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		String geometryPropertyName = features.getSchema().getGeometryDescriptor().getLocalName();
 
-		Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(regionOfInterest.getDefaultGeometry()));
+		Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(intersectingFeature.getDefaultGeometry()));
 
 		return features.subCollection(filter);
 
