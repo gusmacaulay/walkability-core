@@ -1,6 +1,8 @@
 package org.mccaughey.density;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import oms3.annotations.Execute;
 import oms3.annotations.In;
@@ -11,12 +13,18 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
-import org.mccaughey.spatial.IntersectionOMS;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.graph.structure.Graph;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
 
 public class NettDensityOMS {
 	static final Logger LOGGER = LoggerFactory.getLogger(NettDensityOMS.class);
@@ -54,42 +62,87 @@ public class NettDensityOMS {
 		try {
 
 			FeatureIterator<SimpleFeature> regions = regionsOfInterest.getFeatures().features();
+			SimpleFeatureCollection intersectingFeatures = DataUtilities.collection(new SimpleFeature[0]);
+			SimpleFeatureCollection dissolvedParcels = DataUtilities.collection(new SimpleFeature[0]);
+			try {
+				while (regions.hasNext()) {
+					SimpleFeature regionOfInterest = regions.next();
+					//Do an intersection of parcels with service areas
+					intersectingFeatures = intersection(parcels, regionOfInterest);
 
-			//Do an intersection of parcels with service areas
-			resultsSource = intersection(parcels, regionsOfInterest);
+					//Do an point in polygon intersection parcel/service with residential points
 
-			//Do an point in polygon intersection parcel/service with residential points
+					//Dissolve parcel/service intersection
+					LOGGER.info("Attempting Dissolvv ...");
+					dissolvedParcels.add(dissolve(intersectingFeatures, regionOfInterest));
+					//Dissolve parcel/residential intersection
 
-			//Dissolve parcel/service intersection
+					//Calculate proportion(density) of parcel/service:parcel/residential
+				}
+				System.out.print("Processing Complete...");
+				resultsSource = DataUtilities.source(dissolvedParcels);
+				System.out.println("Found features" + dissolvedParcels.size());
 
-			//Dissolve parcel/residential intersection
-
-			//Calculate proportion(density) of parcel/service:parcel/residential
-
-			
+			} catch (Exception e) {
+				LOGGER.error("Failed to complete process for all features");
+				e.printStackTrace();
+			} finally {
+				regions.close();
+			}
 
 		} catch (IOException e) {
 			LOGGER.error("Failed to read input/s");
 		}
 	}
 
-	private SimpleFeatureSource intersection(SimpleFeatureSource featuresOfInterest, SimpleFeatureSource regionsOfInterest) {
+	private SimpleFeature dissolve(SimpleFeatureCollection collection, SimpleFeature parent) throws IOException {
+		FeatureIterator<SimpleFeature> features = collection.features();
 		try {
 
-			SimpleFeatureCollection features = featuresOfInterest.getFeatures();
-			FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-			String geometryPropertyName = features.getSchema().getGeometryDescriptor().getLocalName();
-			FeatureIterator<SimpleFeature> regions = regionsOfInterest.getFeatures().features();
-			SimpleFeatureCollection intersectingFeatures = DataUtilities.collection(new SimpleFeature[0]);
-			while(regions.hasNext()) {
-				SimpleFeature regionOfInterest = regions.next();
-				Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(regionOfInterest.getDefaultGeometry()));
-				intersectingFeatures.addAll(features.subCollection(filter));
+			List<Geometry> geometries = new ArrayList();
+			SimpleFeature feature = null;
+			while (features.hasNext()) {
+			//	System.out.println("Doing some stuff ..");
+				feature = features.next();
+				geometries.add((Geometry) feature.getDefaultGeometry());
 			}
-			return DataUtilities.source(intersectingFeatures);
-		} catch (IOException e) {
-			LOGGER.equals("Failed to read input datasets");
+			Geometry dissolved = union(geometries);
+			return buildFeatureFromGeometry(parent.getFeatureType(), dissolved, parent.getID());
+		} finally {
+			features.close();
 		}
-		return null;
+
+	}
+
+	private Geometry union(List geometries) {
+		Geometry[] geom = new Geometry[geometries.size()];
+		geometries.toArray(geom);
+		GeometryFactory fact = geom[0].getFactory();
+		Geometry geomColl = fact.createGeometryCollection(geom);
+		Geometry union = geomColl.buffer(0.0);
+		return union;
+	}
+
+	private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType featureType, Geometry geom, String id) {
+
+		SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+		stb.init(featureType);
+		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(featureType);
+		sfb.add(id);
+		sfb.add(geom);
+
+		return sfb.buildFeature(id);
+	}
+
+	private SimpleFeatureCollection intersection(SimpleFeatureSource featuresOfInterest, SimpleFeature regionOfInterest) throws IOException {
+
+		SimpleFeatureCollection features = featuresOfInterest.getFeatures();
+		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+		String geometryPropertyName = features.getSchema().getGeometryDescriptor().getLocalName();
+
+		Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(regionOfInterest.getDefaultGeometry()));
+
+		return features.subCollection(filter);
+
 	}
 }

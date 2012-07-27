@@ -53,19 +53,19 @@ public final class GeoJSONUtilities {
 			// fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(),
 			// os);
 
-//			if (features.getSchema().getCoordinateReferenceSystem() != null) {
-//				fjson.setEncodeFeatureCollectionBounds(true);
-//				fjson.setEncodeFeatureCollectionCRS(true);
-//			} else {
-//				throw new IOException("CRS is null");
-//			}
-//			LOGGER.info("CRS: {}", features.getSchema().getCoordinateReferenceSystem().toString());
-//			if (features.getSchema().getCoordinateReferenceSystem().toString().contains("UNIT[\"m")) {
-//				LOGGER.info("CRS in metres!");
-//			} else {
-//				LOGGER.error("CRS not in metres");
-//			}
-			
+			//			if (features.getSchema().getCoordinateReferenceSystem() != null) {
+			//				fjson.setEncodeFeatureCollectionBounds(true);
+			//				fjson.setEncodeFeatureCollectionCRS(true);
+			//			} else {
+			//				throw new IOException("CRS is null");
+			//			}
+			//			LOGGER.info("CRS: {}", features.getSchema().getCoordinateReferenceSystem().toString());
+			//			if (features.getSchema().getCoordinateReferenceSystem().toString().contains("UNIT[\"m")) {
+			//				LOGGER.info("CRS in metres!");
+			//			} else {
+			//				LOGGER.error("CRS not in metres");
+			//			}
+
 			fjson.writeFeatureCollection(features, os);
 			os.close();
 		} catch (IOException e) {
@@ -82,36 +82,15 @@ public final class GeoJSONUtilities {
 	 *            The URL to write to (will overwrite existing)
 	 */
 	public static URL writeFeatures(SimpleFeatureCollection features, URL dataStoreURL) {
-//		SslUtil.trustSelfSignedSSL();
-//		DataStoreClient store = new DataStoreClientImpl();
 		String dataStore = dataStoreURL.toString();
 
-		URL featuresURL = null;
 		try {
-			// LOGGER.info("DATA STORE: {}", dataStore);
-			//if (dataStore.toLowerCase().startsWith("file:/")) {
-				LOGGER.info("Writing to File resource {}", dataStore);
-				featuresURL = dataStoreURL;
-				writeFeatures(features, new File(dataStoreURL.toURI()));
-				return dataStoreURL;
-//			} else {
-//				store.setUrl(dataStore);
-//
-//				featuresURL = new URL(store.createStorageLocation());
-//				LOGGER.info("New geojson resource {}", featuresURL);
-//
-//				FeatureJSON fjson = new FeatureJSON();
-//
-//				ByteArrayOutputStream sos = new ByteArrayOutputStream();
-//
-//				fjson.writeFeatureCollection(features, sos);
-//				String urlString = featuresURL.toString();
-//				store.storeGeoJsonData(urlString, sos.toString());
-//			}
-//			return featuresURL;
+			LOGGER.info("Writing to File resource {}", dataStore);
+			writeFeatures(features, new File(dataStoreURL.toURI()));
+			return dataStoreURL;
 		} catch (Exception e) {
 			LOGGER.error(e.getMessage());
-			//e.printStackTrace();
+			e.printStackTrace();
 		}
 		return null; // FIXME: add proper error handling
 	}
@@ -160,7 +139,7 @@ public final class GeoJSONUtilities {
 	public static FeatureIterator<SimpleFeature> getFeatureIterator(URL url) throws IOException {
 		LOGGER.info("Reading features from URL {}", url);
 		FeatureJSON io = new FeatureJSON();
-	//	SslUtil.trustSelfSignedSSL();
+		//	SslUtil.trustSelfSignedSSL();
 		io.setEncodeFeatureCollectionCRS(true);
 		return io.streamFeatureCollection(url.openConnection().getInputStream());
 	}
