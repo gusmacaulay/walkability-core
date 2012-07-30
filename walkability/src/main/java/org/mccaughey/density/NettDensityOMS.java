@@ -76,20 +76,28 @@ public class NettDensityOMS {
 					//Do an point in polygon intersection parcel/service with residential points
 					pipFeatures = pipIntersection(residentialPoints, intersectingFeatures);
 					//Dissolve parcel/service intersection
-	
-				//	SimpleFeature dissolvedParcel = dissolve(intersectingFeatures, regionOfInterest);
+
+					//	SimpleFeature dissolvedParcel = dissolve(intersectingFeatures, regionOfInterest);
 					//dissolvedParcels.addAll(intersectingFeatures);
 					//Dissolve parcel/residential intersection
 					//SimpleFeature dissolvedResidential = dissolve(pipFeatures, regionOfInterest);
 					//Calculate proportion(density) of parcel/service:parcel/residential
-					double residentialArea = getTotalArea(pipFeatures);
+					double residentialAreaHectares = getTotalArea(pipFeatures)/10000;
 					double parcelArea = getTotalArea(intersectingFeatures);
-					double density = (residentialArea / parcelArea);
+					int pipCount = pipCount(residentialPoints, intersectingFeatures);
+					double density = (pipCount / residentialAreaHectares);
+
 					System.out.println("Total Parcels " + intersectingFeatures.size() + " Res Parcels " + pipFeatures.size());
-					System.out.println("Total Area " + parcelArea + " Res Area " + residentialArea);
+					System.out.println("Total Area " + parcelArea + " Res Area " + residentialAreaHectares);
 					System.out.println("Density: " + density);
-					SimpleFeature densityFeature = buildFeature(regionOfInterest);
+					List<String> outputAttrs = new ArrayList();
+					outputAttrs.add("NettDensity");
+					outputAttrs.add("ResidentialAreaHA");
+					outputAttrs.add("ResidentialPointsCount");
+					SimpleFeature densityFeature = buildFeature(regionOfInterest,outputAttrs);
 					densityFeature.setAttribute("NettDensity", density);
+					densityFeature.setAttribute("ResidentialAreaHA", residentialAreaHectares);
+					densityFeature.setAttribute("ResidentialPointsCount", pipCount);
 					densityFeatures.add(densityFeature);
 				}
 				System.out.print("Processing Complete...");
@@ -108,20 +116,22 @@ public class NettDensityOMS {
 		}
 	}
 
-	private static SimpleFeature buildFeature(SimpleFeature region) {
+	 private static SimpleFeature buildFeature(SimpleFeature region, List<String> attributes) {
 
-		SimpleFeatureType sft = (SimpleFeatureType) region.getType();
-		SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
-		stb.init(sft);
-		stb.setName("densityFeatureType");
-		stb.add("NettDensity", Double.class);
-		SimpleFeatureType statsFT = stb.buildFeatureType();
-		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(statsFT);
-		sfb.addAll(region.getAttributes());
+	        SimpleFeatureType sft = (SimpleFeatureType) region.getType();
+	        SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+	        stb.init(sft);
+	        stb.setName("densityFeatureType");
+	        for (String attr : attributes) {
+	            stb.add(attr, Double.class);
+	        }
+	        SimpleFeatureType statsFT = stb.buildFeatureType();
+	        SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(statsFT);
+	        sfb.addAll(region.getAttributes());
 
-		return sfb.buildFeature(region.getID());
+	        return sfb.buildFeature(region.getID());
 
-	}
+	    }
 
 	private SimpleFeature dissolve(SimpleFeatureCollection collection, SimpleFeature parent) throws IOException {
 		FeatureIterator<SimpleFeature> features = collection.features();
@@ -225,6 +235,21 @@ public class NettDensityOMS {
 		sfb.add(geom);
 
 		return sfb.buildFeature(id);
+	}
+
+	private int pipCount(SimpleFeatureSource points, SimpleFeatureCollection regions) throws IOException {
+		int pipCount = 0;
+		SimpleFeatureIterator regionsIter = regions.features();
+
+		try {
+			while (regionsIter.hasNext()) {
+				SimpleFeature region = regionsIter.next();
+				pipCount += (intersection(points, region)).size();
+			}
+			return pipCount;
+		} finally {
+			regionsIter.close();
+		}
 	}
 
 	private SimpleFeatureCollection pipIntersection(SimpleFeatureSource points, SimpleFeatureCollection regions) throws IOException {
