@@ -65,7 +65,7 @@ public class NettDensityOMS {
 
 			FeatureIterator<SimpleFeature> regions = regionsOfInterest.getFeatures().features();
 			SimpleFeatureCollection intersectingFeatures = DataUtilities.collection(new SimpleFeature[0]);
-			SimpleFeatureCollection dissolvedParcels = DataUtilities.collection(new SimpleFeature[0]);
+			SimpleFeatureCollection densityFeatures = DataUtilities.collection(new SimpleFeature[0]);
 			SimpleFeatureCollection pipFeatures = DataUtilities.collection(new SimpleFeature[0]);
 			try {
 				while (regions.hasNext()) {
@@ -78,20 +78,23 @@ public class NettDensityOMS {
 					//Dissolve parcel/service intersection
 	
 				//	SimpleFeature dissolvedParcel = dissolve(intersectingFeatures, regionOfInterest);
-					dissolvedParcels.addAll(intersectingFeatures);
+					//dissolvedParcels.addAll(intersectingFeatures);
 					//Dissolve parcel/residential intersection
 					//SimpleFeature dissolvedResidential = dissolve(pipFeatures, regionOfInterest);
 					//Calculate proportion(density) of parcel/service:parcel/residential
 					double residentialArea = getTotalArea(pipFeatures);
 					double parcelArea = getTotalArea(intersectingFeatures);
+					double density = (residentialArea / parcelArea);
 					System.out.println("Total Parcels " + intersectingFeatures.size() + " Res Parcels " + pipFeatures.size());
 					System.out.println("Total Area " + parcelArea + " Res Area " + residentialArea);
-					System.out.println("Density: " + (residentialArea / parcelArea));
-					//break;
+					System.out.println("Density: " + density);
+					SimpleFeature densityFeature = buildFeature(regionOfInterest);
+					densityFeature.setAttribute("NettDensity", density);
+					densityFeatures.add(densityFeature);
 				}
 				System.out.print("Processing Complete...");
-				resultsSource = DataUtilities.source(dissolvedParcels);
-				System.out.println("Found features" + dissolvedParcels.size());
+				resultsSource = DataUtilities.source(densityFeatures);
+				System.out.println("Found features" + densityFeatures.size());
 
 			} catch (Exception e) {
 				LOGGER.error("Failed to complete process for all features");
@@ -103,6 +106,21 @@ public class NettDensityOMS {
 		} catch (IOException e) {
 			LOGGER.error("Failed to read input/s");
 		}
+	}
+
+	private static SimpleFeature buildFeature(SimpleFeature region) {
+
+		SimpleFeatureType sft = (SimpleFeatureType) region.getType();
+		SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+		stb.init(sft);
+		stb.setName("densityFeatureType");
+		stb.add("NettDensity", Double.class);
+		SimpleFeatureType statsFT = stb.buildFeatureType();
+		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(statsFT);
+		sfb.addAll(region.getAttributes());
+
+		return sfb.buildFeature(region.getID());
+
 	}
 
 	private SimpleFeature dissolve(SimpleFeatureCollection collection, SimpleFeature parent) throws IOException {
@@ -192,7 +210,7 @@ public class NettDensityOMS {
 		SimpleFeatureIterator iter = features.features();
 		while (iter.hasNext()) {
 			SimpleFeature feature = iter.next();
-			area += ((Geometry)(feature.getDefaultGeometry())).getArea();
+			area += ((Geometry) (feature.getDefaultGeometry())).getArea();
 			//System.out.println("area: " + area);
 		}
 		return area;
