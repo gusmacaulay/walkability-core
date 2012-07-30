@@ -2,6 +2,7 @@ package org.mccaughey.density;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import oms3.annotations.Execute;
@@ -16,7 +17,6 @@ import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.graph.structure.Graph;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.Filter;
@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.PrecisionModel;
 
 public class NettDensityOMS {
 	static final Logger LOGGER = LoggerFactory.getLogger(NettDensityOMS.class);
@@ -73,16 +74,21 @@ public class NettDensityOMS {
 					intersectingFeatures = intersection(parcels, regionOfInterest);
 
 					//Do an point in polygon intersection parcel/service with residential points
-					pipFeatures.addAll(pipIntersection(residentialPoints.getFeatures(),DataUtilities.source(intersectingFeatures)));
+					pipFeatures = pipIntersection(residentialPoints.getFeatures(), DataUtilities.source(intersectingFeatures));
 					//Dissolve parcel/service intersection
 					LOGGER.info("Attempting Dissolvv ...");
-					dissolvedParcels.add(dissolve(intersectingFeatures, regionOfInterest));
+				//	SimpleFeature dissolvedParcel = dissolve(intersectingFeatures, regionOfInterest);
+					dissolvedParcels.addAll(intersectingFeatures);
 					//Dissolve parcel/residential intersection
-					
+					SimpleFeature dissolvedResidential = dissolve(pipFeatures, regionOfInterest);
 					//Calculate proportion(density) of parcel/service:parcel/residential
+					Double residentialArea = getTotalArea(pipFeatures);
+					Double parcelArea = getTotalArea(intersectingFeatures);
+					System.out.println("Density: " + residentialArea / parcelArea);
+					//break;
 				}
 				System.out.print("Processing Complete...");
-				resultsSource = DataUtilities.source(pipFeatures);
+				resultsSource = DataUtilities.source(dissolvedParcels);
 				System.out.println("Found features" + dissolvedParcels.size());
 
 			} catch (Exception e) {
@@ -104,7 +110,7 @@ public class NettDensityOMS {
 			List<Geometry> geometries = new ArrayList();
 			SimpleFeature feature = null;
 			while (features.hasNext()) {
-			//	System.out.println("Doing some stuff ..");
+				//	System.out.println("Doing some stuff ..");
 				feature = features.next();
 				geometries.add((Geometry) feature.getDefaultGeometry());
 			}
@@ -117,12 +123,75 @@ public class NettDensityOMS {
 	}
 
 	private Geometry union(List geometries) {
+		double t1 = new Date().getTime();
 		Geometry[] geom = new Geometry[geometries.size()];
 		geometries.toArray(geom);
 		GeometryFactory fact = geom[0].getFactory();
+		//PrecisionModel precision = new PrecisionModel(100); // FIXME: should be configurable
+		//GeometryFactory fact = new GeometryFactory(precision);
 		Geometry geomColl = fact.createGeometryCollection(geom);
-		Geometry union = geomColl.buffer(0.0);
+		Geometry union = geomColl.union(); //geomColl.buffer(0.0);
+		double t2 = new Date().getTime();
+		System.out.println("Time taken Union: " + (t2 - t1) / 1000);
 		return union;
+	}
+
+	private Geometry union_better(List<Geometry> geometries) {
+
+		// int loopcount = 0;
+		PrecisionModel precision = new PrecisionModel(10); // FIXME: should be configurable
+		GeometryFactory fact = new GeometryFactory(precision);
+		Geometry all = fact.createGeometry(null);
+		double t1 = new Date().getTime();
+		while (geometries.size() > 0) {
+			// LOGGER.info("loopcount: {}",loopcount++);
+			List<Geometry> unjoined = new ArrayList();
+			for (Geometry geom : geometries) {
+				//Geometry geom = (Geometry) ((SimpleFeature) serviceArea.get(edge)).getDefaultGeometry();
+				// LOGGER.info("GEOM TYPE: {}",geom.getGeometryType());
+				geom = geom.union();
+				// LOGGER.info("Unioned collection");
+				//geom = geom.buffer(distance);
+				// LOGGER.info("Buffered geom");
+				try {
+					if (all != null) {
+						all = all.union().union();
+					}
+					if (all == null) {
+						all = geom;
+					} else if (!(all.covers(geom))) {
+						// LOGGER.info("ALL TYPE: {} GEOM TYPE: {}",
+						// all.getGeometryType(), geom.getGeometryType());
+						if (all.intersects(geom)) {
+							all = all.union(geom);
+						} else {
+							// LOGGER.info("No intersection ...");
+							unjoined.add(geom);
+						}
+					}
+				} catch (Exception e) {
+					if (e.getMessage().contains("non-noded")) {
+						LOGGER.info(e.getMessage());
+					} else {
+						LOGGER.error("Failed to create buffer from network: " + e.getMessage());
+						return null;
+					}
+				}
+			}
+			geometries = unjoined;
+		}
+		double t2 = new Date().getTime();
+		System.out.println("Time taken Union: " + (t2 - t1) / 1000);
+		return all;
+	}
+
+	private Double getTotalArea(SimpleFeatureCollection features) {
+		double area = 0.0;
+		SimpleFeatureIterator iter = features.features();
+		while (iter.hasNext()) {
+			area += ((Geometry) (iter.next().getDefaultGeometry())).getArea();
+		}
+		return area;
 	}
 
 	private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType featureType, Geometry geom, String id) {
@@ -140,16 +209,16 @@ public class NettDensityOMS {
 		SimpleFeatureIterator pointsIter = points.features();
 		SimpleFeatureCollection pipFeatures = DataUtilities.collection(new SimpleFeature[0]);
 		try {
-			while(pointsIter.hasNext()) {
+			while (pointsIter.hasNext()) {
 				SimpleFeature point = pointsIter.next();
-				pipFeatures.addAll(intersection(regions,point));
+				pipFeatures.addAll(intersection(regions, point));
 			}
 			return pipFeatures;
 		} finally {
 			pointsIter.close();
 		}
 	}
-	
+
 	private SimpleFeatureCollection intersection(SimpleFeatureSource featuresOfInterest, SimpleFeature intersectingFeature) throws IOException {
 
 		SimpleFeatureCollection features = featuresOfInterest.getFeatures();
@@ -158,7 +227,8 @@ public class NettDensityOMS {
 
 		Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(intersectingFeature.getDefaultGeometry()));
 
-		return features.subCollection(filter);
+		//	return features.subCollection(filter); --> THIS IS REALLY SLOW
+		return featuresOfInterest.getFeatures(filter); // --> DO THIS INSTEAD
 
 	}
 }
