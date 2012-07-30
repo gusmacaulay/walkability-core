@@ -74,17 +74,19 @@ public class NettDensityOMS {
 					intersectingFeatures = intersection(parcels, regionOfInterest);
 
 					//Do an point in polygon intersection parcel/service with residential points
-					pipFeatures = pipIntersection(residentialPoints.getFeatures(), DataUtilities.source(intersectingFeatures));
+					pipFeatures = pipIntersection(residentialPoints, intersectingFeatures);
 					//Dissolve parcel/service intersection
-					LOGGER.info("Attempting Dissolvv ...");
+	
 				//	SimpleFeature dissolvedParcel = dissolve(intersectingFeatures, regionOfInterest);
 					dissolvedParcels.addAll(intersectingFeatures);
 					//Dissolve parcel/residential intersection
-					SimpleFeature dissolvedResidential = dissolve(pipFeatures, regionOfInterest);
+					//SimpleFeature dissolvedResidential = dissolve(pipFeatures, regionOfInterest);
 					//Calculate proportion(density) of parcel/service:parcel/residential
-					Double residentialArea = getTotalArea(pipFeatures);
-					Double parcelArea = getTotalArea(intersectingFeatures);
-					System.out.println("Density: " + residentialArea / parcelArea);
+					double residentialArea = getTotalArea(pipFeatures);
+					double parcelArea = getTotalArea(intersectingFeatures);
+					System.out.println("Total Parcels " + intersectingFeatures.size() + " Res Parcels " + pipFeatures.size());
+					System.out.println("Total Area " + parcelArea + " Res Area " + residentialArea);
+					System.out.println("Density: " + (residentialArea / parcelArea));
 					//break;
 				}
 				System.out.print("Processing Complete...");
@@ -189,7 +191,9 @@ public class NettDensityOMS {
 		double area = 0.0;
 		SimpleFeatureIterator iter = features.features();
 		while (iter.hasNext()) {
-			area += ((Geometry) (iter.next().getDefaultGeometry())).getArea();
+			SimpleFeature feature = iter.next();
+			area += ((Geometry)(feature.getDefaultGeometry())).getArea();
+			//System.out.println("area: " + area);
 		}
 		return area;
 	}
@@ -205,17 +209,18 @@ public class NettDensityOMS {
 		return sfb.buildFeature(id);
 	}
 
-	private SimpleFeatureCollection pipIntersection(SimpleFeatureCollection points, SimpleFeatureSource regions) throws IOException {
-		SimpleFeatureIterator pointsIter = points.features();
+	private SimpleFeatureCollection pipIntersection(SimpleFeatureSource points, SimpleFeatureCollection regions) throws IOException {
+		SimpleFeatureIterator regionsIter = regions.features();
 		SimpleFeatureCollection pipFeatures = DataUtilities.collection(new SimpleFeature[0]);
 		try {
-			while (pointsIter.hasNext()) {
-				SimpleFeature point = pointsIter.next();
-				pipFeatures.addAll(intersection(regions, point));
+			while (regionsIter.hasNext()) {
+				SimpleFeature region = regionsIter.next();
+				if ((intersection(points, region)).size() > 0)
+					pipFeatures.add(region);
 			}
 			return pipFeatures;
 		} finally {
-			pointsIter.close();
+			regionsIter.close();
 		}
 	}
 
