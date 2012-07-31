@@ -80,21 +80,21 @@ public class NettDensityOMS {
 					//	SimpleFeature dissolvedParcel = dissolve(intersectingFeatures, regionOfInterest);
 					//dissolvedParcels.addAll(intersectingFeatures);
 					//Dissolve parcel/residential intersection
-					//SimpleFeature dissolvedResidential = dissolve(pipFeatures, regionOfInterest);
+					SimpleFeature dissolvedResidential = dissolve(pipFeatures, regionOfInterest);
 					//Calculate proportion(density) of parcel/service:parcel/residential
 					double residentialAreaHectares = getTotalArea(pipFeatures)/10000;
-					double parcelArea = getTotalArea(intersectingFeatures);
-					int pipCount = pipCount(residentialPoints, intersectingFeatures);
+					//double parcelArea = getTotalArea(intersectingFeatures);
+					int pipCount = pipCount(residentialPoints, pipFeatures);
 					double density = (pipCount / residentialAreaHectares);
 
 					System.out.println("Total Parcels " + intersectingFeatures.size() + " Res Parcels " + pipFeatures.size());
-					System.out.println("Total Area " + parcelArea + " Res Area " + residentialAreaHectares);
+					System.out.println("RESAREAHA Area " + regionOfInterest.getAttribute("RESAREAHA") + " Res Area " + residentialAreaHectares);
 					System.out.println("Density: " + density);
 					List<String> outputAttrs = new ArrayList();
 					outputAttrs.add("NettDensity");
 					outputAttrs.add("ResidentialAreaHA");
 					outputAttrs.add("ResidentialPointsCount");
-					SimpleFeature densityFeature = buildFeature(regionOfInterest,outputAttrs);
+					SimpleFeature densityFeature = buildFeature(dissolvedResidential,outputAttrs);
 					densityFeature.setAttribute("NettDensity", density);
 					densityFeature.setAttribute("ResidentialAreaHA", residentialAreaHectares);
 					densityFeature.setAttribute("ResidentialPointsCount", pipCount);
@@ -136,20 +136,34 @@ public class NettDensityOMS {
 	private SimpleFeature dissolve(SimpleFeatureCollection collection, SimpleFeature parent) throws IOException {
 		FeatureIterator<SimpleFeature> features = collection.features();
 		try {
-
 			List<Geometry> geometries = new ArrayList();
 			SimpleFeature feature = null;
 			while (features.hasNext()) {
-				//	System.out.println("Doing some stuff ..");
 				feature = features.next();
 				geometries.add((Geometry) feature.getDefaultGeometry());
 			}
 			Geometry dissolved = union(geometries);
-			return buildFeatureFromGeometry(parent.getFeatureType(), dissolved, parent.getID());
+			SimpleFeature dissolvedFeature = buildFeature(parent,new ArrayList());
+			dissolvedFeature.setDefaultGeometry(dissolved);
+			return dissolvedFeature;
 		} finally {
 			features.close();
 		}
 
+	}
+	
+	private Double getTotalArea(SimpleFeatureCollection features) {
+		double area = 0.0;
+		SimpleFeatureIterator iter = features.features();
+		List<Geometry> geometries = new ArrayList();
+		while (iter.hasNext()) {
+			SimpleFeature feature = iter.next();
+			geometries.add((Geometry) (feature.getDefaultGeometry()));
+			//area += ((Geometry) (feature.getDefaultGeometry())).getArea();
+			//System.out.println("area: " + area);
+		}
+		return union(geometries).getArea();
+		//return area;
 	}
 
 	private Geometry union(List geometries) {
@@ -183,13 +197,13 @@ public class NettDensityOMS {
 				// LOGGER.info("Unioned collection");
 				//geom = geom.buffer(distance);
 				// LOGGER.info("Buffered geom");
-				try {
-					if (all != null) {
-						all = all.union().union();
-					}
+				//try {
+				//	if (all != null) {
+				//		all = all.union().union();
+				//	}
 					if (all == null) {
 						all = geom;
-					} else if (!(all.covers(geom))) {
+					} //else if (!(all.covers(geom))) {
 						// LOGGER.info("ALL TYPE: {} GEOM TYPE: {}",
 						// all.getGeometryType(), geom.getGeometryType());
 						if (all.intersects(geom)) {
@@ -198,15 +212,15 @@ public class NettDensityOMS {
 							// LOGGER.info("No intersection ...");
 							unjoined.add(geom);
 						}
-					}
-				} catch (Exception e) {
-					if (e.getMessage().contains("non-noded")) {
-						LOGGER.info(e.getMessage());
-					} else {
-						LOGGER.error("Failed to create buffer from network: " + e.getMessage());
-						return null;
-					}
-				}
+					//}
+				//} catch (Exception e) {
+				//	if (e.getMessage().contains("non-noded")) {
+				//		LOGGER.info(e.getMessage());
+					//} else {
+				//		LOGGER.error("Failed to create buffer from network: " + e.getMessage());
+					//	return null;
+				//	}
+				//}
 			}
 			geometries = unjoined;
 		}
@@ -215,24 +229,15 @@ public class NettDensityOMS {
 		return all;
 	}
 
-	private Double getTotalArea(SimpleFeatureCollection features) {
-		double area = 0.0;
-		SimpleFeatureIterator iter = features.features();
-		while (iter.hasNext()) {
-			SimpleFeature feature = iter.next();
-			area += ((Geometry) (feature.getDefaultGeometry())).getArea();
-			//System.out.println("area: " + area);
-		}
-		return area;
-	}
+
 
 	private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType featureType, Geometry geom, String id) {
 
 		SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
 		stb.init(featureType);
 		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(featureType);
-		sfb.add(id);
 		sfb.add(geom);
+		sfb.add(id);
 
 		return sfb.buildFeature(id);
 	}
