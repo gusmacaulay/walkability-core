@@ -82,7 +82,7 @@ public class NettDensityOMS {
 					//Dissolve parcel/residential intersection
 					SimpleFeature dissolvedResidential = dissolve(pipFeatures, regionOfInterest);
 					//Calculate proportion(density) of parcel/service:parcel/residential
-					double residentialAreaHectares = getTotalArea(pipFeatures)/10000;
+					double residentialAreaHectares = ((Geometry)dissolvedResidential.getDefaultGeometry()).getArea()/10000;//getTotalArea(pipFeatures)/10000;
 					//double parcelArea = getTotalArea(intersectingFeatures);
 					int pipCount = pipCount(residentialPoints, pipFeatures);
 					double density = (pipCount / residentialAreaHectares);
@@ -179,57 +179,6 @@ public class NettDensityOMS {
 		System.out.println("Time taken Union: " + (t2 - t1) / 1000);
 		return union;
 	}
-
-	private Geometry union_better(List<Geometry> geometries) {
-
-		// int loopcount = 0;
-		PrecisionModel precision = new PrecisionModel(10); // FIXME: should be configurable
-		GeometryFactory fact = new GeometryFactory(precision);
-		Geometry all = fact.createGeometry(null);
-		double t1 = new Date().getTime();
-		while (geometries.size() > 0) {
-			// LOGGER.info("loopcount: {}",loopcount++);
-			List<Geometry> unjoined = new ArrayList();
-			for (Geometry geom : geometries) {
-				//Geometry geom = (Geometry) ((SimpleFeature) serviceArea.get(edge)).getDefaultGeometry();
-				// LOGGER.info("GEOM TYPE: {}",geom.getGeometryType());
-				geom = geom.union();
-				// LOGGER.info("Unioned collection");
-				//geom = geom.buffer(distance);
-				// LOGGER.info("Buffered geom");
-				//try {
-				//	if (all != null) {
-				//		all = all.union().union();
-				//	}
-					if (all == null) {
-						all = geom;
-					} //else if (!(all.covers(geom))) {
-						// LOGGER.info("ALL TYPE: {} GEOM TYPE: {}",
-						// all.getGeometryType(), geom.getGeometryType());
-						if (all.intersects(geom)) {
-							all = all.union(geom);
-						} else {
-							// LOGGER.info("No intersection ...");
-							unjoined.add(geom);
-						}
-					//}
-				//} catch (Exception e) {
-				//	if (e.getMessage().contains("non-noded")) {
-				//		LOGGER.info(e.getMessage());
-					//} else {
-				//		LOGGER.error("Failed to create buffer from network: " + e.getMessage());
-					//	return null;
-				//	}
-				//}
-			}
-			geometries = unjoined;
-		}
-		double t2 = new Date().getTime();
-		System.out.println("Time taken Union: " + (t2 - t1) / 1000);
-		return all;
-	}
-
-
 
 	private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType featureType, Geometry geom, String id) {
 
