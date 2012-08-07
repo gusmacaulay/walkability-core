@@ -16,19 +16,17 @@
  */
 package org.mccaughey.connectivity;
 
-import com.vividsolutions.jts.geom.*;
-import com.vividsolutions.jts.index.SpatialIndex;
-import com.vividsolutions.jts.index.strtree.STRtree;
-import com.vividsolutions.jts.linearref.LinearLocation;
-import com.vividsolutions.jts.linearref.LocationIndexedLine;
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.commons.io.FileUtils;
+
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -36,7 +34,6 @@ import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.geojson.feature.FeatureJSON;
 import org.geotools.geometry.jts.GeometryCollector;
 import org.geotools.graph.build.feature.FeatureGraphGenerator;
 import org.geotools.graph.build.line.LineStringGraphGenerator;
@@ -44,6 +41,7 @@ import org.geotools.graph.path.Path;
 import org.geotools.graph.structure.Edge;
 import org.geotools.graph.structure.Graph;
 import org.geotools.graph.structure.Node;
+import org.mccaughey.utilities.GeoJSONUtilities;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
@@ -53,6 +51,19 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.PrecisionModel;
+import com.vividsolutions.jts.index.SpatialIndex;
+import com.vividsolutions.jts.index.strtree.STRtree;
+import com.vividsolutions.jts.linearref.LinearLocation;
+import com.vividsolutions.jts.linearref.LocationIndexedLine;
+
 /**
  * Generates Network Buffers, which can be used as service areas
  * 
@@ -60,6 +71,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class NetworkBuffer {
 
+	private static final int INTERSECTION_THRESHOLD = 3;
 	static final Logger LOGGER = LoggerFactory.getLogger(NetworkBuffer.class);
 	private static PrecisionModel precision = new PrecisionModel(10); // FIXME: should be configurable
 
@@ -119,7 +131,6 @@ public final class NetworkBuffer {
 			GeometryFactory gf = new GeometryFactory(precision);
 			lineA = gf.createLineString(lineA.getCoordinates());
 			lineB = gf.createLineString(lineB.getCoordinates());
-			LineString[] lines = new LineString[] { (LineString) lineB };
 
 			SimpleFeatureType edgeType = createEdgeFeatureType(networkRegion.getSchema().getCoordinateReferenceSystem());
 			SimpleFeature featureB = buildFeatureFromGeometry(edgeType, lineB);
@@ -183,7 +194,7 @@ public final class NetworkBuffer {
 
 	private static Node findStartNode(Graph graph, Geometry startLine) {
 		for (Node node : (Collection<Node>) graph.getNodes()) {
-			if (node.getEdges().size() == 3) {
+			if (node.getEdges().size() == INTERSECTION_THRESHOLD) {
 				for (Edge edge : (List<Edge>) node.getEdges()) {
 					// if (node.getEdges().size() == 1) {
 					// Edge edge = (Edge)(node.getEdges().get(0));
@@ -313,19 +324,24 @@ public final class NetworkBuffer {
 		return index;
 	}
 
-	private static void writeNetworkFromEdges(Map serviceArea) {
-		List<SimpleFeature> features = new ArrayList();
-		Set<Edge> edges = serviceArea.keySet();
-		for (Edge edge : edges) {
-			// SimpleFeature feature = (SimpleFeature) edge.getObject();
-			// feature.setDefaultGeometry(serviceArea.get(edge));
-			SimpleFeature feature = (SimpleFeature) serviceArea.get(edge);
-			features.add(feature);
+	private static void writeNetworkFromEdges(Map<Edge,SimpleFeature> serviceArea) {
+		List<SimpleFeature> featuresList = new ArrayList();
+	//	Set<Edge> edges = serviceArea.keySet();
+		Collection<SimpleFeature>  features = serviceArea.values();
+		for (SimpleFeature feature : features) {
+			featuresList.add(feature);
 		}
+//		for (Edge edge : edges) {
+//			// SimpleFeature feature = (SimpleFeature) edge.getObject();
+//			// feature.setDefaultGeometry(serviceArea.get(edge));
+//			SimpleFeature feature = (SimpleFeature) serviceArea.get(edge);
+//			features.add(feature);
+//		}
 		try {
 			File file = new File("bufferNetwork.json");
-			FileUtils.writeStringToFile(file, writeFeatures(DataUtilities.collection(features)));
+			GeoJSONUtilities.writeFeatures(DataUtilities.collection(featuresList),file);
 		} catch (Exception e) {
+			
 		}
 	}
 
@@ -428,17 +444,8 @@ public final class NetworkBuffer {
 		return buildFeatureFromGeometry(type, bufferedConvexHull);
 	}
 
-	private static String writeFeatures(SimpleFeatureCollection features) {
-		FeatureJSON fjson = new FeatureJSON();
-		Writer writer = new StringWriter();
-		try {
-			fjson.writeFeatureCollection(features, writer);
-		} catch (Exception e) {
-			return "{}";
-		}
-		return writer.toString();
-	}
 
+	
 	private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType featureType, Geometry geom) {
 		SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
 		stb.init(featureType);
