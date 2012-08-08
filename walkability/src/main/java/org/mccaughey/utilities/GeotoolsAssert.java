@@ -18,7 +18,10 @@ public final class GeotoolsAssert {
 
 	static final Logger LOGGER = LoggerFactory.getLogger(GeotoolsAssert.class);
 
-	public static void assertEquals(SimpleFeatureSource sourceA, SimpleFeatureSource sourceB) throws IOException, AssertionFailedException {
+	private GeotoolsAssert() {
+	}
+	
+	public static void assertEquals(SimpleFeatureSource sourceA, SimpleFeatureSource sourceB) throws IOException {
 		SimpleFeatureIterator iteratorA = sourceA.getFeatures().features();
 		SimpleFeatureIterator iteratorB = sourceB.getFeatures().features();
 		//assertEquals(sourceA.getSchema(),(sourceB.getSchema()));
@@ -48,7 +51,7 @@ public final class GeotoolsAssert {
 					//	System.out.println(("Comparing " + p.toString()));
 						String valueB = featureB.getProperty(p.getName()).getValue().toString();
 						LOGGER.info("A {}, B {}.", p.getValue(), valueB);
-						if(!p.getValue().toString().equals(valueB.toString())) {
+						if(!p.getValue().equals(valueB)) {
 							throw new AssertionFailedException("Feature Properties not equal, expected:" + p.getValue() + " but got: " + valueB);
 						}
 					}
