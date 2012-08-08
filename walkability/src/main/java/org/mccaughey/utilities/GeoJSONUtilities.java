@@ -17,6 +17,7 @@
 package org.mccaughey.utilities;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -48,26 +49,31 @@ public final class GeoJSONUtilities {
 
 	public static void writeFeatures(SimpleFeatureCollection features, File file) {
 		FeatureJSON fjson = new FeatureJSON();
+		OutputStream os;
 		try {
-			OutputStream os = new FileOutputStream(file);
-			// fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(),
-			// os);
+			os = new FileOutputStream(file);
+			try {
+				// fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(),
+				// os);
 
-			//			if (features.getSchema().getCoordinateReferenceSystem() != null) {
-			//				fjson.setEncodeFeatureCollectionBounds(true);
-			//				fjson.setEncodeFeatureCollectionCRS(true);
-			//			} else {
-			//				throw new IOException("CRS is null");
-			//			}
-			//			LOGGER.info("CRS: {}", features.getSchema().getCoordinateReferenceSystem().toString());
-			//			if (features.getSchema().getCoordinateReferenceSystem().toString().contains("UNIT[\"m")) {
-			//				LOGGER.info("CRS in metres!");
-			//			} else {
-			//				LOGGER.error("CRS not in metres");
-			//			}
-
-			fjson.writeFeatureCollection(features, os);
-			os.close();
+				//			if (features.getSchema().getCoordinateReferenceSystem() != null) {
+				//				fjson.setEncodeFeatureCollectionBounds(true);
+				//				fjson.setEncodeFeatureCollectionCRS(true);
+				//			} else {
+				//				throw new IOException("CRS is null");
+				//			}
+				//			LOGGER.info("CRS: {}", features.getSchema().getCoordinateReferenceSystem().toString());
+				//			if (features.getSchema().getCoordinateReferenceSystem().toString().contains("UNIT[\"m")) {
+				//				LOGGER.info("CRS in metres!");
+				//			} else {
+				//				LOGGER.error("CRS not in metres");
+				//			}
+				fjson.writeFeatureCollection(features, os);
+			} finally {
+				os.close();
+			}
+		} catch (FileNotFoundException e1) {
+			LOGGER.error("Failed to write feature collection " + e1.getMessage());
 		} catch (IOException e) {
 			LOGGER.error("Failed to write feature collection " + e.getMessage());
 		}
@@ -90,7 +96,6 @@ public final class GeoJSONUtilities {
 			return dataStoreURL;
 		} catch (Exception e) {
 			LOGGER.error(e.getMessage());
-			e.printStackTrace();
 		}
 		return null; // FIXME: add proper error handling
 	}
@@ -103,22 +108,17 @@ public final class GeoJSONUtilities {
 	 */
 	public static void writeFeature(SimpleFeature feature, File file) {
 		FeatureJSON fjson = new FeatureJSON();
-		OutputStream os = null;
 		try {
-			os = new FileOutputStream(file);
-			fjson.setEncodeFeatureCRS(true);
-			fjson.writeCRS(feature.getType().getCoordinateReferenceSystem(), os);
-			fjson.writeFeature(feature, os);
-			
+			OutputStream os = new FileOutputStream(file);
+			try {
+				fjson.setEncodeFeatureCRS(true);
+				fjson.writeCRS(feature.getType().getCoordinateReferenceSystem(), os);
+				fjson.writeFeature(feature, os);
+			} finally {
+				os.close();
+			}
 		} catch (IOException e) {
 			LOGGER.error("Failed to write feature collection" + e.getMessage());
-		} finally {
-			try {
-				os.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 		}
 	}
 
