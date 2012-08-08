@@ -64,7 +64,7 @@ public class IntersectionOMS {
 			 results = DataUtilities.source(intersectingFeatures);
 		 }
 		 catch(IOException e) {
-			 LOGGER.equals("Failed to read input datasets");
+			 LOGGER.error("Failed to read input datasets");
 		 }
 	 }
 }
