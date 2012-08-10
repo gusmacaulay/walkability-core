@@ -1,64 +1,159 @@
 package org.mccaughey.tabular;
 
-import groovy.sql.GroovyResultSetExtension;
-import groovy.sql.Sql;
-
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import oms3.annotations.Execute;
 import oms3.annotations.In;
 import oms3.annotations.Out;
 
-import org.codehaus.groovy.runtime.MethodClosure;
+import org.geotools.data.DataStore;
+import org.geotools.data.DataUtilities;
+import org.geotools.data.FileDataStoreFactorySpi;
+import org.geotools.data.FileDataStoreFinder;
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.data.simple.SimpleFeatureSource;
+import org.geotools.data.simple.SimpleFeatureStore;
+import org.geotools.feature.FeatureCollections;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import au.com.bytecode.opencsv.CSVReader;
+
 /**
  * Performs a join on two tables - this should be refactored so it can handle spatial and non-spatial datasets
+ * 
  * @author amacaulay
- *
+ * 
  */
 public class JoinOMS {
 	static final Logger LOGGER = LoggerFactory.getLogger(JoinOMS.class);
 
 	@In
-	URL tableA;
+	URL csvTable;
 
 	@In
-	URL tableB;
-	
-	@In
-	String columnName;
+	SimpleFeatureSource spatialTable;
 
-	@In 
+	@In
+	String joinColumn;
+
+	@In
 	URL dataStore;
-	
+
 	@Out
-	URL result;
+	SimpleFeatureSource result;
 
 	/**
-	 * Performs a join using and in memory h2 database and groovy sql.
+	 * Performs a join of a CSV with Geotools SimpleFeatureSource
 	 */
 	@Execute
 	public void join() {
-		try {
-			Sql db = Sql.newInstance("jdbc:h2:mem:temp", "org.h2.Driver");
-			db.execute(String.format("create table testA as select * from csvread('%s')",tableA.toString()));
-			db.execute(String.format("create table testB as select * from csvread('%s')",tableB.toString()));
-			db.execute(String.format("CALL csvwrite('%s','select * from testA join testB on testA.a = testB.a')",dataStore));
-			db.eachRow("select * from testA join testB on testA.a = testB.a",printRow(null));
-		//	db.e
-		} catch (Exception e) {
-			LOGGER.error("Failed to create in memory database: {}", e.getMessage());
-		}
-		result = dataStore;
-	}
+		CSVReader reader;
+		Map<String, List<String>> lookupTable = new HashMap();
+
 	
-	private MethodClosure printRow(GroovyResultSetExtension row) {
-		if (row == null)
-			return new MethodClosure(this,"printRow");
-		else
-			LOGGER.info(row.toString());
-		return null;
+		
+		try {
+			reader = new CSVReader(new FileReader(csvTable.getFile()));
+
+			//Assume column names in first line ...
+			String[] header = reader.readNext();
+			List<String> newAttrs = new ArrayList();
+			//List of new attribute names (columns - join column)
+			for (String attribute : header) {
+				if (attribute != joinColumn) {
+					newAttrs.add(attribute);
+				}
+			}
+			SimpleFeatureType newFeatureType = createNewFeatureType(spatialTable.getSchema(),newAttrs);
+			
+			FileDataStoreFactorySpi factory = FileDataStoreFinder.getDataStoreFactory("shp");
+
+			File file = new File("my.shp");
+			Map map = Collections.singletonMap( "url", file.toURL() );
+
+			DataStore myData = factory.createNewDataStore( map );
+
+			myData.createSchema( newFeatureType );
+
+			String[] nextLine;
+			while ((nextLine = reader.readNext()) != null) {
+				String key = null;
+				List<String> values = new ArrayList();
+				for (int i = 0; i < nextLine.length; i++) {
+					if (header[i] == joinColumn) {
+						key = nextLine[i];
+					} else {
+						values.add(nextLine[i]);
+					}
+				}
+				lookupTable.put(key, values);
+			}
+			SimpleFeatureIterator features = spatialTable.getFeatures().features();
+			try {
+			//	SimpleFeature[] newFeatures = new SimpleFeature[spatialTable.getFeatures().size()];
+				int i=0;
+				SimpleFeatureStore featureStore = (SimpleFeatureStore)myData.getFeatureSource(newFeatureType.getName());//
+				SimpleFeatureCollection collection = FeatureCollections.newCollection("internal");
+				while (features.hasNext()) {
+					SimpleFeature feature = features.next();
+					List joinValues = lookupTable.get(feature.getAttribute(joinColumn));
+					//build new feature ..
+					SimpleFeature joinFeature = buildFeature(feature, newFeatureType, joinValues);
+					collection.add(joinFeature);
+					i++;
+					if (i < 10000) {
+						featureStore.addFeatures(collection);
+						collection = FeatureCollections.newCollection("internal");
+						i = 0;
+					}
+				}
+				featureStore.addFeatures(collection);
+				result = featureStore;//DataUtilities.collection(newFeatures));
+			} finally {
+				features.close();
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		result = null;
+	}
+
+	private static SimpleFeatureType createNewFeatureType(SimpleFeatureType baseFeatureType, List<String> newAttributeNames) {
+		//     SimpleFeatureType baseFeatureType = (SimpleFeatureType) baseFeature.getType(); 
+		SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+		stb.init(baseFeatureType);
+		stb.setName("newFeatureType");
+		//Add new attributes to feature type
+		for (String attr : newAttributeNames) {
+			stb.add(attr, String.class);
+		}
+		return stb.buildFeatureType();
+	}
+
+	private static SimpleFeature buildFeature(SimpleFeature baseFeature, SimpleFeatureType newFT, List<Object> newValues) {
+		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(newFT);
+		sfb.addAll(baseFeature.getAttributes());
+		sfb.addAll(newValues);
+		return sfb.buildFeature(baseFeature.getID());
+
 	}
 }
