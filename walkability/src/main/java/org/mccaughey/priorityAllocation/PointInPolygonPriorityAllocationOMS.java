@@ -1,29 +1,29 @@
 package org.mccaughey.priorityAllocation;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import oms3.annotations.Execute;
 import oms3.annotations.In;
 import oms3.annotations.Out;
 
-import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
-import org.geotools.data.FileDataStoreFactorySpi;
-import org.geotools.data.FileDataStoreFinder;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
@@ -96,29 +96,23 @@ public class PointInPolygonPriorityAllocationOMS {
 		try {
 			FeatureIterator<SimpleFeature> regions = regionsOfInterest.getFeatures().features();
 			SimpleFeatureCollection intersectingParcels = DataUtilities.collection(new SimpleFeature[0]);
-			SimpleFeatureCollection priorityPoints = DataUtilities.collection(new SimpleFeature[0]);
+			SimpleFeatureCollection allocatedParcels = DataUtilities.collection(new SimpleFeature[0]);
 			try {
 				int count = 0;
+				ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+				List<Future> futures = new ArrayList<Future>();
 				while (regions.hasNext()) {
 					SimpleFeature regionOfInterest = regions.next();
-					//Do an intersection of parcels with service areas
-					intersectingParcels.addAll(intersection(parcels, regionOfInterest));
-					//Priority allocation
-					//for each intersecting parcel
-					FeatureIterator<SimpleFeature> allocationParcels = intersectingParcels.features();
-					while (allocationParcels.hasNext()) {
-						SimpleFeature parcel = allocationParcels.next();
-						//interesct with points
-						SimpleFeature allocatedParcel = allocateParcel(pointFeatures, parcel, priorityLookup);
-						priorityPoints.add(allocatedParcel);
-						//get max priority -> set this land use
-					}
-
-					System.out.println("*" + count++);
+					Allocater ac = new Allocater(regionOfInterest, priorityLookup,++count);
+					Future future = executorService.submit(ac);
+					futures.add(future);
+					System.out.println("Started .. " + count);
 					//break;
 				}
-
-				resultParcels = DataUtilities.source(priorityPoints);
+				for (Future future : futures) {
+					allocatedParcels.addAll((SimpleFeatureCollection) future.get());
+				}
+				resultParcels = DataUtilities.source(allocatedParcels);
 			} catch (Exception e) {
 				LOGGER.error("Failed to complete process for all features");
 				e.printStackTrace();
@@ -132,48 +126,34 @@ public class PointInPolygonPriorityAllocationOMS {
 
 	}
 
-	class allocater implements Callable {
+	class Allocater implements Callable {
 
-		private Map<String, Integer> createLanduseLookup(URL csvTable, String keyColumn, String valueColumn) {
-			CSVReader reader;
-			Map<String, Integer> lookupTable = new HashMap();
+		private SimpleFeature regionOfInterest;
+		private Map<String, Integer> priorityLookup;
+		private int index;
 
-			try {
-				reader = new CSVReader(new FileReader(csvTable.getFile()));
+		Allocater(SimpleFeature regionOfInterest, Map<String, Integer> priorityLookup, int index) {
+			this.regionOfInterest = regionOfInterest;
+			this.priorityLookup = priorityLookup;
+			this.index = index;
+		}
 
-				//Assume column names in first line ...
-				String[] header = reader.readNext();
-				List<String> newAttrs = new ArrayList();
-				//List of new attribute names (columns - join column)
-				for (String attribute : header) {
-					if (attribute != keyColumn) {
-						System.out.println(attribute);
-						newAttrs.add(attribute);
-					}
-				}
-
-				String[] nextLine;
-				while ((nextLine = reader.readNext()) != null) {
-					String key = null;
-					int value = -1;
-					for (int i = 0; i < nextLine.length; i++) {
-						if (header[i].toString().equals(keyColumn)) {
-							key = nextLine[i];
-						} else if (header[i].toString().equals(valueColumn)) {
-							value = Integer.parseInt(nextLine[i]);
-						}
-					}
-					lookupTable.put(key, value);
-				}
-				return lookupTable;
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		public SimpleFeatureCollection call() throws Exception {
+			//Do an intersection of parcels with service areas
+			SimpleFeatureCollection intersectingParcels = intersection(parcels, regionOfInterest);
+			//Priority allocation
+			//for each intersecting parcel
+			FeatureIterator<SimpleFeature> unAllocatedParcels = intersectingParcels.features();
+			List<SimpleFeature> allocatedParcels = new ArrayList();
+			while (unAllocatedParcels.hasNext()) {
+				SimpleFeature parcel = unAllocatedParcels.next();
+				//intersect with points
+				SimpleFeature allocatedParcel = allocateParcel(pointFeatures, parcel, priorityLookup);
+				allocatedParcels.add(allocatedParcel);
+				//get max priority -> set this land use
 			}
-			return lookupTable;
+			System.out.println("Completed: " + index);
+			return DataUtilities.collection(allocatedParcels);
 		}
 
 		private SimpleFeature allocateParcel(SimpleFeatureSource priorityFeatures, SimpleFeature parcel, Map<String, Integer> priorityLookup) throws NoSuchElementException, IOException {
@@ -264,5 +244,48 @@ public class PointInPolygonPriorityAllocationOMS {
 			return sfb.buildFeature(baseFeature.getID());
 
 		}
+
+	}
+
+	private Map<String, Integer> createLanduseLookup(URL csvTable, String keyColumn, String valueColumn) {
+		CSVReader reader;
+		Map<String, Integer> lookupTable = new HashMap();
+
+		try {
+			reader = new CSVReader(new FileReader(csvTable.getFile()));
+
+			//Assume column names in first line ...
+			String[] header = reader.readNext();
+			List<String> newAttrs = new ArrayList();
+			//List of new attribute names (columns - join column)
+			for (String attribute : header) {
+				if (attribute != keyColumn) {
+					System.out.println(attribute);
+					newAttrs.add(attribute);
+				}
+			}
+
+			String[] nextLine;
+			while ((nextLine = reader.readNext()) != null) {
+				String key = null;
+				int value = -1;
+				for (int i = 0; i < nextLine.length; i++) {
+					if (header[i].toString().equals(keyColumn)) {
+						key = nextLine[i];
+					} else if (header[i].toString().equals(valueColumn)) {
+						value = Integer.parseInt(nextLine[i]);
+					}
+				}
+				lookupTable.put(key, value);
+			}
+			return lookupTable;
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return lookupTable;
 	}
 }
