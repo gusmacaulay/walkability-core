@@ -23,10 +23,11 @@ import org.slf4j.LoggerFactory;
  */
 public class ConnectivityIndexFJ extends RecursiveAction {
 
-    static final Logger LOGGER  = LoggerFactory.getLogger(ConnectivityIndexFJ.class);
-    private SimpleFeatureCollection results;
-    private final SimpleFeatureSource roadsFeatureSource;
-    private final SimpleFeatureCollection regions;
+	private static final long serialVersionUID = 1L;
+	static final Logger LOGGER  = LoggerFactory.getLogger(ConnectivityIndexFJ.class);
+    private transient SimpleFeatureCollection results;
+    private final transient SimpleFeatureSource roadsFeatureSource;
+    private final transient SimpleFeatureCollection regions;
 
     public SimpleFeatureCollection getResults() {
         return results;
