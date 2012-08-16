@@ -365,11 +365,21 @@ public final class NetworkBuffer {
 			// LOGGER.info("loopcount: {}",loopcount++);
 			Set<Edge> unjoined = new HashSet();
 			for (Edge edge : edges) {
+				SimpleFeature feature = ((SimpleFeature) serviceArea.get(edge));
 				Geometry geom = (Geometry) ((SimpleFeature) serviceArea.get(edge)).getDefaultGeometry();
 				// LOGGER.info("GEOM TYPE: {}",geom.getGeometryType());
 				geom = geom.union();
 				// LOGGER.info("Unioned collection");
-				geom = geom.buffer(distance);
+				Double edgeWalkDistance = (Double)feature.getAttribute("Distance");
+				double bufferDistance = distance;
+//				if ((edgeWalkDistance + distance + geom.getLength()) > 1600) {
+//					bufferDistance = 1600 - edgeWalkDistance - geom.getLength();
+//				}
+//				if (bufferDistance < 20) {
+//					bufferDistance = 20 ;
+//				}
+//				System.out.println(bufferDistance);
+				geom = geom.buffer(bufferDistance);
 				// LOGGER.info("Buffered geom");
 				try {
 					if (all != null) {

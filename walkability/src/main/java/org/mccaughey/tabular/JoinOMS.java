@@ -65,8 +65,6 @@ public class JoinOMS {
 		CSVReader reader;
 		Map<String, List<String>> lookupTable = new HashMap();
 
-	
-		
 		try {
 			reader = new CSVReader(new FileReader(csvTable.getFile()));
 
@@ -76,52 +74,59 @@ public class JoinOMS {
 			//List of new attribute names (columns - join column)
 			for (String attribute : header) {
 				if (attribute != joinColumn) {
+					System.out.println(attribute);
 					newAttrs.add(attribute);
 				}
 			}
-			SimpleFeatureType newFeatureType = createNewFeatureType(spatialTable.getSchema(),newAttrs);
-			
+			SimpleFeatureType newFeatureType = createNewFeatureType(spatialTable.getSchema(), newAttrs);
+
 			FileDataStoreFactorySpi factory = FileDataStoreFinder.getDataStoreFactory("shp");
 
-			File file = new File("my.shp");
-			Map map = Collections.singletonMap( "url", file.toURL() );
+			File file = new File("new_tenure.shp");
+			Map map = Collections.singletonMap("url", file.toURI().toURL());
 
-			DataStore myData = factory.createNewDataStore( map );
+			DataStore myData = factory.createNewDataStore(map);
 
-			myData.createSchema( newFeatureType );
+			myData.createSchema(newFeatureType);
 
 			String[] nextLine;
 			while ((nextLine = reader.readNext()) != null) {
 				String key = null;
-				List<String> values = new ArrayList();
+				List<String> values = new ArrayList<String>();
 				for (int i = 0; i < nextLine.length; i++) {
-					if (header[i] == joinColumn) {
+					if (header[i].toString().equals(joinColumn)) {
 						key = nextLine[i];
 					} else {
 						values.add(nextLine[i]);
 					}
 				}
+				//System.out.println("Adding values for key: " + key);
 				lookupTable.put(key, values);
 			}
 			SimpleFeatureIterator features = spatialTable.getFeatures().features();
 			try {
-			//	SimpleFeature[] newFeatures = new SimpleFeature[spatialTable.getFeatures().size()];
-				int i=0;
-				SimpleFeatureStore featureStore = (SimpleFeatureStore)myData.getFeatureSource(newFeatureType.getName());//
+				//	SimpleFeature[] newFeatures = new SimpleFeature[spatialTable.getFeatures().size()];
+				int i = 0;
+				SimpleFeatureStore featureStore = (SimpleFeatureStore) myData.getFeatureSource(newFeatureType.getName());//
 				SimpleFeatureCollection collection = FeatureCollections.newCollection("internal");
 				while (features.hasNext()) {
 					SimpleFeature feature = features.next();
-					List joinValues = lookupTable.get(feature.getAttribute(joinColumn));
-					//build new feature ..
-					SimpleFeature joinFeature = buildFeature(feature, newFeatureType, joinValues);
-					collection.add(joinFeature);
-					i++;
-					if (i < 10000) {
-						featureStore.addFeatures(collection);
-						collection = FeatureCollections.newCollection("internal");
-						i = 0;
+					List joinValues = lookupTable.get(feature.getAttribute(joinColumn).toString());
+					if (joinValues == null)
+						System.out.println("Missing Classification for key:" + feature.getAttribute(joinColumn).toString());
+					else {
+						SimpleFeature joinFeature = buildFeature(feature, newFeatureType, joinValues);
+						collection.add(joinFeature);
+
+						i++;
+						if (i > 10000) {
+							featureStore.addFeatures(collection);
+							collection = FeatureCollections.newCollection("internal");
+							i = 0;
+						}
 					}
 				}
+				//	}
 				featureStore.addFeatures(collection);
 				result = featureStore;//DataUtilities.collection(newFeatures));
 			} finally {
@@ -149,10 +154,12 @@ public class JoinOMS {
 		return stb.buildFeatureType();
 	}
 
-	private static SimpleFeature buildFeature(SimpleFeature baseFeature, SimpleFeatureType newFT, List<Object> newValues) {
+	private static SimpleFeature buildFeature(SimpleFeature baseFeature, SimpleFeatureType newFT, List<String> newValues) {
 		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(newFT);
 		sfb.addAll(baseFeature.getAttributes());
-		sfb.addAll(newValues);
+		for (String value : newValues) {
+			sfb.add(value);
+		}
 		return sfb.buildFeature(baseFeature.getID());
 
 	}

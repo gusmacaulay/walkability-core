@@ -111,8 +111,8 @@ public final class GeoJSONUtilities {
 		try {
 			OutputStream os = new FileOutputStream(file);
 			try {
-				fjson.setEncodeFeatureCRS(true);
-				fjson.writeCRS(feature.getType().getCoordinateReferenceSystem(), os);
+				//fjson.setEncodeFeatureCRS(true);
+				//fjson.writeCRS(feature.getType().getCoordinateReferenceSystem(), os);
 				fjson.writeFeature(feature, os);
 			} finally {
 				os.close();

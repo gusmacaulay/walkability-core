@@ -5,9 +5,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -23,10 +25,11 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
-import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.filter.text.cql2.CQL;
+import org.geotools.filter.text.cql2.CQLException;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.Filter;
@@ -36,6 +39,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import au.com.bytecode.opencsv.CSVReader;
+
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
 
 public class PointInPolygonPriorityAllocationOMS {
 	static final Logger LOGGER = LoggerFactory.getLogger(PointInPolygonPriorityAllocationOMS.class);
@@ -103,16 +109,17 @@ public class PointInPolygonPriorityAllocationOMS {
 				List<Future> futures = new ArrayList<Future>();
 				while (regions.hasNext()) {
 					SimpleFeature regionOfInterest = regions.next();
-					Allocater ac = new Allocater(regionOfInterest, priorityLookup,++count);
+					Allocater ac = new Allocater(regionOfInterest, priorityLookup, ++count);
 					Future future = executorService.submit(ac);
 					futures.add(future);
 					System.out.println("Started .. " + count);
-					//break;
+					break;
 				}
 				for (Future future : futures) {
 					allocatedParcels.addAll((SimpleFeatureCollection) future.get());
 				}
-				resultParcels = DataUtilities.source(allocatedParcels);
+				//resultParcels = DataUtilities.source(allocatedParcels);
+				resultParcels = dissolveByCategory(DataUtilities.source(allocatedParcels), priorityLookup,priorityAttribute );
 			} catch (Exception e) {
 				LOGGER.error("Failed to complete process for all features");
 				e.printStackTrace();
@@ -124,6 +131,71 @@ public class PointInPolygonPriorityAllocationOMS {
 			e.printStackTrace();
 		}
 
+	}
+
+	private SimpleFeatureSource dissolveByCategory(SimpleFeatureSource parcels, Map<String, Integer> priorityLookup, String categoryAttribute) {
+
+		List<SimpleFeature> dissolved = new ArrayList();
+		try {
+			for (Entry e : priorityLookup.entrySet()) {
+				Filter filter = CQL.toFilter(categoryAttribute + "=" + e.getValue());
+				SimpleFeatureCollection categoryCollection = parcels.getFeatures(filter);
+				if (categoryCollection.size() > 0) {
+					dissolved.add(dissolve(categoryCollection));
+				}
+			}
+			return DataUtilities.source(DataUtilities.collection(dissolved));
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (CQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	private SimpleFeature dissolve(SimpleFeatureCollection collection) throws IOException {
+		FeatureIterator<SimpleFeature> features = collection.features();
+		try {
+			List<Geometry> geometries = new ArrayList();
+			SimpleFeature feature = null;
+			while (features.hasNext()) {
+				feature = features.next();
+				geometries.add((Geometry) feature.getDefaultGeometry());
+			}
+			Geometry dissolved = union(geometries);
+			SimpleFeature dissolvedFeature = buildFeature(feature, feature.getFeatureType(), new ArrayList());
+			dissolvedFeature.setDefaultGeometry(dissolved);
+			return dissolvedFeature;
+		} finally {
+			features.close();
+		}
+
+	}
+
+	private SimpleFeature buildFeature(SimpleFeature baseFeature, SimpleFeatureType newFT, List<String> newValues) {
+		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(newFT);
+		sfb.addAll(baseFeature.getAttributes());
+		for (String value : newValues) {
+			sfb.add(value);
+		}
+		return sfb.buildFeature(baseFeature.getID());
+
+	}
+
+	private Geometry union(List geometries) {
+		double t1 = new Date().getTime();
+		Geometry[] geom = new Geometry[geometries.size()];
+		geometries.toArray(geom);
+		GeometryFactory fact = geom[0].getFactory();
+		//PrecisionModel precision = new PrecisionModel(100); // FIXME: should be configurable
+		//GeometryFactory fact = new GeometryFactory(precision);
+		Geometry geomColl = fact.createGeometryCollection(geom);
+		Geometry union = geomColl.union(); //geomColl.buffer(0.0);
+		double t2 = new Date().getTime();
+		LOGGER.info("Time taken Union: " + (t2 - t1) / 1000);
+		return union;
 	}
 
 	class Allocater implements Callable {
