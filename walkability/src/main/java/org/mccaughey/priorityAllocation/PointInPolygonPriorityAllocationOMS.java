@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -32,6 +33,7 @@ import org.geotools.filter.text.cql2.CQL;
 import org.geotools.filter.text.cql2.CQLException;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.Name;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 import org.opengis.filter.sort.SortOrder;
@@ -90,7 +92,7 @@ public class PointInPolygonPriorityAllocationOMS {
 	 * The resulting parcels with re-allocated land use types
 	 */
 	@Out
-	public SimpleFeatureSource resultParcels;
+	public SimpleFeatureCollection resultParcels;
 
 	/**
 	 * Reads in the population count layer and regions layer from given URLs, writes out average density results to
@@ -113,15 +115,21 @@ public class PointInPolygonPriorityAllocationOMS {
 					Future future = executorService.submit(ac);
 					futures.add(future);
 					System.out.println("Started .. " + count);
-					break;
+					//break;
 				}
 				for (Future future : futures) {
+					
 					allocatedParcels.addAll((SimpleFeatureCollection) future.get());
+					System.out.println("Completed");
 				}
-				//resultParcels = DataUtilities.source(allocatedParcels);
-				resultParcels = dissolveByCategory(DataUtilities.source(allocatedParcels), priorityLookup,priorityAttribute );
-			} catch (Exception e) {
+				resultParcels = allocatedParcels;
+				System.out.println("Sourcification Complete");
+
+			} catch (ExecutionException e) {
 				LOGGER.error("Failed to complete process for all features");
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} finally {
 				regions.close();
@@ -133,7 +141,7 @@ public class PointInPolygonPriorityAllocationOMS {
 
 	}
 
-	private SimpleFeatureSource dissolveByCategory(SimpleFeatureSource parcels, Map<String, Integer> priorityLookup, String categoryAttribute) {
+	private SimpleFeatureCollection dissolveByCategory(SimpleFeatureSource parcels, Map<String, Integer> priorityLookup, String categoryAttribute) {
 
 		List<SimpleFeature> dissolved = new ArrayList();
 		try {
@@ -141,10 +149,10 @@ public class PointInPolygonPriorityAllocationOMS {
 				Filter filter = CQL.toFilter(categoryAttribute + "=" + e.getValue());
 				SimpleFeatureCollection categoryCollection = parcels.getFeatures(filter);
 				if (categoryCollection.size() > 0) {
-					dissolved.add(dissolve(categoryCollection));
+					dissolved.addAll(dissolve(categoryCollection));
 				}
 			}
-			return DataUtilities.source(DataUtilities.collection(dissolved));
+			return DataUtilities.collection(dissolved);
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -155,8 +163,9 @@ public class PointInPolygonPriorityAllocationOMS {
 		return null;
 	}
 
-	private SimpleFeature dissolve(SimpleFeatureCollection collection) throws IOException {
+	private List<SimpleFeature> dissolve(SimpleFeatureCollection collection) throws IOException {
 		FeatureIterator<SimpleFeature> features = collection.features();
+		List<SimpleFeature> dissolvedFeatures = new ArrayList<SimpleFeature>();
 		try {
 			List<Geometry> geometries = new ArrayList();
 			SimpleFeature feature = null;
@@ -165,9 +174,14 @@ public class PointInPolygonPriorityAllocationOMS {
 				geometries.add((Geometry) feature.getDefaultGeometry());
 			}
 			Geometry dissolved = union(geometries);
-			SimpleFeature dissolvedFeature = buildFeature(feature, feature.getFeatureType(), new ArrayList());
-			dissolvedFeature.setDefaultGeometry(dissolved);
-			return dissolvedFeature;
+			for (int n = 0; n < dissolved.getNumGeometries(); n++) {
+				Geometry split = dissolved.getGeometryN(n);
+				SimpleFeature splitFeature = buildFeatureFromGeometry(feature, feature.getFeatureType(),split, new ArrayList(),feature.getID()+String.valueOf(n));
+			//	splitFeature.setDefaultGeometry(split);
+				dissolvedFeatures.add(splitFeature);
+			}
+			return dissolvedFeatures;
+
 		} finally {
 			features.close();
 		}
@@ -182,6 +196,18 @@ public class PointInPolygonPriorityAllocationOMS {
 		}
 		return sfb.buildFeature(baseFeature.getID());
 
+	}
+	
+	private static SimpleFeature buildFeatureFromGeometry(SimpleFeature baseFeature, SimpleFeatureType newFT,Geometry geom, List<String> newValues,String id) {
+		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(newFT);
+		sfb.addAll(baseFeature.getAttributes());
+		sfb.set(sfb.getFeatureType().getGeometryDescriptor().getLocalName(),geom);
+		for (String value : newValues) {
+			sfb.add(value);
+		}
+		return sfb.buildFeature(id);
+
+		//turn sfb.buildFeature(id);
 	}
 
 	private Geometry union(List geometries) {
@@ -222,10 +248,9 @@ public class PointInPolygonPriorityAllocationOMS {
 				//intersect with points
 				SimpleFeature allocatedParcel = allocateParcel(pointFeatures, parcel, priorityLookup);
 				allocatedParcels.add(allocatedParcel);
-				//get max priority -> set this land use
 			}
-			System.out.println("Completed: " + index);
-			return DataUtilities.collection(allocatedParcels);
+			System.out.println("Dissolving: " + index);
+			return dissolveByCategory(DataUtilities.source(DataUtilities.collection(allocatedParcels)), priorityLookup, priorityAttribute);
 		}
 
 		private SimpleFeature allocateParcel(SimpleFeatureSource priorityFeatures, SimpleFeature parcel, Map<String, Integer> priorityLookup) throws NoSuchElementException, IOException {
@@ -269,21 +294,6 @@ public class PointInPolygonPriorityAllocationOMS {
 		}
 
 		private SimpleFeatureCollection intersection(SimpleFeatureSource featuresOfInterest, SimpleFeature intersectingFeature) throws IOException {
-			intersection2(featuresOfInterest, intersectingFeature);
-			SimpleFeatureCollection features = featuresOfInterest.getFeatures();
-			FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-			String geometryPropertyName = features.getSchema().getGeometryDescriptor().getLocalName();
-
-			Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(intersectingFeature.getDefaultGeometry()));
-
-			//	return features.subCollection(filter); <-- THIS IS REALLY SLOW
-			return featuresOfInterest.getFeatures(filter); // <-- DO THIS INSTEAD
-
-		}
-
-		//SONAR doesn't detect duplications?
-		private SimpleFeatureCollection intersection2(SimpleFeatureSource featuresOfInterest, SimpleFeature intersectingFeature) throws IOException {
-
 			SimpleFeatureCollection features = featuresOfInterest.getFeatures();
 			FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 			String geometryPropertyName = features.getSchema().getGeometryDescriptor().getLocalName();
