@@ -122,7 +122,7 @@ public class PointInPolygonPriorityAllocationOMS {
 					allocatedParcels.addAll((SimpleFeatureCollection) future.get());
 					System.out.println("Completed");
 				}
-				resultParcels = allocatedParcels;
+				resultParcels = dissolveByCategory(DataUtilities.source(allocatedParcels), priorityLookup, priorityAttribute);
 				System.out.println("Sourcification Complete");
 
 			} catch (ExecutionException e) {
@@ -185,16 +185,6 @@ public class PointInPolygonPriorityAllocationOMS {
 		} finally {
 			features.close();
 		}
-
-	}
-
-	private SimpleFeature buildFeature(SimpleFeature baseFeature, SimpleFeatureType newFT, List<String> newValues) {
-		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(newFT);
-		sfb.addAll(baseFeature.getAttributes());
-		for (String value : newValues) {
-			sfb.add(value);
-		}
-		return sfb.buildFeature(baseFeature.getID());
 
 	}
 	
