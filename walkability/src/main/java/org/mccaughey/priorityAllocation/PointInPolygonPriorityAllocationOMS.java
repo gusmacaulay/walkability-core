@@ -79,17 +79,16 @@ public class PointInPolygonPriorityAllocationOMS {
 	 */
 	@In
 	public String priorityAttribute;
-
-	@In
-	public URL csvTable;
+	
 	/**
 	 * The priority list of which land uses, to figure out which one to allocate
 	 */
 	@In
-	public List<String> landUsePriorityList;
+	public Map<String,Integer> priorityOrder;
 
 	@In
-	public SortOrder priorityOrder;
+	public URL csvTable;
+
 	/**
 	 * The resulting parcels with re-allocated land use types
 	 */
@@ -102,7 +101,7 @@ public class PointInPolygonPriorityAllocationOMS {
 	 */
 	@Execute
 	public void allocate() {
-		Map<String, Integer> priorityLookup = createLanduseLookup(csvTable, landUseAttribute, priorityAttribute);
+		Map<String, String> classificationLookup = createLanduseLookup(csvTable, landUseAttribute, priorityAttribute);
 		try {
 			FeatureIterator<SimpleFeature> regions = regionsOfInterest.getFeatures().features();
 			SimpleFeatureCollection intersectingParcels = DataUtilities.collection(new SimpleFeature[0]);
@@ -113,7 +112,7 @@ public class PointInPolygonPriorityAllocationOMS {
 				List<Future> futures = new ArrayList<Future>();
 				while (regions.hasNext()) {
 					SimpleFeature regionOfInterest = regions.next();
-					Allocater ac = new Allocater(regionOfInterest, priorityLookup, ++count);
+					Allocater ac = new Allocater(regionOfInterest, classificationLookup, ++count);
 					Future future = executorService.submit(ac);
 					futures.add(future);
 					System.out.println("Started .. " + count);
@@ -124,8 +123,8 @@ public class PointInPolygonPriorityAllocationOMS {
 					allocatedParcels.addAll((SimpleFeatureCollection) future.get());
 					System.out.println("Completed");
 				}
-				resultParcels = prioritiseOverlap(allocatedParcels, priorityLookup, priorityAttribute);
-				resultParcels = dissolveByCategory(DataUtilities.source(resultParcels), priorityLookup, priorityAttribute);
+				resultParcels = prioritiseOverlap(allocatedParcels,/* priorityLookup,*/ priorityAttribute, priorityOrder);
+				resultParcels = dissolveByCategory(DataUtilities.source(resultParcels), classificationLookup, priorityAttribute);
 
 				System.out.println("Sourcification Complete");
 
@@ -157,7 +156,7 @@ public class PointInPolygonPriorityAllocationOMS {
 
 	}
 
-	private SimpleFeatureCollection prioritiseOverlap(SimpleFeatureCollection parcels, Map<String, Integer> priorityLookup, String categoryAttribute) {
+	private SimpleFeatureCollection prioritiseOverlap(SimpleFeatureCollection parcels,/* Map<String, String> priorityLookup,*/ String categoryAttribute, Map<String,Integer> priorityOrder) {
 		SimpleFeatureIterator parcelIterator = parcels.features();
 		SimpleFeatureSource parcelSource = DataUtilities.source(parcels);
 		Map<String, SimpleFeature> uniqueParcels = new HashMap();
@@ -181,8 +180,8 @@ public class PointInPolygonPriorityAllocationOMS {
 						{
 							try {
 								System.out.println("Pluc:  " + (String)parcel.getAttribute(categoryAttribute));
-								int parcelPriority = Integer.parseInt((String) parcel.getAttribute(categoryAttribute)); // priorityLookup.get(parcel.getAttribute(categoryAttribute));
-								int intersectingPriority = Integer.parseInt((String)intersectingParcel.getAttribute(categoryAttribute));//priorityLookup.get(intersectingParcel.getAttribute(categoryAttribute));
+								int parcelPriority = priorityOrder.get((String) parcel.getAttribute(categoryAttribute)); // priorityLookup.get(parcel.getAttribute(categoryAttribute));
+								int intersectingPriority = priorityOrder.get((String)intersectingParcel.getAttribute(categoryAttribute));//priorityLookup.get(intersectingParcel.getAttribute(categoryAttribute));
 								//If this parcel has higher priority add to unique parcels un-modified
 								if (parcelPriority < intersectingPriority) {
 									//Check if parcel is already in unique parcels before adding
@@ -214,11 +213,11 @@ public class PointInPolygonPriorityAllocationOMS {
 		return DataUtilities.collection(new ArrayList(features));
 	}
 
-	private SimpleFeatureCollection dissolveByCategory(SimpleFeatureSource parcels, Map<String, Integer> priorityLookup, String categoryAttribute) {
+	private SimpleFeatureCollection dissolveByCategory(SimpleFeatureSource parcels, Map<String, String> classificationLookup, String categoryAttribute) {
 
 		List<SimpleFeature> dissolved = new ArrayList<SimpleFeature>();
 		try {
-			for (Entry e : priorityLookup.entrySet()) {
+			for (Entry e : classificationLookup.entrySet()) {
 				Filter filter = CQL.toFilter(categoryAttribute + "=" + e.getValue());
 				SimpleFeatureCollection categoryCollection = parcels.getFeatures(filter);
 				if (categoryCollection.size() > 0) {
@@ -295,12 +294,12 @@ public class PointInPolygonPriorityAllocationOMS {
 	class Allocater implements Callable {
 
 		private SimpleFeature regionOfInterest;
-		private Map<String, Integer> priorityLookup;
+		private Map<String, String> classificationLookup;
 		private int index;
 
-		Allocater(SimpleFeature regionOfInterest, Map<String, Integer> priorityLookup, int index) {
+		Allocater(SimpleFeature regionOfInterest, Map<String, String> priorityLookup, int index) {
 			this.regionOfInterest = regionOfInterest;
-			this.priorityLookup = priorityLookup;
+			this.classificationLookup = priorityLookup;
 			this.index = index;
 		}
 
@@ -314,14 +313,14 @@ public class PointInPolygonPriorityAllocationOMS {
 			while (unAllocatedParcels.hasNext()) {
 				SimpleFeature parcel = unAllocatedParcels.next();
 				//intersect with points
-				SimpleFeature allocatedParcel = allocateParcel(pointFeatures, parcel, priorityLookup);
+				SimpleFeature allocatedParcel = allocateParcel(pointFeatures, parcel, classificationLookup, priorityOrder);
 				allocatedParcels.add(allocatedParcel);
 			}
 			System.out.println("Dissolving: " + index);
-			return dissolveByCategory(DataUtilities.source(DataUtilities.collection(allocatedParcels)), priorityLookup, priorityAttribute);
+			return dissolveByCategory(DataUtilities.source(DataUtilities.collection(allocatedParcels)), classificationLookup, priorityAttribute);
 		}
 
-		private SimpleFeature allocateParcel(SimpleFeatureSource priorityFeatures, SimpleFeature parcel, Map<String, Integer> priorityLookup) throws NoSuchElementException, IOException {
+		private SimpleFeature allocateParcel(SimpleFeatureSource priorityFeatures, SimpleFeature parcel, Map<String, String> classificationLookup, Map<String, Integer> priorityOrder) throws NoSuchElementException, IOException {
 			FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 			String geometryPropertyName = priorityFeatures.getSchema().getGeometryDescriptor().getLocalName();
 
@@ -334,22 +333,24 @@ public class PointInPolygonPriorityAllocationOMS {
 			SimpleFeatureType allocatedFT = createNewFeatureType(parcel.getFeatureType(), additionalAttributes);
 			try {
 				int currentPriority = -1;
+				String currentPriorityClass = "";
 				while (pFeatures.hasNext()) {
 					SimpleFeature comparisonFeature = pFeatures.next();
 
 					String landUse = comparisonFeature.getAttribute(landUseAttribute).toString();
 					try {
-
-						int comparisonPriority = priorityLookup.get(landUse);
+						String priorityClass = String.valueOf(classificationLookup.get(landUse));
+						int comparisonPriority = priorityOrder.get(priorityClass);
 						if (comparisonPriority > currentPriority) { //TODO: generalise this for ascending/descending
 							currentPriority = comparisonPriority;
+							currentPriorityClass = priorityClass;
 						}
 					} catch (NullPointerException e) {
 						LOGGER.error("Missing priority value for landuse " + landUse);
 					}
 				}
 				List<String> priorityValue = new ArrayList<String>();
-				priorityValue.add(String.valueOf(currentPriority));
+				priorityValue.add(currentPriorityClass);
 				return buildFeature(parcel, allocatedFT, priorityValue);
 			} finally {
 				pFeatures.close();
@@ -380,9 +381,9 @@ public class PointInPolygonPriorityAllocationOMS {
 
 	}
 
-	private Map<String, Integer> createLanduseLookup(URL csvTable, String keyColumn, String valueColumn) {
+	private Map<String, String> createLanduseLookup(URL csvTable, String keyColumn, String valueColumn) {
 		CSVReader reader;
-		Map<String, Integer> lookupTable = new HashMap<String, Integer>();
+		Map<String, String> lookupTable = new HashMap<String, String>();
 
 		try {
 			reader = new CSVReader(new FileReader(csvTable.getFile()));
@@ -401,12 +402,12 @@ public class PointInPolygonPriorityAllocationOMS {
 			String[] nextLine;
 			while ((nextLine = reader.readNext()) != null) {
 				String key = null;
-				int value = -1;
+				String value = null;
 				for (int i = 0; i < nextLine.length; i++) {
 					if (header[i].toString().equals(keyColumn)) {
 						key = nextLine[i];
 					} else if (header[i].toString().equals(valueColumn)) {
-						value = Integer.parseInt(nextLine[i]);
+						value = nextLine[i];
 					}
 				}
 				lookupTable.put(key, value);
