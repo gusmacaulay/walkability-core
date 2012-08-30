@@ -5,12 +5,15 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -33,7 +36,6 @@ import org.geotools.filter.text.cql2.CQL;
 import org.geotools.filter.text.cql2.CQLException;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.Name;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 import org.opengis.filter.sort.SortOrder;
@@ -118,11 +120,13 @@ public class PointInPolygonPriorityAllocationOMS {
 					//break;
 				}
 				for (Future future : futures) {
-					
+
 					allocatedParcels.addAll((SimpleFeatureCollection) future.get());
 					System.out.println("Completed");
 				}
-				resultParcels = dissolveByCategory(DataUtilities.source(allocatedParcels), priorityLookup, priorityAttribute);
+				resultParcels = prioritiseOverlap(allocatedParcels, priorityLookup, priorityAttribute);
+				resultParcels = dissolveByCategory(DataUtilities.source(resultParcels), priorityLookup, priorityAttribute);
+
 				System.out.println("Sourcification Complete");
 
 			} catch (ExecutionException e) {
@@ -141,9 +145,78 @@ public class PointInPolygonPriorityAllocationOMS {
 
 	}
 
+	private SimpleFeatureCollection intersection(SimpleFeatureSource featuresOfInterest, SimpleFeature intersectingFeature) throws IOException {
+		SimpleFeatureCollection features = featuresOfInterest.getFeatures();
+		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+		String geometryPropertyName = features.getSchema().getGeometryDescriptor().getLocalName();
+
+		Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(intersectingFeature.getDefaultGeometry()));
+
+		//	return features.subCollection(filter); <-- THIS IS REALLY SLOW
+		return featuresOfInterest.getFeatures(filter); // <-- DO THIS INSTEAD
+
+	}
+
+	private SimpleFeatureCollection prioritiseOverlap(SimpleFeatureCollection parcels, Map<String, Integer> priorityLookup, String categoryAttribute) {
+		SimpleFeatureIterator parcelIterator = parcels.features();
+		SimpleFeatureSource parcelSource = DataUtilities.source(parcels);
+		Map<String, SimpleFeature> uniqueParcels = new HashMap();
+		try {
+			while (parcelIterator.hasNext()) {
+				SimpleFeature parcel = parcelIterator.next();
+				SimpleFeatureCollection intersectingParcels = intersection(parcelSource, parcel);
+				System.out.println("Intersecting: " + intersectingParcels.size());
+				//if (intersectingParcels.size()  == 1) {
+				//	uniqueParcels.put(parcel.getID(),parcel);
+				//}
+				//Check if parcel is already in unique parcels before adding
+				if (!(uniqueParcels.containsKey(parcel.getID()))) {
+					uniqueParcels.put(parcel.getID(), parcel);
+				}
+				//else {
+				SimpleFeatureIterator intersectingParcelsIter = intersectingParcels.features();
+				while (intersectingParcelsIter.hasNext()) {
+					SimpleFeature intersectingParcel = intersectingParcelsIter.next();
+					if ((intersectingParcel.getID() != parcel.getID())) {
+						{
+							try {
+								System.out.println("Pluc:  " + (String)parcel.getAttribute(categoryAttribute));
+								int parcelPriority = Integer.parseInt((String) parcel.getAttribute(categoryAttribute)); // priorityLookup.get(parcel.getAttribute(categoryAttribute));
+								int intersectingPriority = Integer.parseInt((String)intersectingParcel.getAttribute(categoryAttribute));//priorityLookup.get(intersectingParcel.getAttribute(categoryAttribute));
+								//If this parcel has higher priority add to unique parcels un-modified
+								if (parcelPriority < intersectingPriority) {
+									//Check if parcel is already in unique parcels before adding
+									//if (!(uniqueParcels.containsKey(parcel.getID()))) {
+									//	uniqueParcels.put(parcel.getID(), parcel);
+									//}
+									//	} //If this parcel has lower priority chop out the overlapping area, before adding to/updating unique parcels
+									//else {
+									Geometry parcelGeometry = (Geometry) uniqueParcels.get(parcel.getID()).getDefaultGeometry();
+									Geometry intersectingGeometry = (Geometry) intersectingParcel.getDefaultGeometry();
+									Geometry parcelDifference = parcelGeometry.difference(intersectingGeometry);
+									SimpleFeature newFeature = buildFeatureFromGeometry(parcel, parcelDifference);
+									uniqueParcels.put(parcel.getID(), newFeature);
+								}
+							} catch (NullPointerException e) {
+								System.out.println("Null priority for feature: " + intersectingParcel.getID());
+							}
+						}
+					}
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			parcelIterator.close();
+		}
+		Collection<SimpleFeature> features = uniqueParcels.values();
+		return DataUtilities.collection(new ArrayList(features));
+	}
+
 	private SimpleFeatureCollection dissolveByCategory(SimpleFeatureSource parcels, Map<String, Integer> priorityLookup, String categoryAttribute) {
 
-		List<SimpleFeature> dissolved = new ArrayList();
+		List<SimpleFeature> dissolved = new ArrayList<SimpleFeature>();
 		try {
 			for (Entry e : priorityLookup.entrySet()) {
 				Filter filter = CQL.toFilter(categoryAttribute + "=" + e.getValue());
@@ -167,7 +240,7 @@ public class PointInPolygonPriorityAllocationOMS {
 		FeatureIterator<SimpleFeature> features = collection.features();
 		List<SimpleFeature> dissolvedFeatures = new ArrayList<SimpleFeature>();
 		try {
-			List<Geometry> geometries = new ArrayList();
+			List<Geometry> geometries = new ArrayList<Geometry>();
 			SimpleFeature feature = null;
 			while (features.hasNext()) {
 				feature = features.next();
@@ -176,8 +249,8 @@ public class PointInPolygonPriorityAllocationOMS {
 			Geometry dissolved = union(geometries);
 			for (int n = 0; n < dissolved.getNumGeometries(); n++) {
 				Geometry split = dissolved.getGeometryN(n);
-				SimpleFeature splitFeature = buildFeatureFromGeometry(feature, feature.getFeatureType(),split, new ArrayList(),feature.getID()+String.valueOf(n));
-			//	splitFeature.setDefaultGeometry(split);
+				SimpleFeature splitFeature = buildFeatureFromGeometry(feature, feature.getFeatureType(), split, new ArrayList<String>(), feature.getID() + String.valueOf(n));
+				//	splitFeature.setDefaultGeometry(split);
 				dissolvedFeatures.add(splitFeature);
 			}
 			return dissolvedFeatures;
@@ -187,20 +260,25 @@ public class PointInPolygonPriorityAllocationOMS {
 		}
 
 	}
-	
-	private static SimpleFeature buildFeatureFromGeometry(SimpleFeature baseFeature, SimpleFeatureType newFT,Geometry geom, List<String> newValues,String id) {
+
+	private static SimpleFeature buildFeatureFromGeometry(SimpleFeature baseFeature, Geometry geom) {
+		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(baseFeature.getFeatureType());
+		sfb.addAll(baseFeature.getAttributes());
+		sfb.set(sfb.getFeatureType().getGeometryDescriptor().getLocalName(), geom);
+		return sfb.buildFeature(baseFeature.getID());
+	}
+
+	private static SimpleFeature buildFeatureFromGeometry(SimpleFeature baseFeature, SimpleFeatureType newFT, Geometry geom, List<String> newValues, String id) {
 		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(newFT);
 		sfb.addAll(baseFeature.getAttributes());
-		sfb.set(sfb.getFeatureType().getGeometryDescriptor().getLocalName(),geom);
+		sfb.set(sfb.getFeatureType().getGeometryDescriptor().getLocalName(), geom);
 		for (String value : newValues) {
 			sfb.add(value);
 		}
 		return sfb.buildFeature(id);
-
-		//turn sfb.buildFeature(id);
 	}
 
-	private Geometry union(List geometries) {
+	private Geometry union(List<Geometry> geometries) {
 		double t1 = new Date().getTime();
 		Geometry[] geom = new Geometry[geometries.size()];
 		geometries.toArray(geom);
@@ -232,7 +310,7 @@ public class PointInPolygonPriorityAllocationOMS {
 			//Priority allocation
 			//for each intersecting parcel
 			FeatureIterator<SimpleFeature> unAllocatedParcels = intersectingParcels.features();
-			List<SimpleFeature> allocatedParcels = new ArrayList();
+			List<SimpleFeature> allocatedParcels = new ArrayList<SimpleFeature>();
 			while (unAllocatedParcels.hasNext()) {
 				SimpleFeature parcel = unAllocatedParcels.next();
 				//intersect with points
@@ -255,14 +333,10 @@ public class PointInPolygonPriorityAllocationOMS {
 			additionalAttributes.add(priorityAttribute);
 			SimpleFeatureType allocatedFT = createNewFeatureType(parcel.getFeatureType(), additionalAttributes);
 			try {
-				//SimpleFeature priorityFeature = null;
 				int currentPriority = -1;
 				while (pFeatures.hasNext()) {
-					//if (priorityFeature == null)
-					//	priorityFeature = pFeatures.next();
-					//else {
 					SimpleFeature comparisonFeature = pFeatures.next();
-					//currentPriority = priorityLookup.get(priorityFeature.getAttribute(landUseAttribute).toString());
+
 					String landUse = comparisonFeature.getAttribute(landUseAttribute).toString();
 					try {
 
@@ -273,7 +347,6 @@ public class PointInPolygonPriorityAllocationOMS {
 					} catch (NullPointerException e) {
 						LOGGER.error("Missing priority value for landuse " + landUse);
 					}
-					//}
 				}
 				List<String> priorityValue = new ArrayList<String>();
 				priorityValue.add(String.valueOf(currentPriority));
@@ -281,18 +354,6 @@ public class PointInPolygonPriorityAllocationOMS {
 			} finally {
 				pFeatures.close();
 			}
-		}
-
-		private SimpleFeatureCollection intersection(SimpleFeatureSource featuresOfInterest, SimpleFeature intersectingFeature) throws IOException {
-			SimpleFeatureCollection features = featuresOfInterest.getFeatures();
-			FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-			String geometryPropertyName = features.getSchema().getGeometryDescriptor().getLocalName();
-
-			Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(intersectingFeature.getDefaultGeometry()));
-
-			//	return features.subCollection(filter); <-- THIS IS REALLY SLOW
-			return featuresOfInterest.getFeatures(filter); // <-- DO THIS INSTEAD
-
 		}
 
 		private SimpleFeatureType createNewFeatureType(SimpleFeatureType baseFeatureType, List<String> newAttributeNames) {
@@ -321,14 +382,14 @@ public class PointInPolygonPriorityAllocationOMS {
 
 	private Map<String, Integer> createLanduseLookup(URL csvTable, String keyColumn, String valueColumn) {
 		CSVReader reader;
-		Map<String, Integer> lookupTable = new HashMap();
+		Map<String, Integer> lookupTable = new HashMap<String, Integer>();
 
 		try {
 			reader = new CSVReader(new FileReader(csvTable.getFile()));
 
 			//Assume column names in first line ...
 			String[] header = reader.readNext();
-			List<String> newAttrs = new ArrayList();
+			List<String> newAttrs = new ArrayList<String>();
 			//List of new attribute names (columns - join column)
 			for (String attribute : header) {
 				if (attribute != keyColumn) {
