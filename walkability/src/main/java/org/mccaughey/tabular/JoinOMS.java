@@ -16,7 +16,6 @@ import oms3.annotations.In;
 import oms3.annotations.Out;
 
 import org.geotools.data.DataStore;
-import org.geotools.data.DataUtilities;
 import org.geotools.data.FileDataStoreFactorySpi;
 import org.geotools.data.FileDataStoreFinder;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -35,11 +34,13 @@ import au.com.bytecode.opencsv.CSVReader;
 
 /**
  * Performs a join on two tables - this should be refactored so it can handle spatial and non-spatial datasets
- * 
+ * NOTE: THIS CLASS IS A HACK while we wait for AURIN to implement a real join, I reccomend you DON'T use it. 
  * @author amacaulay
  * 
  */
 public class JoinOMS {
+	private static final int FEATURE_STORE_THRESHOLD = 10000;
+
 	static final Logger LOGGER = LoggerFactory.getLogger(JoinOMS.class);
 
 	@In
@@ -73,8 +74,7 @@ public class JoinOMS {
 			List<String> newAttrs = new ArrayList();
 			//List of new attribute names (columns - join column)
 			for (String attribute : header) {
-				if (attribute != joinColumn) {
-					System.out.println(attribute);
+				if (!(attribute.equals(joinColumn))) {
 					newAttrs.add(attribute);
 				}
 			}
@@ -94,7 +94,7 @@ public class JoinOMS {
 				String key = null;
 				List<String> values = new ArrayList<String>();
 				for (int i = 0; i < nextLine.length; i++) {
-					if (header[i].toString().equals(joinColumn)) {
+					if (header[i].equals(joinColumn)) {
 						key = nextLine[i];
 					} else {
 						values.add(nextLine[i]);
@@ -103,43 +103,45 @@ public class JoinOMS {
 				//System.out.println("Adding values for key: " + key);
 				lookupTable.put(key, values);
 			}
-			SimpleFeatureIterator features = spatialTable.getFeatures().features();
-			try {
-				//	SimpleFeature[] newFeatures = new SimpleFeature[spatialTable.getFeatures().size()];
-				int i = 0;
-				SimpleFeatureStore featureStore = (SimpleFeatureStore) myData.getFeatureSource(newFeatureType.getName());//
-				SimpleFeatureCollection collection = FeatureCollections.newCollection("internal");
-				while (features.hasNext()) {
-					SimpleFeature feature = features.next();
-					List joinValues = lookupTable.get(feature.getAttribute(joinColumn).toString());
-					if (joinValues == null)
-						System.out.println("Missing Classification for key:" + feature.getAttribute(joinColumn).toString());
-					else {
-						SimpleFeature joinFeature = buildFeature(feature, newFeatureType, joinValues);
-						collection.add(joinFeature);
-
-						i++;
-						if (i > 10000) {
-							featureStore.addFeatures(collection);
-							collection = FeatureCollections.newCollection("internal");
-							i = 0;
-						}
-					}
-				}
-				//	}
-				featureStore.addFeatures(collection);
-				result = featureStore;//DataUtilities.collection(newFeatures));
-			} finally {
-				features.close();
-			}
+			joinDataSets(lookupTable, newFeatureType, myData);
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LOGGER.error("File Not Found");
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LOGGER.error("Join failed due to IOException withe feature store");
 		}
 		result = null;
+	}
+
+	private void joinDataSets(Map<String, List<String>> lookupTable, SimpleFeatureType newFeatureType, DataStore myData) throws IOException {
+		SimpleFeatureIterator features = spatialTable.getFeatures().features();
+		try {
+			//	SimpleFeature[] newFeatures = new SimpleFeature[spatialTable.getFeatures().size()];
+			int i = 0;
+			SimpleFeatureStore featureStore = (SimpleFeatureStore) myData.getFeatureSource(newFeatureType.getName());//
+			SimpleFeatureCollection collection = FeatureCollections.newCollection("internal");
+			while (features.hasNext()) {
+				SimpleFeature feature = features.next();
+				List joinValues = lookupTable.get(feature.getAttribute(joinColumn).toString());
+				if (joinValues == null) {
+					LOGGER.warn("Missing Classification for key: {}", feature.getAttribute(joinColumn).toString());
+				} else {
+					SimpleFeature joinFeature = buildFeature(feature, newFeatureType, joinValues);
+					collection.add(joinFeature);
+
+					i++;
+					if (i > FEATURE_STORE_THRESHOLD) {
+						featureStore.addFeatures(collection);
+						collection = FeatureCollections.newCollection("internal");
+						i = 0;
+					}
+				}
+			}
+			//	}
+			featureStore.addFeatures(collection);
+			result = featureStore;//DataUtilities.collection(newFeatures));
+		} finally {
+			features.close();
+		}
 	}
 
 	private static SimpleFeatureType createNewFeatureType(SimpleFeatureType baseFeatureType, List<String> newAttributeNames) {
