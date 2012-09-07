@@ -14,13 +14,26 @@ import org.slf4j.LoggerFactory;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.util.AssertionFailedException;
 
+/**
+ * Provides Assert functionality for comparing Geotools objects, useful for testing - even though it is not super accurate.
+ * @author amacaulay
+ *
+ */
 public final class GeotoolsAssert {
 
+	private static final int GEOMETRY_PRECISION = 1000; //TODO: improve accuracy
 	static final Logger LOGGER = LoggerFactory.getLogger(GeotoolsAssert.class);
 
 	private GeotoolsAssert() {
 	}
 	
+	/**
+	 * Compares two SimpleFeatureSource and throws exceptions if they are not roughly 
+	 * equivalent (features with the same id have the same attributes
+	 * @param sourceA
+	 * @param sourceB
+	 * @throws IOException
+	 */
 	public static void assertEquals(SimpleFeatureSource sourceA, SimpleFeatureSource sourceB) throws IOException {
 		SimpleFeatureIterator iteratorA = sourceA.getFeatures().features();
 		SimpleFeatureIterator iteratorB = sourceB.getFeatures().features();
@@ -38,8 +51,8 @@ public final class GeotoolsAssert {
 			//	System.out.println("Geometry Name: " + featureA.getDefaultGeometryProperty().getName());
 				Geometry geomB = (Geometry) (featureB.getDefaultGeometry());
 				Geometry geomA = (Geometry) (featureA.getDefaultGeometry());
-				Long areaA = Math.round(geomB.getArea() / 1000); //TODO: improve accuracy
-				Long areaB = Math.round(geomA.getArea() / 1000);
+				Long areaA = Math.round(geomB.getArea() / GEOMETRY_PRECISION); 
+				Long areaB = Math.round(geomA.getArea() / GEOMETRY_PRECISION);
 				if (!areaA.equals(areaB)) {
 					throw new AssertionFailedException("Geometry Areas not equal,expected: " + areaA + " but was: " + areaB);
 				}

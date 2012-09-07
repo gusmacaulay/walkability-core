@@ -163,7 +163,7 @@ public class NettDensityOMS {
 //	}
 
 	private Geometry union(List geometries) {
-		double t1 = new Date().getTime();
+//		double t1 = new Date().getTime();
 		Geometry[] geom = new Geometry[geometries.size()];
 		geometries.toArray(geom);
 		GeometryFactory fact = geom[0].getFactory();
@@ -171,8 +171,8 @@ public class NettDensityOMS {
 		//GeometryFactory fact = new GeometryFactory(precision);
 		Geometry geomColl = fact.createGeometryCollection(geom);
 		Geometry union = geomColl.union(); //geomColl.buffer(0.0);
-		double t2 = new Date().getTime();
-		LOGGER.info("Time taken Union: " + (t2 - t1) / 1000);
+//		double t2 = new Date().getTime();
+//		LOGGER.info("Time taken Union: " + (t2 - t1) / 1000);
 		return union;
 	}
 

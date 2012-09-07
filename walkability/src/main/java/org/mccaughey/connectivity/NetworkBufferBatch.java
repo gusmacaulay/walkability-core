@@ -39,11 +39,15 @@ import org.slf4j.LoggerFactory;
  */
 public class NetworkBufferBatch extends RecursiveAction {
 
+	//	/**
+//	 * Some nonsense to satisfy sonar+findbugs
+//	 */
+//	private static final long serialVersionUID = 1L;
 	static final Logger LOGGER = LoggerFactory.getLogger(NetworkBufferBatch.class);
-	private SimpleFeatureSource network;
-	private SimpleFeatureCollection points;
-	private SimpleFeatureCollection buffers;
-	private SimpleFeatureCollection graphs;
+	private  SimpleFeatureSource network;
+	private  SimpleFeatureCollection points;
+	private  SimpleFeatureCollection buffers;
+	private  SimpleFeatureCollection graphs;
 	private Double distance;
 	private Double bufferSize;
 	private int pointsPerThread;
@@ -144,8 +148,8 @@ public class NetworkBufferBatch extends RecursiveAction {
 		ArrayList<NetworkBufferBatch> buffernators = new ArrayList();
 
 		SimpleFeatureCollection pointsSubCollection = FeatureCollections.newCollection();
-		int count = 0;
-		while (features.hasNext() && (count < 10000)) {
+	//	int count = 0;
+		while (features.hasNext()){ //&& (count < 10000)) {
 			SimpleFeature feature = (SimpleFeature) features.next();
 			pointsSubCollection.add(feature);
 			if (pointsSubCollection.size() == this.pointsPerThread) {
@@ -153,7 +157,7 @@ public class NetworkBufferBatch extends RecursiveAction {
 				buffernators.add(nbb);
 				pointsSubCollection = FeatureCollections.newCollection();
 			}
-			count++;
+		//	count++;
 		}
 		if (pointsSubCollection.size() > 0) {
 			NetworkBufferBatch nbb = new NetworkBufferBatch(network, pointsSubCollection, distance, bufferSize);
