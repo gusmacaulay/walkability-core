@@ -53,16 +53,16 @@ public final class GeoJSONUtilities {
 		try {
 			os = new FileOutputStream(file);
 			try {
-				// fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(),
-				// os);
+				//fjson.writeCRS(features.getSchema().getCoordinateReferenceSystem(),
+				//os);
 
-				//			if (features.getSchema().getCoordinateReferenceSystem() != null) {
-				//				fjson.setEncodeFeatureCollectionBounds(true);
-				//				fjson.setEncodeFeatureCollectionCRS(true);
-				//			} else {
-				//				throw new IOException("CRS is null");
-				//			}
-				//			LOGGER.info("CRS: {}", features.getSchema().getCoordinateReferenceSystem().toString());
+				if (features.getSchema().getCoordinateReferenceSystem() != null) {
+					fjson.setEncodeFeatureCollectionBounds(true);
+					fjson.setEncodeFeatureCollectionCRS(true);
+				} else {
+					LOGGER.info("CRS is null");
+				}
+				LOGGER.info("CRS: {}", features.getSchema().getCoordinateReferenceSystem().toString());
 				//			if (features.getSchema().getCoordinateReferenceSystem().toString().contains("UNIT[\"m")) {
 				//				LOGGER.info("CRS in metres!");
 				//			} else {
