@@ -71,23 +71,27 @@ import com.vividsolutions.jts.linearref.LocationIndexedLine;
  */
 public final class NetworkBuffer {
 
+	private static final int GEOMETRY_PRECISION = 10;
 	private static final int INTERSECTION_THRESHOLD = 3;
 	static final Logger LOGGER = LoggerFactory.getLogger(NetworkBuffer.class);
-	private static PrecisionModel precision = new PrecisionModel(10); // FIXME: should be configurable
+	private static PrecisionModel precision = new PrecisionModel(GEOMETRY_PRECISION);
 
 	private NetworkBuffer() {
 	}
 
 	/**
-	 * @param network A network (eg roads) dataset
-	 * @param pointFeature A point of interest used as a starting point
-	 * @param networkDistance The distance to traverse along the network
-	 * @param bufferDistance The distance to buffer the network to create the final region
+	 * @param network
+	 *            A network (eg roads) dataset
+	 * @param pointFeature
+	 *            A point of interest used as a starting point
+	 * @param networkDistance
+	 *            The distance to traverse along the network
+	 * @param bufferDistance
+	 *            The distance to buffer the network to create the final region
 	 * @return A network of all paths of networkDistance from the starting point (snapped to the network)
 	 * @throws IOException
 	 */
-	public static Map findServiceArea(SimpleFeatureSource network, SimpleFeature pointFeature, Double networkDistance,
-			Double bufferDistance) throws IOException {
+	public static Map findServiceArea(SimpleFeatureSource network, SimpleFeature pointFeature, Double networkDistance, Double bufferDistance) throws IOException {
 		Point pointOfInterest = (Point) pointFeature.getDefaultGeometry();
 		LocationIndexedLine nearestLine = findNearestEdgeLine(network, networkDistance, bufferDistance, pointOfInterest);
 		if (nearestLine == null) {
@@ -106,8 +110,7 @@ public final class NetworkBuffer {
 		return serviceArea;
 	}
 
-	private static Graph createGraphWithStartNode(LocationIndexedLine connectedLine, Path startPath,
-			SimpleFeatureCollection networkRegion, Point pointOfInterest) {
+	private static Graph createGraphWithStartNode(LocationIndexedLine connectedLine, Path startPath, SimpleFeatureCollection networkRegion, Point pointOfInterest) {
 		Coordinate pt = pointOfInterest.getCoordinate();
 		LinearLocation here = connectedLine.project(pt);
 		Coordinate minDistPoint = connectedLine.extractPoint(here);
@@ -247,16 +250,15 @@ public final class NetworkBuffer {
 		Map networkMap = new HashMap();
 		for (Node node : (Collection<Node>) graph.getNodes()) {
 			// LOGGER.info("Node: " + node);
-			for (Edge edge : (List<Edge>) node.getEdges()) {
-				// LOGGER.info("Edge: {} Feature: {}",edge.getID(),((SimpleFeature)edge.getObject()).getID());
-			}
+			//			for (Edge edge : (List<Edge>) node.getEdges()) {
+			//				// LOGGER.info("Edge: {} Feature: {}",edge.getID(),((SimpleFeature)edge.getObject()).getID());
+			//			}
 			networkMap.put(node, node.getEdges());
 		}
 		return networkMap;
 	}
 
-	private static LocationIndexedLine findNearestEdgeLine(SimpleFeatureSource network, Double roadDistance,
-			Double bufferDistance, Point pointOfInterest) throws IOException {
+	private static LocationIndexedLine findNearestEdgeLine(SimpleFeatureSource network, Double roadDistance, Double bufferDistance, Point pointOfInterest) throws IOException {
 		// Build network Graph - within bounds
 		Double maxDistance = roadDistance + bufferDistance;
 		SpatialIndex index = createLineStringIndex(network);
@@ -324,25 +326,14 @@ public final class NetworkBuffer {
 		return index;
 	}
 
-	private static void writeNetworkFromEdges(Map<Edge,SimpleFeature> serviceArea) {
+	private static void writeNetworkFromEdges(Map<Edge, SimpleFeature> serviceArea) {
 		List<SimpleFeature> featuresList = new ArrayList();
-	//	Set<Edge> edges = serviceArea.keySet();
-		Collection<SimpleFeature>  features = serviceArea.values();
+		Collection<SimpleFeature> features = serviceArea.values();
 		for (SimpleFeature feature : features) {
 			featuresList.add(feature);
 		}
-//		for (Edge edge : edges) {
-//			// SimpleFeature feature = (SimpleFeature) edge.getObject();
-//			// feature.setDefaultGeometry(serviceArea.get(edge));
-//			SimpleFeature feature = (SimpleFeature) serviceArea.get(edge);
-//			features.add(feature);
-//		}
-		try {
-			File file = new File("bufferNetwork.json");
-			GeoJSONUtilities.writeFeatures(DataUtilities.collection(featuresList),file);
-		} catch (Exception e) {
-			
-		}
+		File file = new File("bufferNetwork.json");
+		GeoJSONUtilities.writeFeatures(DataUtilities.collection(featuresList), file);
 	}
 
 	/**
@@ -355,8 +346,7 @@ public final class NetworkBuffer {
 	 * @param crs
 	 * @return A buffered service area
 	 */
-	public static SimpleFeature createBufferFromEdges(Map serviceArea, Double distance, CoordinateReferenceSystem crs,
-			String id) {
+	public static SimpleFeature createBufferFromEdges(Map serviceArea, Double distance, CoordinateReferenceSystem crs, String id) {
 		Set<Edge> edges = serviceArea.keySet();
 		SimpleFeatureType type = createBufferFeatureType(crs);
 		Geometry all = null;
@@ -365,20 +355,20 @@ public final class NetworkBuffer {
 			// LOGGER.info("loopcount: {}",loopcount++);
 			Set<Edge> unjoined = new HashSet();
 			for (Edge edge : edges) {
-				SimpleFeature feature = ((SimpleFeature) serviceArea.get(edge));
+				//	SimpleFeature feature = ((SimpleFeature) serviceArea.get(edge));
 				Geometry geom = (Geometry) ((SimpleFeature) serviceArea.get(edge)).getDefaultGeometry();
 				// LOGGER.info("GEOM TYPE: {}",geom.getGeometryType());
 				geom = geom.union();
 				// LOGGER.info("Unioned collection");
-				Double edgeWalkDistance = (Double)feature.getAttribute("Distance");
+				//			Double edgeWalkDistance = (Double)feature.getAttribute("Distance");
 				double bufferDistance = distance;
-//				if ((edgeWalkDistance + distance + geom.getLength()) > 1600) {
-//					bufferDistance = 1600 - edgeWalkDistance - geom.getLength();
-//				}
-//				if (bufferDistance < 20) {
-//					bufferDistance = 20 ;
-//				}
-//				System.out.println(bufferDistance);
+				//				if ((edgeWalkDistance + distance + geom.getLength()) > 1600) {
+				//					bufferDistance = 1600 - edgeWalkDistance - geom.getLength();
+				//				}
+				//				if (bufferDistance < 20) {
+				//					bufferDistance = 20 ;
+				//				}
+				//				System.out.println(bufferDistance);
 				geom = geom.buffer(bufferDistance);
 				// LOGGER.info("Buffered geom");
 				try {
@@ -454,8 +444,6 @@ public final class NetworkBuffer {
 		return buildFeatureFromGeometry(type, bufferedConvexHull);
 	}
 
-
-	
 	private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType featureType, Geometry geom) {
 		SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
 		stb.init(featureType);
@@ -475,8 +463,7 @@ public final class NetworkBuffer {
 		return sfb.buildFeature(id);
 	}
 
-	private static SimpleFeatureCollection featuresInRegion(SimpleFeatureSource featureSource, Geometry roi)
-			throws IOException {
+	private static SimpleFeatureCollection featuresInRegion(SimpleFeatureSource featureSource, Geometry roi) throws IOException {
 		// Construct a filter which first filters within the bbox of roi and
 		// then filters with intersections of roi
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();

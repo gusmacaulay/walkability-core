@@ -72,15 +72,12 @@ public class NettDensityOMS {
 					//Do an intersection of parcels with service areas
 					intersectingFeatures = intersection(parcels, regionOfInterest);
 
-					//Do an point in polygon intersection parcel/service with residential points
+					//Do a point in polygon intersection parcel/service with residential points
 					pipFeatures = pipIntersection(residentialPoints, intersectingFeatures);
-					//Dissolve parcel/service intersection
 
-					//	SimpleFeature dissolvedParcel = dissolve(intersectingFeatures, regionOfInterest);
-					//dissolvedParcels.addAll(intersectingFeatures);
 					//Dissolve parcel/residential intersection
 					SimpleFeature dissolvedResidential = dissolve(pipFeatures, regionOfInterest);
-					//Calculate proportion(density) of parcel/service:parcel/residential
+					//Calculate total residential area
 					double residentialAreaHectares = ((Geometry)dissolvedResidential.getDefaultGeometry()).getArea()/10000;//getTotalArea(pipFeatures)/10000;
 					//double parcelArea = getTotalArea(intersectingFeatures);
 					int pipCount = pipCount(residentialPoints, pipFeatures);
@@ -91,12 +88,12 @@ public class NettDensityOMS {
 					//System.out.println("Density: " + density);
 					List<String> outputAttrs = new ArrayList();
 					outputAttrs.add("NettDensity");
-					outputAttrs.add("ResidentialAreaHA");
-					outputAttrs.add("ResidentialPointsCount");
+					outputAttrs.add("AreaResidentialHA");
+					outputAttrs.add("PointsCountResidential");
 					SimpleFeature densityFeature = buildFeature(dissolvedResidential,outputAttrs);
 					densityFeature.setAttribute("NettDensity", density);
-					densityFeature.setAttribute("ResidentialAreaHA", residentialAreaHectares);
-					densityFeature.setAttribute("ResidentialPointsCount", pipCount);
+					densityFeature.setAttribute("AreaResidentialHA", residentialAreaHectares);
+					densityFeature.setAttribute("PointsCountResidential", pipCount);
 					densityFeatures.add(densityFeature);
 				}
 				//System.out.print("Processing Complete...");
