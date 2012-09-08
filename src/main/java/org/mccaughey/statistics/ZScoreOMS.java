@@ -42,23 +42,29 @@ import org.slf4j.LoggerFactory;
 @Description("For a given list of attributes and a set of features, calculates the z score for each attribute and sums the z scores")
 public class ZScoreOMS {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(ZScoreOMS.class);
-    /**
-     * Attributes to calculate z-score for
-     */
-    @In
-    public List<String> attributes;
-    
-    /**
-     * Regions of interest (GeoJSON)
-     */
-    @In
-    public SimpleFeatureSource regionsSource;
-    /**
-     * Resulting regions with z-scores for each attribute and sum of z-scores across attributes
-     */
-    @Out
-    public SimpleFeatureSource resultsSource;
+  static final Logger LOGGER = LoggerFactory.getLogger(ZScoreOMS.class);
+  /**
+   * Attributes to calculate z-score for
+   */
+  @In
+  @Name("Zscore attributes")
+  @Description("Attributes to calculate z-score for")
+  public List<String> attributes;
+
+  /**
+   * Regions of interest (GeoJSON)
+   */
+  @In
+  @Name("Regions of interest")
+  public SimpleFeatureSource regionsSource;
+  /**
+   * Resulting regions with z-scores for each attribute and sum of z-scores
+   * across attributes
+   */
+  @Out
+  @Name("Result regions")
+  @Description("Resulting regions with z-scores for each attribute and sum of z-scores across attributes")
+  public SimpleFeatureSource resultsSource;
 
     /**
      * For a given list of attributes and a set of features, calculates the z

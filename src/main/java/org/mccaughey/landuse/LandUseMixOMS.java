@@ -41,38 +41,45 @@ import org.slf4j.LoggerFactory;
 @Name("landmix")
 @Description("Calculates Land Use Mix Measure for a given land use layer and set of regions")
 public class LandUseMixOMS {
+	
+  static final Logger LOGGER = LoggerFactory.getLogger(LandUseMixOMS.class);
+  /**
+   * Dataset containing Land Use regions.
+   */
+  @In
+  @Name("Land use source dataset")
+  @Description("Dataset containing Land Use regions.")
+  public SimpleFeatureSource landUseSource;
 
-    static final Logger LOGGER = LoggerFactory.getLogger(LandUseMixOMS.class);
-    /**
-     * URL containing geojson representation of Land Use regions.
-     */
-    @In
-    public SimpleFeatureSource landUseSource;
-    
-    /**
-     * A List of classification categories to use in the Land Use Mix calculation
-     */
-    @In
-    public List<String> classifications;
-    
-    /**
-     * The attribute (column) containing the classification categories
-     */
-    @In
-    public String classificationAttribute;
-    
-    /**
-     * The set of regions to calculate Land Use Mix for
-     */
-    @In
-    public SimpleFeatureSource regionsSource;
-    
-    /**
-     * The location of the resulting dataset (GeoJSON)
-     */
-    @Out
-    public SimpleFeatureSource resultsSource;
+  /**
+   * The attribute (column) containing the classification categories
+   */
+  @In
+  @Name("Classification attribute")
+  @Description("The attribute (column) containing the classification categories")
+  public String classificationAttribute;
 
+  /**
+   * A List of classification categories to use in the Land Use Mix calculation
+   */
+  @In
+  @Name("Chosen classification")
+  @Description("Classification categories to use in the Land Use Mix calculation")
+  public List<String> classifications;
+
+  /**
+   * The set of regions to calculate Land Use Mix for
+   */
+  @In
+  @Name("Regions of interest")
+  public SimpleFeatureSource regionsSource;
+
+  /**
+   * The location of the resulting dataset (GeoJSON)
+   */
+  @Out
+  @Name("Result regions")
+  public SimpleFeatureSource resultsSource;
 
     /**
      * Reads in the land use layer and regions layer from given URLs, writes out

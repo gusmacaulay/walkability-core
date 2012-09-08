@@ -24,23 +24,27 @@ import org.slf4j.LoggerFactory;
 @Name("connectivity")
 @Description("Calculates Connectivity for a given network and region")
 public class ConnectivityIndexOMS {
-
+	
     static final Logger LOGGER = LoggerFactory.getLogger(ConnectivityIndexOMS.class);
     /**
      * The road network to count connections from
      */
     @In
+    @Name("Road network")
+    @Description("The road network to count connections from")
     public SimpleFeatureSource network;
     /**
      * The region if interest
      */
     @In
+    @Name("Regions of Interest")
     public SimpleFeatureSource regions;
-        
+
     /**
      * The resulting connectivity
      */
     @Out
+    @Name("Resulting connectivity")
     public SimpleFeatureSource results;
 
     /**

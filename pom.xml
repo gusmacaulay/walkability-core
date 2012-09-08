@@ -5,7 +5,7 @@
 
 	<groupId>org.mccaughey</groupId>
 	<artifactId>walkability</artifactId>
-	<version>0.1</version>
+	<version>0.2.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>Walkability</name>
@@ -161,11 +161,6 @@
 			<groupId>junit-addons</groupId>
 			<artifactId>junit-addons</artifactId>
 			<version>1.4</version>
-		</dependency>
-		<dependency>
-			<groupId>org.skyscreamer</groupId>
-			<artifactId>jsonassert</artifactId>
-			<version>1.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>net.sf.opencsv</groupId>

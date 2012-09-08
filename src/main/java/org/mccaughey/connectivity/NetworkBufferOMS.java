@@ -36,35 +36,43 @@ import org.slf4j.LoggerFactory;
 @Name("netbuffer")
 @Description("Generates network service areas for points on a network")
 public class NetworkBufferOMS {
-
-    static final Logger LOGGER = LoggerFactory.getLogger(NetworkBufferOMS.class);
-    /**
-     * The road network to count connections from
-     */
-    @In
-    public SimpleFeatureSource network;
-    /**
-     * The points of interest
-     */
-    @In
-    public SimpleFeatureSource points;
-    /**
-     * The network distance for the service areas (maximum walk distance)
-     */
-    @In
-    public Double distance;
-    /**
-     * The buffer size
-     */
-    @In
-    public Double bufferSize;
- 
-    /**
-     * The resulting regions url
-     */
-    @Out
-    public SimpleFeatureSource regions;
- 
+	
+static final Logger LOGGER = LoggerFactory.getLogger(NetworkBufferOMS.class);
+/**
+ * The road network to count connections from
+ */
+@In
+@Name("Road Network")
+@Description("The road network to count connections from")
+public SimpleFeatureSource network;
+	/**
+	 * The points of interest
+	 */
+	@In
+	@Name("Points of Interest")
+	@Description("Points of Interest")
+	public SimpleFeatureSource points;
+	/**
+	 * The network distance for the service areas (maximum walk distance)
+	 */
+	@In
+	@Name("Maximum walk distance")
+	@Description("The network distance for the service areas (maximum walk distance)")
+	public Double distance;
+	/**
+	 * The buffer size
+	 */
+	@In
+	@Name("Buffer size")
+	@Description("Buffer size")
+	public Double bufferSize;
+	
+	/**
+	 * The resulting regions url
+	 */
+	@Out
+	@Name("Resulting regions")
+	public SimpleFeatureSource regions;
 
     /**
      * Reads the input network and point datasets then uses NetworkBufferBatch
@@ -73,7 +81,6 @@ public class NetworkBufferOMS {
     @Execute
     public void run() {
         try {
-
         	LOGGER.info("Reading in network...");
             SimpleFeatureSource networkSource = network;
             LOGGER.info("Reading in points...");

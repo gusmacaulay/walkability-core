@@ -40,48 +40,59 @@ import org.slf4j.LoggerFactory;
 @Name("dwellingdensity")
 @Description("Calculates Average Density for a given region population count layer and set of regions of interest")
 public class DwellingDensityOMS {
-    static final Logger LOGGER = LoggerFactory.getLogger(DwellingDensityOMS.class);
-    /**
-     * A URL pointing to a GeoJSON representation of regions with a population attribute
-     */
-    @In
-    public SimpleFeatureSource populationSource;
-    
-    /**
-     * The attribute to use for population
-     */
-    @In
-    public String countAttribute;
-    
-    /**
-     * The input regions to calculate desnity for
-     */
-    @In
-    public SimpleFeatureSource regionsSource;
-    
-    /**
-     * The resulting regions with average density calculated
-     */
-    @Out
-    public SimpleFeatureSource resultsSource;
-    
-     /**
-     * Reads in the population count layer and regions layer from given URLs, writes out average density results to resultsURL
-     */
-    @Execute
-    public void averageDensity() {
-        try {
-         
-            FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures().features();
-            
-            SimpleFeatureCollection densityRegions = DwellingDensity.averageDensity(populationSource, regions,countAttribute);
-        
-            //FIXME: need to get real URL somehow? then write to it instead of file
-            //File file = new File("landUseMixRegions.geojson");
-            resultsSource = DataUtilities.source(densityRegions);
-            
-        } catch (IOException e) {
-            LOGGER.error("Failed to read input/s");
-        }
-    }
+
+	  static final Logger LOGGER = LoggerFactory.getLogger(DwellingDensityOMS.class);
+	  /**
+	   * A URL pointing to a GeoJSON representation of regions with a population
+	   * attribute
+	   */
+	  @In
+	  @Name("Population dataset")
+	  @Description("A dataset containting a set of regions with a population attribute")
+	  public SimpleFeatureSource populationSource;
+
+	  /**
+	   * The attribute to use for population
+	   */
+	  @In
+	  @Name("Population attribute")
+	  @Description("The attribute to use for population")
+	  public String countAttribute;
+
+	  /**
+	   * The input regions to calculate density for
+	   */
+	  @In
+	  @Name("Regions of interest")
+	  public SimpleFeatureSource regionsSource;
+
+	  /**
+	   * The resulting regions with average density calculated
+	   */
+	  @Out
+	  @Name("Resulting regions")
+	  public SimpleFeatureSource resultsSource;
+
+	  /**
+	   * Reads in the population count layer and regions layer from given URLs,
+	   * writes out average density results to resultsURL
+	   */
+	  @Execute
+	  public void averageDensity() {
+	    try {
+	
+	      FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures().features();
+	
+	      SimpleFeatureCollection densityRegions = DwellingDensity
+	          .averageDensity(populationSource, regions, countAttribute);
+	
+	      // FIXME: need to get real URL somehow? then write to it instead of file
+	      // File file = new File("landUseMixRegions.geojson");
+	      resultsSource = DataUtilities.source(densityRegions);
+	
+	    } catch (IOException e) {
+	      LOGGER.error("Failed to read input/s");
+	    }
+	  }
 }
+
