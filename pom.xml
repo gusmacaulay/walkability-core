@@ -32,6 +32,18 @@
 		</developer>
 	</developers>
 
+	<distributionManagement>
+		<repository>
+			<id>aurin</id>
+			<url>https://mvn.aurin.org.au/nexus/content/repositories/stable/</url>
+			<name>AURIN Repository</name>
+		</repository>
+		<snapshotRepository>
+			<id>aurin-snapshots</id>
+			<url>https://mvn.aurin.org.au/nexus/content/repositories/snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>commons-io</groupId>
