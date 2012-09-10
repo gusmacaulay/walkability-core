@@ -34,37 +34,42 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Finds all intersecting features in a region of interest.
+ * 
  * @author amacaulay
- *
+ * 
  */
 public class IntersectionOMS {
 
-	 static final Logger LOGGER = LoggerFactory.getLogger(IntersectionOMS.class);
-	 
-	 @In
-	 SimpleFeature regionOfInterest;
-	 @In
-	 SimpleFeatureSource featuresOfInterest;
-	 @Out
-	 SimpleFeatureSource results;
-	 
-	 /**
-	  * Finds all intersecting features in a region of interest - uses geotools filter.
-	  */
-	 @Execute
-	 public void intersection() {
-		 try {
-			 
-			 SimpleFeatureCollection features = featuresOfInterest.getFeatures();
-			 FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-		     String geometryPropertyName = features.getSchema().getGeometryDescriptor().getLocalName();
-			 Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(regionOfInterest.getDefaultGeometry())); 
-			 SimpleFeatureCollection intersectingFeatures = features.subCollection(filter);
-			 LOGGER.info("Found {} intersecting features", intersectingFeatures.size());
-			 results = DataUtilities.source(intersectingFeatures);
-		 }
-		 catch(IOException e) {
-			 LOGGER.error("Failed to read input datasets");
-		 }
-	 }
+  static final Logger LOGGER = LoggerFactory.getLogger(IntersectionOMS.class);
+
+  @In
+  SimpleFeature regionOfInterest;
+  @In
+  SimpleFeatureSource featuresOfInterest;
+  @Out
+  SimpleFeatureSource results;
+
+  /**
+   * Finds all intersecting features in a region of interest - uses geotools
+   * filter.
+   */
+  @Execute
+  public void intersection() {
+    try {
+
+      SimpleFeatureCollection features = featuresOfInterest.getFeatures();
+      FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+      String geometryPropertyName = features.getSchema()
+          .getGeometryDescriptor().getLocalName();
+      Filter filter = ff.intersects(ff.property(geometryPropertyName),
+          ff.literal(regionOfInterest.getDefaultGeometry()));
+      SimpleFeatureCollection intersectingFeatures = features
+          .subCollection(filter);
+      LOGGER
+          .info("Found {} intersecting features", intersectingFeatures.size());
+      results = DataUtilities.source(intersectingFeatures);
+    } catch (IOException e) {
+      LOGGER.error("Failed to read input datasets");
+    }
+  }
 }

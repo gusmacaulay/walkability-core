@@ -41,136 +41,157 @@ import org.slf4j.LoggerFactory;
 /**
  * Calculates the Land Use Mix Measure for a given land use dataset, region/s,
  * and a list of classifications of interest
- *
+ * 
  * @author amacaulay
  */
 public final class LandUseMix {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(LandUseMix.class);
+  static final Logger LOGGER = LoggerFactory.getLogger(LandUseMix.class);
 
-    private LandUseMix() {
+  private LandUseMix() {
+  }
+
+  /**
+   * Calculates Land Use Mix Measure for a set of regions
+   * 
+   * @param landUse
+   *          The Land Use layer containing polygonal features with land use
+   *          classifications
+   * @param regions
+   *          A set of regions to calculate Land Use Mix for
+   * @param classifications
+   *          A List of classifications of interest
+   * @return The set of regions augmented with summary of classification areas
+   *         and land use mix measure as attributes
+   */
+  public static SimpleFeatureCollection summarise(SimpleFeatureSource landUse,
+      FeatureIterator<SimpleFeature> regions, List<String> classifications,
+      String classificationAttribute) {
+    List<SimpleFeature> lumFeatures = new ArrayList();
+    while (regions.hasNext()) {
+      SimpleFeature lumFeature = summarise(landUse, regions.next(),
+          classifications, classificationAttribute);
+      lumFeatures.add(lumFeature);
     }
-    
-    /**
-     * Calculates Land Use Mix Measure for a set of regions
-     *
-     * @param landUse The Land Use layer containing polygonal features with land
-     * use classifications
-     * @param regions A set of regions to calculate Land Use Mix for
-     * @param classifications A List of classifications of interest
-     * @return The set of regions augmented with summary of classification areas
-     * and land use mix measure as attributes
-     */
-    public static SimpleFeatureCollection summarise(SimpleFeatureSource landUse, FeatureIterator<SimpleFeature> regions, List<String> classifications, String classificationAttribute) {
-        List<SimpleFeature> lumFeatures = new ArrayList();
-        while (regions.hasNext()) {
-            SimpleFeature lumFeature = summarise(landUse, regions.next(), classifications, classificationAttribute);
-            lumFeatures.add(lumFeature);
+    return DataUtilities.collection(lumFeatures);
+  }
+
+  /**
+   * Calculates Land Use Mix Measure for a single region
+   * 
+   * @param landUse
+   *          The Land Use layer containing polygonal features with land use
+   *          classifications
+   * @param region
+   *          A region to calculate Land Use Mix for
+   * @param classifications
+   *          A List of classifications of interest
+   * @return The region feature augmented with summary of classification areas
+   *         and land use mix measure as attributes
+   */
+  public static SimpleFeature summarise(SimpleFeatureSource landUse,
+      SimpleFeature region, List<String> classifications,
+      String classificationAttribute) {
+
+    try {
+      Geometry regionGeom = (Geometry) region.getDefaultGeometry();
+
+      SimpleFeatureIterator parcels = (featuresInRegion(landUse, regionGeom))
+          .features();
+      Map classificationAreas = new HashMap();
+      double totalArea = 0.0;
+      while (parcels.hasNext()) {
+        SimpleFeature parcel = parcels.next();
+        Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
+        String classification = String.valueOf(parcel
+            .getAttribute(classificationAttribute));
+        // LOGGER.info("Classification: {}", classification);
+        if (classifications.contains(classification)) {
+          // LOGGER.info("Classification: {}", classification);
+          Double parcelArea = parcelGeom.intersection(regionGeom).getArea();
+          // LOGGER.info("Parcel Area:, {}", parcelArea);
+          totalArea += parcelArea;
+          Double area = parcelArea;
+          if (classificationAreas.containsKey(classification)) {
+            area = (Double) classificationAreas.get(classification) + area;
+          }
+          classificationAreas.put(classification, area);
+
         }
-        return DataUtilities.collection(lumFeatures);
-    }
 
-    /**
-     * Calculates Land Use Mix Measure for a single region
-     *
-     * @param landUse The Land Use layer containing polygonal features with land
-     * use classifications
-     * @param region A region to calculate Land Use Mix for
-     * @param classifications A List of classifications of interest
-     * @return The region feature augmented with summary of classification areas
-     * and land use mix measure as attributes
-     */
-    public static SimpleFeature summarise(SimpleFeatureSource landUse, SimpleFeature region, List<String> classifications, String classificationAttribute) {
+      }
 
-        try {
-            Geometry regionGeom = (Geometry) region.getDefaultGeometry();
+      Collection<Double> areas = classificationAreas.values();
+      SimpleFeatureType sft = (SimpleFeatureType) region.getType();
+      SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+      stb.init(sft);
+      stb.setName("landUseMixFeatureType");
 
-            SimpleFeatureIterator parcels = (featuresInRegion(landUse, regionGeom)).features();
-            Map classificationAreas = new HashMap();
-            double totalArea = 0.0;
-            while (parcels.hasNext()) {
-                SimpleFeature parcel = parcels.next();
-                Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-                String classification = String.valueOf(parcel.getAttribute(classificationAttribute));
-                //  LOGGER.info("Classification: {}", classification);
-                if (classifications.contains(classification)) {
-                    //     LOGGER.info("Classification: {}", classification);
-                    Double parcelArea = parcelGeom.intersection(regionGeom).getArea();
-                  //  LOGGER.info("Parcel Area:, {}", parcelArea);
-                    totalArea += parcelArea;
-                    Double area = parcelArea;
-                    if (classificationAreas.containsKey(classification)) {
-                        area = (Double) classificationAreas.get(classification) + area;
-                    }
-                    classificationAreas.put(classification, area);
-
-                }
-
-            }
-
-            Collection<Double> areas = classificationAreas.values();
-            SimpleFeatureType sft = (SimpleFeatureType) region.getType();
-            SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
-            stb.init(sft);
-            stb.setName("landUseMixFeatureType");
-            
-            for (String classification : classifications) {
-                stb.add(classification, Double.class);
-            }
-            //Add the land use mix attribute
-            stb.add("LandUseMixMeasure", Double.class);
-            SimpleFeatureType landUseMixFeatureType = stb.buildFeatureType();
-            SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
-            sfb.addAll(region.getAttributes());
-            for (String classification : classifications) {
-                Double area = (Double)classificationAreas.get(classification);
-                if (area == null) {
-                    area = 0d;
-                }
-                sfb.add(area);
-            }
-            Double landUseMixMeasure = calculateLUM(areas, totalArea);
-            sfb.add(landUseMixMeasure);
-            return sfb.buildFeature(region.getID());
-            // LOGGER.info("Land Use Mix Measure: {}", landUseMixMeasure);
-        } catch (IOException e) {
-            LOGGER.error("Failed to select land use features in region: {}", e.getMessage());
-            return null;
+      for (String classification : classifications) {
+        stb.add(classification, Double.class);
+      }
+      // Add the land use mix attribute
+      stb.add("LandUseMixMeasure", Double.class);
+      SimpleFeatureType landUseMixFeatureType = stb.buildFeatureType();
+      SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
+      sfb.addAll(region.getAttributes());
+      for (String classification : classifications) {
+        Double area = (Double) classificationAreas.get(classification);
+        if (area == null) {
+          area = 0d;
         }
-        // return region;
+        sfb.add(area);
+      }
+      Double landUseMixMeasure = calculateLUM(areas, totalArea);
+      sfb.add(landUseMixMeasure);
+      return sfb.buildFeature(region.getID());
+      // LOGGER.info("Land Use Mix Measure: {}", landUseMixMeasure);
+    } catch (IOException e) {
+      LOGGER.error("Failed to select land use features in region: {}",
+          e.getMessage());
+      return null;
     }
+    // return region;
+  }
 
-    /**
-     * Calculates Land Use Mix
-     * @param areas Collection of area values for each classification
-     * @param totalArea The total area covered by all the land use classifications
-     * @return The Land Use Mix Measure
-     */
-    private static Double calculateLUM(Collection<Double> areas, Double totalArea) {
-        Double landUseMixMeasure = 0.0;
-        if (areas.size() == 1) {
-            landUseMixMeasure = 0.0;
-        } else {
-            for (Double area : areas) {
-                Double proportion = area / totalArea;
-                //  LOGGER.info("Class Area: {} Total Area: {}", area, totalArea);
-                landUseMixMeasure += (((proportion) * (Math.log(proportion))) / (Math.log(areas.size())));
-            }
-            landUseMixMeasure = -1 * landUseMixMeasure;
-        }
-        return landUseMixMeasure;
+  /**
+   * Calculates Land Use Mix
+   * 
+   * @param areas
+   *          Collection of area values for each classification
+   * @param totalArea
+   *          The total area covered by all the land use classifications
+   * @return The Land Use Mix Measure
+   */
+  private static Double calculateLUM(Collection<Double> areas, Double totalArea) {
+    Double landUseMixMeasure = 0.0;
+    if (areas.size() == 1) {
+      landUseMixMeasure = 0.0;
+    } else {
+      for (Double area : areas) {
+        Double proportion = area / totalArea;
+        // LOGGER.info("Class Area: {} Total Area: {}", area, totalArea);
+        landUseMixMeasure += (((proportion) * (Math.log(proportion))) / (Math
+            .log(areas.size())));
+      }
+      landUseMixMeasure = -1 * landUseMixMeasure;
     }
+    return landUseMixMeasure;
+  }
 
-    private static SimpleFeatureCollection featuresInRegion(SimpleFeatureSource featureSource, Geometry roi) throws IOException {
-        //Construct a filter which first filters within the bbox of roi and then filters with intersections of roi
-        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-        FeatureType schema = featureSource.getSchema();
+  private static SimpleFeatureCollection featuresInRegion(
+      SimpleFeatureSource featureSource, Geometry roi) throws IOException {
+    // Construct a filter which first filters within the bbox of roi and then
+    // filters with intersections of roi
+    FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+    FeatureType schema = featureSource.getSchema();
 
-        String geometryPropertyName = schema.getGeometryDescriptor().getLocalName();
+    String geometryPropertyName = schema.getGeometryDescriptor().getLocalName();
 
-        Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(roi));
+    Filter filter = ff.intersects(ff.property(geometryPropertyName),
+        ff.literal(roi));
 
-        // collection of filtered features
-        return featureSource.getFeatures(filter);
-    }
+    // collection of filtered features
+    return featureSource.getFeatures(filter);
+  }
 }

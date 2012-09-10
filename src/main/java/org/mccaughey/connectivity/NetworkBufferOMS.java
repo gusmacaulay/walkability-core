@@ -30,81 +30,82 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An OMS Wrapper for Network Buffer generation
- *
+ * 
  * @author amacaulay
  */
 @Name("netbuffer")
 @Description("Generates network service areas for points on a network")
 public class NetworkBufferOMS {
-	
-static final Logger LOGGER = LoggerFactory.getLogger(NetworkBufferOMS.class);
-/**
- * The road network to count connections from
- */
-@In
-@Name("Road Network")
-@Description("The road network to count connections from")
-public SimpleFeatureSource network;
-	/**
-	 * The points of interest
-	 */
-	@In
-	@Name("Points of Interest")
-	@Description("Points of Interest")
-	public SimpleFeatureSource points;
-	/**
-	 * The network distance for the service areas (maximum walk distance)
-	 */
-	@In
-	@Name("Maximum walk distance")
-	@Description("The network distance for the service areas (maximum walk distance)")
-	public Double distance;
-	/**
-	 * The buffer size
-	 */
-	@In
-	@Name("Buffer size")
-	@Description("Buffer size")
-	public Double bufferSize;
-	
-	/**
-	 * The resulting regions url
-	 */
-	@Out
-	@Name("Resulting regions")
-	public SimpleFeatureSource regions;
 
-    /**
-     * Reads the input network and point datasets then uses NetworkBufferBatch
-     * to generate all the network buffers and writes out to regions URL
-     */
-    @Execute
-    public void run() {
-        try {
-        	LOGGER.info("Reading in network...");
-            SimpleFeatureSource networkSource = network;
-            LOGGER.info("Reading in points...");
-            SimpleFeatureSource pointsSource = points;
+  static final Logger LOGGER = LoggerFactory.getLogger(NetworkBufferOMS.class);
+  /**
+   * The road network to count connections from
+   */
+  @In
+  @Name("Road Network")
+  @Description("The road network to count connections from")
+  public SimpleFeatureSource network;
+  /**
+   * The points of interest
+   */
+  @In
+  @Name("Points of Interest")
+  @Description("Points of Interest")
+  public SimpleFeatureSource points;
+  /**
+   * The network distance for the service areas (maximum walk distance)
+   */
+  @In
+  @Name("Maximum walk distance")
+  @Description("The network distance for the service areas (maximum walk distance)")
+  public Double distance;
+  /**
+   * The buffer size
+   */
+  @In
+  @Name("Buffer size")
+  @Description("Buffer size")
+  public Double bufferSize;
 
-            //     LOGGER.info("Points Source CRS: {}", pointsSource.getSchema().getCoordinateReferenceSystem());
-            LOGGER.info("Generate network service areas...");
-            NetworkBufferBatch nbb = new NetworkBufferBatch(networkSource, pointsSource.getFeatures(), distance, bufferSize);
-            SimpleFeatureCollection buffers = nbb.createBuffers();
+  /**
+   * The resulting regions url
+   */
+  @Out
+  @Name("Resulting regions")
+  public SimpleFeatureSource regions;
 
-//            if (buffers.getSchema().getCoordinateReferenceSystem() == null) {
-//                LOGGER.error("NULL buffers fail");
-//            }
+  /**
+   * Reads the input network and point datasets then uses NetworkBufferBatch to
+   * generate all the network buffers and writes out to regions URL
+   */
+  @Execute
+  public void run() {
+    try {
+      LOGGER.info("Reading in network...");
+      SimpleFeatureSource networkSource = network;
+      LOGGER.info("Reading in points...");
+      SimpleFeatureSource pointsSource = points;
 
+      // LOGGER.info("Points Source CRS: {}",
+      // pointsSource.getSchema().getCoordinateReferenceSystem());
+      LOGGER.info("Generate network service areas...");
+      NetworkBufferBatch nbb = new NetworkBufferBatch(networkSource,
+          pointsSource.getFeatures(), distance, bufferSize);
+      SimpleFeatureCollection buffers = nbb.createBuffers();
 
-            //  File file = new File("service_areas_oms.geojson");
-            regions = DataUtilities.source(buffers);
+      // if (buffers.getSchema().getCoordinateReferenceSystem() == null) {
+      // LOGGER.error("NULL buffers fail");
+      // }
 
-            //regions = file.toURI().toURL();
-            LOGGER.info("Regions uploaded to {}", regions);
+      // File file = new File("service_areas_oms.geojson");
+      regions = DataUtilities.source(buffers);
 
-        } catch (Exception e) { //Can't do much here because of OMS?
-            LOGGER.error(e.getMessage());
-            //e.printStackTrace();
-        }
+      // regions = file.toURI().toURL();
+      LOGGER.info("Regions uploaded to {}", regions);
+
+    } catch (Exception e) { // Can't do much here because of OMS?
+      LOGGER.error(e.getMessage());
+      // e.printStackTrace();
     }
+  }
 }

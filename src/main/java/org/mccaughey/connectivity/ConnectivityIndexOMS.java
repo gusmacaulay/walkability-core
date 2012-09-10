@@ -18,58 +18,60 @@ import org.slf4j.LoggerFactory;
 /**
  * This is a wrapper for ConnectivityIndex that provides OMS3 annotations so it
  * can be used in OMS3 workflows, scripts etc.
- *
+ * 
  * @author amacaulay
  */
 @Name("connectivity")
 @Description("Calculates Connectivity for a given network and region")
 public class ConnectivityIndexOMS {
-	
-    static final Logger LOGGER = LoggerFactory.getLogger(ConnectivityIndexOMS.class);
-    /**
-     * The road network to count connections from
-     */
-    @In
-    @Name("Road network")
-    @Description("The road network to count connections from")
-    public SimpleFeatureSource network;
-    /**
-     * The region if interest
-     */
-    @In
-    @Name("Regions of Interest")
-    public SimpleFeatureSource regions;
 
-    /**
-     * The resulting connectivity
-     */
-    @Out
-    @Name("Resulting connectivity")
-    public SimpleFeatureSource results;
+  static final Logger LOGGER = LoggerFactory
+      .getLogger(ConnectivityIndexOMS.class);
+  /**
+   * The road network to count connections from
+   */
+  @In
+  @Name("Road network")
+  @Description("The road network to count connections from")
+  public SimpleFeatureSource network;
+  /**
+   * The region if interest
+   */
+  @In
+  @Name("Regions of Interest")
+  public SimpleFeatureSource regions;
 
-    /**
-     * Processes the featureSource network and region to calculate connectivity
-     *
-     * @throws Exception
-     */
-    @Execute
-    public void run() {
-        try {
-            SimpleFeatureSource networkSource = network;
-            SimpleFeatureSource regionSource = regions;
+  /**
+   * The resulting connectivity
+   */
+  @Out
+  @Name("Resulting connectivity")
+  public SimpleFeatureSource results;
 
-            ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(networkSource, regionSource.getFeatures());
-            cifj.connectivity();
+  /**
+   * Processes the featureSource network and region to calculate connectivity
+   * 
+   * @throws Exception
+   */
+  @Execute
+  public void run() {
+    try {
+      SimpleFeatureSource networkSource = network;
+      SimpleFeatureSource regionSource = regions;
 
-         //   File file = new File("connectivity_regions_oms.geojson");
-            results = DataUtilities.source(cifj.getResults());
-            // FileUtils.writeStringToFile(file, writeFeatures(buffers));
-            //results = file.toURI().toURL();
-       
-//            System.out.println(results);
+      ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(networkSource,
+          regionSource.getFeatures());
+      cifj.connectivity();
 
-        } catch (Exception e) { //Can't do much here because of OMS?
-            LOGGER.error(e.getMessage());
-        }
+      // File file = new File("connectivity_regions_oms.geojson");
+      results = DataUtilities.source(cifj.getResults());
+      // FileUtils.writeStringToFile(file, writeFeatures(buffers));
+      // results = file.toURI().toURL();
+
+      // System.out.println(results);
+
+    } catch (Exception e) { // Can't do much here because of OMS?
+      LOGGER.error(e.getMessage());
     }
+  }
 }

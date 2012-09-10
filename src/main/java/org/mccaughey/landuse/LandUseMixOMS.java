@@ -35,13 +35,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An OMS Wrapper for Land Use Mix
- *
+ * 
  * @author amacaulay
  */
 @Name("landmix")
 @Description("Calculates Land Use Mix Measure for a given land use layer and set of regions")
 public class LandUseMixOMS {
-	
+
   static final Logger LOGGER = LoggerFactory.getLogger(LandUseMixOMS.class);
   /**
    * Dataset containing Land Use regions.
@@ -81,21 +81,23 @@ public class LandUseMixOMS {
   @Name("Result regions")
   public SimpleFeatureSource resultsSource;
 
-    /**
-     * Reads in the land use layer and regions layer from given URLs, writes out
-     * results to resultsURL
-     */
-    @Execute
-    public void landUseMixMeasure() {
-        try {
-            FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures().features();
-            SimpleFeatureSource landUse = landUseSource;
-            SimpleFeatureCollection lumRegions = LandUseMix.summarise(landUse, regions, classifications, classificationAttribute);
-            resultsSource = DataUtilities.source(lumRegions);
-            
-        } catch (IOException e) {
-            LOGGER.error("Failed to read input/s: {}",e.getMessage());
-       //     e.printStackTrace();
-        }
+  /**
+   * Reads in the land use layer and regions layer from given URLs, writes out
+   * results to resultsURL
+   */
+  @Execute
+  public void landUseMixMeasure() {
+    try {
+      FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures()
+          .features();
+      SimpleFeatureSource landUse = landUseSource;
+      SimpleFeatureCollection lumRegions = LandUseMix.summarise(landUse,
+          regions, classifications, classificationAttribute);
+      resultsSource = DataUtilities.source(lumRegions);
+
+    } catch (IOException e) {
+      LOGGER.error("Failed to read input/s: {}", e.getMessage());
+      // e.printStackTrace();
     }
+  }
 }

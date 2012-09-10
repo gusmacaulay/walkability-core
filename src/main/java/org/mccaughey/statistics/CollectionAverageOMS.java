@@ -15,35 +15,38 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Calculates the average of an attribute in a dataset.
+ * 
  * @author amacaulay
- *
+ * 
  */
 public class CollectionAverageOMS {
-	static final Logger LOGGER = LoggerFactory.getLogger(CollectionAverageOMS.class);
+  static final Logger LOGGER = LoggerFactory
+      .getLogger(CollectionAverageOMS.class);
 
-	@In
-	SimpleFeatureSource featureSource;
+  @In
+  SimpleFeatureSource featureSource;
 
-	@In
-	String attribute;
+  @In
+  String attribute;
 
-	@Out
-	Double result;
+  @Out
+  Double result;
 
-	/**
-	 * Calculates the average of an attribute in a dataset. Uses the "Collection_Average" CQL function provided by geotools.
-	 */
-	@Execute
-	public void average() {
-		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(null);
-		Function sum = ff.function("Collection_Average", ff.property(attribute));
+  /**
+   * Calculates the average of an attribute in a dataset. Uses the
+   * "Collection_Average" CQL function provided by geotools.
+   */
+  @Execute
+  public void average() {
+    FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(null);
+    Function sum = ff.function("Collection_Average", ff.property(attribute));
 
-		try {
-			result = (Double) sum.evaluate(featureSource.getFeatures());
-		} catch (IOException e) {
-			LOGGER.error("Failed to read features");
-			result = null;
-		}
-	}
+    try {
+      result = (Double) sum.evaluate(featureSource.getFeatures());
+    } catch (IOException e) {
+      LOGGER.error("Failed to read features");
+      result = null;
+    }
+  }
 
 }

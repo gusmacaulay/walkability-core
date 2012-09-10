@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An OMS Wrapper for z-score calculation
- *
+ * 
  * @author amacaulay
  */
 @Name("zscore")
@@ -66,22 +66,24 @@ public class ZScoreOMS {
   @Description("Resulting regions with z-scores for each attribute and sum of z-scores across attributes")
   public SimpleFeatureSource resultsSource;
 
-    /**
-     * For a given list of attributes and a set of features, calculates the z
-     * score for each attribute and sums the z scores Reads in the regions layer
-     * from given URL, writes out results to resultsURL
-     */
-    @Execute
-    public void sumOfZScores() {
-        try {
-            FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures().features();
+  /**
+   * For a given list of attributes and a set of features, calculates the z
+   * score for each attribute and sums the z scores Reads in the regions layer
+   * from given URL, writes out results to resultsURL
+   */
+  @Execute
+  public void sumOfZScores() {
+    try {
+      FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures()
+          .features();
 
-            SimpleFeatureCollection statisticsRegions = ZScore.sumZScores(regions, attributes);
+      SimpleFeatureCollection statisticsRegions = ZScore.sumZScores(regions,
+          attributes);
 
-            resultsSource = DataUtilities.source(statisticsRegions);
-            
-        } catch (IOException e) {
-            LOGGER.error("Failed to read input/s");
-        }
+      resultsSource = DataUtilities.source(statisticsRegions);
+
+    } catch (IOException e) {
+      LOGGER.error("Failed to read input/s");
     }
+  }
 }
