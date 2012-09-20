@@ -73,7 +73,7 @@ public final class GeotoolsAssert {
             String valueB = featureB.getProperty(p.getName()).getValue()
                 .toString();
             LOGGER.info("A {}, B {}.", p.getValue(), valueB);
-            if (!p.getValue().toString().equals(valueB.toString())) {
+            if (!p.getValue().toString().equals(valueB)) {
               throw new AssertionFailedException(
                   "Feature Properties not equal, expected:" + p.getValue()
                       + " but got: " + valueB);
