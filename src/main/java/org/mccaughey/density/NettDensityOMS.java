@@ -26,6 +26,14 @@ import org.slf4j.LoggerFactory;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
+/**
+ * Performs Nett Density calculation, which is the ratio of the number of
+ * dwellings over area of land utilised as residential land within a
+ * participant’s neighbourhood
+ * 
+ * @author amacaulay
+ * 
+ */
 public class NettDensityOMS {
   static final Logger LOGGER = LoggerFactory.getLogger(NettDensityOMS.class);
 
@@ -54,8 +62,8 @@ public class NettDensityOMS {
   public SimpleFeatureSource resultsSource;
 
   /**
-   * Reads in the population count layer and regions layer from given URLs,
-   * writes out average density results to resultsURL
+   * Reads in the population count layer and regions layer from given sources,
+   * writes out Nett Density results to resultsSource
    */
   @Execute
   public void nettDensity() {

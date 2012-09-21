@@ -47,6 +47,11 @@ public final class GeoJSONUtilities {
   private GeoJSONUtilities() {
   }
 
+  /**
+   * Writes out a SimpleFeatureCollection to a file as geojson
+   * @param features The features to write
+   * @param file The file to write to
+   */
   public static void writeFeatures(SimpleFeatureCollection features, File file) {
     FeatureJSON fjson = new FeatureJSON();
     OutputStream os;

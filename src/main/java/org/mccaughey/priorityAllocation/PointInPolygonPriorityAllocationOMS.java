@@ -43,6 +43,13 @@ import au.com.bytecode.opencsv.CSVReader;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
+/**
+ * This class performs the point in polygon priority allocation process, for
+ * allocating land use types to cadastral/parcel data
+ * 
+ * @author amacaulay
+ * 
+ */
 public class PointInPolygonPriorityAllocationOMS {
   static final Logger LOGGER = LoggerFactory
       .getLogger(PointInPolygonPriorityAllocationOMS.class);
@@ -84,6 +91,9 @@ public class PointInPolygonPriorityAllocationOMS {
   @In
   public Map<String, Integer> priorityOrder;
 
+  /**
+   * A URL for a csvTable which can be used as a lookup for land use types
+   */
   @In
   public URL csvTable;
 
@@ -327,6 +337,13 @@ public class PointInPolygonPriorityAllocationOMS {
     return union;
   }
 
+  /**
+   * Performs the priority allocation in a region of interest, according to a
+   * priority lookup. This is called by and executor service
+   * 
+   * @author amacaulay
+   * 
+   */
   class Allocater implements Callable {
 
     private SimpleFeature regionOfInterest;
@@ -337,6 +354,10 @@ public class PointInPolygonPriorityAllocationOMS {
       this.classificationLookup = priorityLookup;
     }
 
+    /**
+     * Does and intersection of parcels with the region of interest and then
+     * allocates each parcel.
+     */
     public SimpleFeatureCollection call() throws IOException {
       // Do an intersection of parcels with service areas
       SimpleFeatureCollection intersectingParcels = intersection(parcels,
