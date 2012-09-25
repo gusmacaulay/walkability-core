@@ -447,9 +447,8 @@ public class PointInPolygonPriorityAllocationOMS {
       sfb.addAll(baseFeature.getAttributes());
       for (String value : newValues) {
         sfb.add(value);
-      }
+      } 
       return sfb.buildFeature(baseFeature.getID());
-
     }
 
   }
