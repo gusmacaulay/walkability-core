@@ -67,8 +67,8 @@ public final class GeoJSONUtilities {
         } else {
           LOGGER.info("CRS is null");
         }
-        LOGGER.info("CRS: {}", features.getSchema()
-            .getCoordinateReferenceSystem().toString());
+     //   LOGGER.info("CRS: {}", features.getSchema()
+     //       .getCoordinateReferenceSystem().toString());
         // if
         // (features.getSchema().getCoordinateReferenceSystem().toString().contains("UNIT[\"m"))
         // {
