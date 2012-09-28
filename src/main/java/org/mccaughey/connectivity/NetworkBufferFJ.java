@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import jsr166y.ForkJoinPool;
 import jsr166y.RecursiveAction;
 
 import org.geotools.feature.simple.SimpleFeatureBuilder;
@@ -38,8 +39,6 @@ import org.slf4j.LoggerFactory;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.linearref.LengthIndexedLine;
-//import java.util.concurrent.ForkJoinPool;
-//import java.util.concurrent.RecursiveAction;
 
 /**
  * A Fork/Join Network service area generator using Bread First graph traversal
@@ -84,17 +83,18 @@ public class NetworkBufferFJ extends RecursiveAction {
    */
   public Map createBuffer() {
     // Get the available processors, processors==threads is probably best?
-    // Runtime runtime = Runtime.getRuntime();
-    // int nProcessors = runtime.availableProcessors();
-    /*
-     * int nThreads = 1;//nProcessors + 1; //
-     * LOGGER.debug("Initialising ForkJoinPool with {}", nThreads); //Fork/Join
-     * handles threads for me, all I do is invoke try { ForkJoinPool fjPool =
-     * new ForkJoinPool(nThreads); fjPool.invoke(this); } catch
-     * (NullPointerException e) {
-     * LOGGER.error("Failed to invoke buffer computation, {}", e.getMessage());
-     * }
-     */
+    Runtime runtime = Runtime.getRuntime();
+    int nProcessors = runtime.availableProcessors();
+    int nThreads = 1; //nProcessors/2;
+    LOGGER.debug("Initialising ForkJoinPool with {}", nThreads); 
+    // Fork/Join // handles threads for me, all I do is invoke
+//    try {
+//      ForkJoinPool fjPool = new ForkJoinPool(nThreads);
+//      fjPool.invoke(this);
+//    } catch (NullPointerException e) {
+//      LOGGER.error("Failed to invoke buffer computation, {}", e.getMessage());
+//    }
+
     compute();
     return serviceArea;
   }

@@ -16,10 +16,16 @@
  */
 package org.mccaughey.connectivity;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-import jsr166y.ForkJoinPool;
 import jsr166y.RecursiveAction;
 
 import org.geotools.data.DataUtilities;
@@ -73,7 +79,7 @@ public class NetworkBufferBatch extends RecursiveAction {
     this.bufferSize = bufferSize;
     this.buffers = FeatureCollections.newCollection();
     this.graphs = FeatureCollections.newCollection();
-    this.pointsPerThread = 1; // TODO: make this dynamic
+    this.pointsPerThread = 1000; // TODO: make this dynamic
   }
 
   /**
@@ -91,16 +97,77 @@ public class NetworkBufferBatch extends RecursiveAction {
    *         for each point of interest
    */
   public SimpleFeatureCollection createBuffers() {
-    Runtime runtime = Runtime.getRuntime();
-    int nProcessors = runtime.availableProcessors();
-    int nThreads = nProcessors;
-
-    LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
-    // Fork/Join handles threads for me, all I do is invoke
-    ForkJoinPool fjPool = new ForkJoinPool(nThreads);
-    fjPool.invoke(this);
-
+    ExecutorService executorService = Executors.newFixedThreadPool(Runtime
+        .getRuntime().availableProcessors());
+    List<Future> futures = new ArrayList<Future>();
+    int count = 0;
+    SimpleFeatureIterator features = points.features();
+    while (features.hasNext()) {
+      try {
+        LOGGER.info("Buffer count {}", ++count);
+        SimpleFeature point = features.next();
+        Buffernator ac = new Buffernator(point, network);
+        Future future = executorService.submit(ac);
+        futures.add(future);
+        // LOGGER.info("+");
+             // .addAll(DataUtilities.collection(networkBuffer)) 
+        
+      } catch (Exception e) {
+        LOGGER.error("Buffer creation failed for some reason, {}",
+            e.getMessage());
+        // e.printStackTrace();
+      }
+    }
+    for (Future future : futures) { 
+      try {
+        buffers.add((SimpleFeature)(future.get()));
+      } catch (InterruptedException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+    LOGGER.info("Completed {} buffers", points.size());
     return buffers;
+    // Runtime runtime = Runtime.getRuntime();
+    // int nProcessors = runtime.availableProcessors();
+    // int nThreads = nProcessors/2;
+    //
+    // LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
+    // // Fork/Join handles threads for me, all I do is invoke
+    // ForkJoinPool fjPool = new ForkJoinPool(nThreads);
+    // fjPool.invoke(this);
+    //
+    // return buffers;
+  }
+
+  class Buffernator implements Callable {
+    private SimpleFeature point;
+    private SimpleFeatureSource network;
+
+    Buffernator(SimpleFeature point, SimpleFeatureSource network) {
+      this.point = point;
+      this.network = network;
+    }
+
+    public SimpleFeature call() throws IOException {
+      Map serviceArea = NetworkBuffer.findServiceArea(network, point, distance,
+          bufferSize);
+      // if (serviceArea != null) {
+      // List<SimpleFeature> networkBuffer =
+      // NetworkBuffer.createLinesFromEdges(serviceArea);
+      // SimpleFeatureCollection graph = DataUtilities
+      // .collection(NetworkBuffer.createLinesFromEdges(serviceArea));
+      // LOGGER.info("Points CRS: {}",
+      // points.getSchema().getCoordinateReferenceSystem());
+      SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(
+          serviceArea, bufferSize, points.getSchema()
+              .getCoordinateReferenceSystem(), String.valueOf(point.getID()));
+      // if (networkBuffer != null) {
+      return networkBuffer;
+    }
   }
 
   @Override

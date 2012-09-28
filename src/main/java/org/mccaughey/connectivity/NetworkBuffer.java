@@ -97,15 +97,16 @@ public final class NetworkBuffer {
       SimpleFeature pointFeature, Double networkDistance, Double bufferDistance)
       throws IOException {
     Point pointOfInterest = (Point) pointFeature.getDefaultGeometry();
-    LocationIndexedLine nearestLine = findNearestEdgeLine(network,
-        networkDistance, bufferDistance, pointOfInterest);
-    if (nearestLine == null) {
-      return null;
-    }
     Geometry pointBuffer = pointOfInterest.buffer(networkDistance
         + bufferDistance);
     SimpleFeatureCollection networkRegion = featuresInRegion(network,
         pointBuffer);
+    LocationIndexedLine nearestLine = findNearestEdgeLine(networkRegion,
+        networkDistance, bufferDistance, pointOfInterest);
+    if (nearestLine == null) {
+      return null;
+    }
+ 
     Path startPath = new Path();
     Graph networkGraph = createGraphWithStartNode(nearestLine, startPath,
         networkRegion, pointOfInterest);
@@ -286,7 +287,7 @@ public final class NetworkBuffer {
   }
 
   private static LocationIndexedLine findNearestEdgeLine(
-      SimpleFeatureSource network, Double roadDistance, Double bufferDistance,
+      SimpleFeatureCollection network, Double roadDistance, Double bufferDistance,
       Point pointOfInterest) throws IOException {
     // Build network Graph - within bounds
     Double maxDistance = roadDistance + bufferDistance;
@@ -332,13 +333,13 @@ public final class NetworkBuffer {
     return null;
   }
 
-  private static SpatialIndex createLineStringIndex(SimpleFeatureSource network)
+  private static SpatialIndex createLineStringIndex(SimpleFeatureCollection network)
       throws IOException {
     SpatialIndex index = new STRtree();
 
     // Create line string index
     // Just in case: check for null or empty geometry
-    SimpleFeatureIterator features = network.getFeatures().features();
+    SimpleFeatureIterator features = network.features();
     try {
       while (features.hasNext()) {
         SimpleFeature feature = features.next();

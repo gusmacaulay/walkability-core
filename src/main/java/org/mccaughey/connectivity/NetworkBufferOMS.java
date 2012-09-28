@@ -16,6 +16,8 @@
  */
 package org.mccaughey.connectivity;
 
+import java.io.IOException;
+
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
