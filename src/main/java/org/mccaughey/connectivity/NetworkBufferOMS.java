@@ -103,7 +103,7 @@ public class NetworkBufferOMS {
       regions = DataUtilities.source(buffers);
 
       // regions = file.toURI().toURL();
-      LOGGER.info("Regions uploaded to {}", regions);
+      LOGGER.info("Completed Network Service Area Generation");
 
     } catch (Exception e) { // Can't do much here because of OMS?
       LOGGER.error(e.getMessage());
