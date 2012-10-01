@@ -33,6 +33,8 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import au.org.aurin.types.NominalAttributeClassification;
+
 /**
  * An OMS Wrapper for Land Use Mix
  * 
@@ -56,16 +58,8 @@ public class LandUseMixOMS {
    */
   @In
   @Name("Classification attribute")
-  @Description("The attribute (column) containing the classification categories")
-  public String classificationAttribute;
-
-  /**
-   * A List of classification categories to use in the Land Use Mix calculation
-   */
-  @In
-  @Name("Chosen classification")
-  @Description("Classification categories to use in the Land Use Mix calculation")
-  public List<String> classifications;
+  @Description("The attribute (column) containing the classification categories and the classification categories")
+  public NominalAttributeClassification classificationAttribute;
 
   /**
    * The set of regions to calculate Land Use Mix for
@@ -92,7 +86,7 @@ public class LandUseMixOMS {
           .features();
       SimpleFeatureSource landUse = landUseSource;
       SimpleFeatureCollection lumRegions = LandUseMix.summarise(landUse,
-          regions, classifications, classificationAttribute);
+          regions, classificationAttribute.getValues(), classificationAttribute.getAttributeName());
       resultsSource = DataUtilities.source(lumRegions);
 
     } catch (IOException e) {
