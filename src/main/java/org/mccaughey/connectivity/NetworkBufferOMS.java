@@ -16,8 +16,6 @@
  */
 package org.mccaughey.connectivity;
 
-import java.io.IOException;
-
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
@@ -75,6 +73,11 @@ public class NetworkBufferOMS {
   @Out
   @Name("Resulting regions")
   public SimpleFeatureSource regions;
+  
+  
+  @Out
+  @Name("The original road network")
+  public SimpleFeatureSource networkOut;
 
   /**
    * Reads the input network and point datasets then uses NetworkBufferBatch to
@@ -104,6 +107,8 @@ public class NetworkBufferOMS {
 
       // regions = file.toURI().toURL();
       LOGGER.info("Completed Network Service Area Generation");
+      
+      networkOut = network;
 
     } catch (Exception e) { // Can't do much here because of OMS?
       LOGGER.error(e.getMessage());
