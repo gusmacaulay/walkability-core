@@ -96,6 +96,7 @@ public class DwellingDensityOMS {
 
     } catch (IOException e) {
       LOGGER.error("Failed to read input/s");
+      throw new IllegalStateException(e);
     }
   }
 }

@@ -91,7 +91,7 @@ public class LandUseMixOMS {
 
     } catch (IOException e) {
       LOGGER.error("Failed to read input/s: {}", e.getMessage());
-      // e.printStackTrace();
+      throw new IllegalStateException(e);
     }
   }
 }

@@ -4,6 +4,8 @@
  */
 package org.mccaughey.connectivity;
 
+import java.io.IOException;
+
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
@@ -70,8 +72,9 @@ public class ConnectivityIndexOMS {
 
       // System.out.println(results);
 
-    } catch (Exception e) { // Can't do much here because of OMS?
+    } catch (IOException e) { // Can't do much here because of OMS?
       LOGGER.error(e.getMessage());
+      throw new IllegalStateException(e);
     }
   }
 }
