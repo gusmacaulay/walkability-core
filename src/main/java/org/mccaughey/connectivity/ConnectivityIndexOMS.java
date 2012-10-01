@@ -57,6 +57,9 @@ public class ConnectivityIndexOMS {
    */
   @Execute
   public void run() {
+    
+    validateInputs();
+    
     try {
       SimpleFeatureSource networkSource = network;
       SimpleFeatureSource regionSource = regions;
@@ -75,6 +78,19 @@ public class ConnectivityIndexOMS {
     } catch (IOException e) { // Can't do much here because of OMS?
       LOGGER.error(e.getMessage());
       throw new IllegalStateException(e);
+    }
+  }
+  
+  private void validateInputs() {
+
+    if (network == null) {
+      throw new IllegalArgumentException(
+          "Connectivity Index Error: A road network was not provided");
+    }
+
+    if (regions == null) {
+      throw new IllegalArgumentException(
+          "Connectivity Index Error: Regions were not provided by the previous component");
     }
   }
 }

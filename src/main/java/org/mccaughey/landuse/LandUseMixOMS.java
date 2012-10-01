@@ -81,7 +81,10 @@ public class LandUseMixOMS {
    */
   @Execute
   public void landUseMixMeasure() {
+    
     try {
+      validateInputs();
+      
       FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures()
           .features();
       SimpleFeatureSource landUse = landUseSource;
@@ -92,6 +95,33 @@ public class LandUseMixOMS {
     } catch (IOException e) {
       LOGGER.error("Failed to read input/s: {}", e.getMessage());
       throw new IllegalStateException(e);
+    }
+  }
+  
+  /*
+   * Clear error messages for invalid inputs
+   */
+  private void validateInputs() throws IOException {
+
+    if (regionsSource == null) {
+      throw new IllegalArgumentException(
+          "Land Use Mix error: Inputs regions were not provided by the previous component");
+    }
+
+    if (regionsSource == null ) {
+      throw new IllegalArgumentException(
+          "Land Use Mix error: Regions feature source not provided");
+    }
+    
+    if (landUseSource == null) {
+      throw new IllegalArgumentException(
+          "Land Use Mix error: A land use dataset was provided");
+    }
+
+    if (classificationAttribute == null || classificationAttribute.getValues() == null
+        || classificationAttribute.getAttributeName() == null) {
+      throw new IllegalArgumentException(
+          "Land Use Mix error: Invalid attribute classification");
     }
   }
 }
