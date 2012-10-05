@@ -103,7 +103,6 @@ public class NetworkBufferBatch extends RecursiveAction {
     int count = 0;
     SimpleFeatureIterator features = points.features();
     while (features.hasNext()) {
-      try {
         LOGGER.info("Buffer count {}", ++count);
         SimpleFeature point = features.next();
         Buffernator ac = new Buffernator(point, network);
@@ -111,25 +110,17 @@ public class NetworkBufferBatch extends RecursiveAction {
         futures.add(future);
         // LOGGER.info("+");
              // .addAll(DataUtilities.collection(networkBuffer)) 
-        
-      } catch (Exception e) {
-        LOGGER.error("Buffer creation failed for some reason, {}",
-            e.getMessage());
-        // e.printStackTrace();
-      }
     }
-    for (Future future : futures) { 
+    for (Future future : futures) {
       try {
         buffers.add((SimpleFeature)(future.get()));
       } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
+        throw new IllegalStateException(e);
       } catch (ExecutionException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
+        LOGGER.error("Buffer generation failed for a point", e);
       }
     }
-    LOGGER.info("Completed {} buffers", points.size());
+    LOGGER.info("Completed {} buffers for {} points", buffers.size(), points.size());
     return buffers;
     // Runtime runtime = Runtime.getRuntime();
     // int nProcessors = runtime.availableProcessors();
@@ -143,7 +134,7 @@ public class NetworkBufferBatch extends RecursiveAction {
     // return buffers;
   }
 
-  class Buffernator implements Callable {
+  class Buffernator implements Callable<SimpleFeature> {
     private SimpleFeature point;
     private SimpleFeatureSource network;
 

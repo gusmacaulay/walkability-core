@@ -86,7 +86,7 @@ public class NetworkBufferFJ extends RecursiveAction {
     Runtime runtime = Runtime.getRuntime();
     int nProcessors = runtime.availableProcessors();
     int nThreads = 1; //nProcessors/2;
-    LOGGER.debug("Initialising ForkJoinPool with {}", nThreads); 
+//    LOGGER.debug("Initialising ForkJoinPool with {}", nThreads); 
     // Fork/Join // handles threads for me, all I do is invoke
 //    try {
 //      ForkJoinPool fjPool = new ForkJoinPool(nThreads);
@@ -101,6 +101,9 @@ public class NetworkBufferFJ extends RecursiveAction {
 
   @Override
   protected void compute() {
+    
+    LOGGER.debug("Computing network buffer, current path: {}" + currentPath.size());
+    
     if (currentPath.size() == 0) {
       return;
     }
@@ -121,7 +124,7 @@ public class NetworkBufferFJ extends RecursiveAction {
         }
       }
     }
-    // LOGGER.info("Nextpaths For path {} - {}",currentPath, nextPaths.size());
+    LOGGER.debug("Nextpaths For path {} - {}",currentPath, nextPaths.size());
     for (Path nextPath : nextPaths) {
       NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance,
           serviceArea);
