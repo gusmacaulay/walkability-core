@@ -16,8 +16,6 @@
  */
 package org.mccaughey.connectivity;
 
-import java.io.IOException;
-
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
@@ -25,6 +23,7 @@ import oms3.annotations.Name;
 import oms3.annotations.Out;
 
 import org.geotools.data.DataUtilities;
+import org.geotools.data.Query;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.slf4j.Logger;
@@ -75,8 +74,7 @@ public class NetworkBufferOMS {
   @Out
   @Name("Resulting regions")
   public SimpleFeatureSource regions;
-  
-  
+
   @Out
   @Name("The original road network")
   public SimpleFeatureSource networkOut;
@@ -87,56 +85,63 @@ public class NetworkBufferOMS {
    */
   @Execute
   public void run() {
-    
+
     validateInputs();
-    
+
     try {
-      LOGGER.info("Reading in network...");
       SimpleFeatureSource networkSource = network;
-      LOGGER.info("Reading in points...");
       SimpleFeatureSource pointsSource = points;
 
-      // LOGGER.info("Points Source CRS: {}",
-      // pointsSource.getSchema().getCoordinateReferenceSystem());
+      LOGGER.info("Received network data containing {} features",
+          networkSource.getCount(new Query()));
+      LOGGER.info("Received points data containing {} features",
+          pointsSource.getCount(new Query()));
+
+      LOGGER.debug("Points Source CRS: {}", pointsSource.getSchema()
+          .getCoordinateReferenceSystem());
       LOGGER.info("Generate network service areas...");
       NetworkBufferBatch nbb = new NetworkBufferBatch(networkSource,
           pointsSource.getFeatures(), distance, bufferSize);
       SimpleFeatureCollection buffers = nbb.createBuffers();
-
-      // if (buffers.getSchema().getCoordinateReferenceSystem() == null) {
-      // LOGGER.error("NULL buffers fail");
-      // }
+      
+      if (buffers.isEmpty()) {
+        throw new IllegalStateException("No buffers were generated. Aborting process");
+      }
 
       // File file = new File("service_areas_oms.geojson");
       regions = DataUtilities.source(buffers);
 
       // regions = file.toURI().toURL();
       LOGGER.info("Completed Network Service Area Generation");
-      
+
       networkOut = network;
 
-    } catch (IOException e) { // Can't do much here because of OMS?
+    } catch (Exception e) {
       LOGGER.error(e.getMessage());
       throw new IllegalStateException(e);
     }
   }
-  
+
   private void validateInputs() {
 
     if (network == null) {
-      throw new IllegalArgumentException("Network buffer error: A road network was not provided");
+      throw new IllegalArgumentException(
+          "Network buffer error: A road network was not provided");
     }
 
     if (points == null) {
-      throw new IllegalArgumentException("Network buffer error: A set of points was not provided");
+      throw new IllegalArgumentException(
+          "Network buffer error: A set of points was not provided");
     }
 
     if (distance == null) {
-      throw new IllegalArgumentException("Network buffer error: A walking distance must be provided");
+      throw new IllegalArgumentException(
+          "Network buffer error: A walking distance must be provided");
     }
 
     if (bufferSize == null) {
-      throw new IllegalArgumentException("Network buffer error: A buffer size must be provided");
+      throw new IllegalArgumentException(
+          "Network buffer error: A buffer size must be provided");
     }
   }
 }

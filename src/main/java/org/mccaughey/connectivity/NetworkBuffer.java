@@ -96,6 +96,9 @@ public final class NetworkBuffer {
   public static Map findServiceArea(SimpleFeatureSource network,
       SimpleFeature pointFeature, Double networkDistance, Double bufferDistance)
       throws IOException {
+    
+    LOGGER.debug("Finding service area for point {}. Network distance: {}, Buffer distance {}", new Object[]{ pointFeature.getID(), networkDistance, bufferDistance});
+    
     Point pointOfInterest = (Point) pointFeature.getDefaultGeometry();
     Geometry pointBuffer = pointOfInterest.buffer(networkDistance
         + bufferDistance);
@@ -103,19 +106,22 @@ public final class NetworkBuffer {
         pointBuffer);
     LocationIndexedLine nearestLine = findNearestEdgeLine(networkRegion,
         networkDistance, bufferDistance, pointOfInterest);
+    LOGGER.debug("Found nearest edge line {}", nearestLine);
     if (nearestLine == null) {
+      LOGGER.error("Failed to snap point {} to network", pointFeature.getID());
       return null;
     }
  
     Path startPath = new Path();
     Graph networkGraph = createGraphWithStartNode(nearestLine, startPath,
         networkRegion, pointOfInterest);
+    LOGGER.debug("Created graph with start node with {} edges", networkGraph.getEdges().size());
     Map networkMap = graphToMap(networkGraph);
     Map serviceArea = new ConcurrentHashMap();
     NetworkBufferFJ nbfj = new NetworkBufferFJ(networkMap, startPath,
         networkDistance, serviceArea);
     serviceArea = nbfj.createBuffer();
-    LOGGER.info("Found " + serviceArea.size() + " Edges");
+    LOGGER.info("Found service area for point {} with {} Edges", pointFeature.getID(),serviceArea.size());
     writeNetworkFromEdges(serviceArea);
     return serviceArea;
   }
@@ -325,11 +331,9 @@ public final class NetworkBuffer {
     }
 
     if (minDistPoint != null) {
-      // LOGGER.info("{} - snapped by moving {}\n", pt.toString(),
-      // minDist);
+      LOGGER.debug("{} - snapped by moving {}\n", pt.toString(), minDist);
       return connectedLine;
     }
-    LOGGER.error("Failed to snap point {} to network", pt.toString());
     return null;
   }
 
@@ -515,7 +519,10 @@ public final class NetworkBuffer {
         ff.literal(roi));
 
     // collection of filtered features
-    return featureSource.getFeatures(filter);
+    LOGGER.debug("Attempting to read features from road network source");
+    final SimpleFeatureCollection features = featureSource.getFeatures(filter);
+    LOGGER.debug("Read {} features from road network source", features.size());
+    return features;
   }
 
   private static SimpleFeatureType createEdgeFeatureType(
