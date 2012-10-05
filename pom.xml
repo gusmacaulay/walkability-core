@@ -187,7 +187,10 @@
 			<name>Sonatype Maven Repository</name>
 			<url>http://oss.sonatype.org/content/repositories/snapshots/</url>
 		</repository>
-
+		<repository>
+			<id>aurin-snapshots</id>
+			<url>https://mvn.aurin.org.au/nexus/content/repositories/snapshots/</url>
+		</repository>
 	</repositories>
 
 	<build>
