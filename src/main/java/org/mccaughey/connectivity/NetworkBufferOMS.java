@@ -75,6 +75,11 @@ public class NetworkBufferOMS {
   @Out
   @Name("Resulting regions")
   public SimpleFeatureSource regions;
+  
+  
+  @Out
+  @Name("The original road network")
+  public SimpleFeatureSource networkOut;
 
   /**
    * Reads the input network and point datasets then uses NetworkBufferBatch to
@@ -82,6 +87,9 @@ public class NetworkBufferOMS {
    */
   @Execute
   public void run() {
+    
+    validateInputs();
+    
     try {
       LOGGER.info("Reading in network...");
       SimpleFeatureSource networkSource = network;
@@ -104,10 +112,31 @@ public class NetworkBufferOMS {
 
       // regions = file.toURI().toURL();
       LOGGER.info("Completed Network Service Area Generation");
+      
+      networkOut = network;
 
-    } catch (Exception e) { // Can't do much here because of OMS?
+    } catch (IOException e) { // Can't do much here because of OMS?
       LOGGER.error(e.getMessage());
-      // e.printStackTrace();
+      throw new IllegalStateException(e);
+    }
+  }
+  
+  private void validateInputs() {
+
+    if (network == null) {
+      throw new IllegalArgumentException("Network buffer error: A road network was not provided");
+    }
+
+    if (points == null) {
+      throw new IllegalArgumentException("Network buffer error: A set of points was not provided");
+    }
+
+    if (distance == null) {
+      throw new IllegalArgumentException("Network buffer error: A walking distance must be provided");
+    }
+
+    if (bufferSize == null) {
+      throw new IllegalArgumentException("Network buffer error: A buffer size must be provided");
     }
   }
 }

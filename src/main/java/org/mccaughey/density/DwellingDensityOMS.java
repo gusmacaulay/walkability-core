@@ -32,6 +32,8 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import au.org.aurin.types.AttributeSelector;
+
 /**
  * An OMS Wrapper for Average Density
  * 
@@ -58,7 +60,7 @@ public class DwellingDensityOMS {
   @In
   @Name("Population attribute")
   @Description("The attribute to use for population")
-  public String countAttribute;
+  public AttributeSelector countAttribute;
 
   /**
    * The input regions to calculate density for
@@ -86,7 +88,7 @@ public class DwellingDensityOMS {
           .features();
 
       SimpleFeatureCollection densityRegions = DwellingDensity.averageDensity(
-          populationSource, regions, countAttribute);
+          populationSource, regions, countAttribute.getAttributeId());
 
       // FIXME: need to get real URL somehow? then write to it instead of file
       // File file = new File("landUseMixRegions.geojson");
@@ -94,6 +96,7 @@ public class DwellingDensityOMS {
 
     } catch (IOException e) {
       LOGGER.error("Failed to read input/s");
+      throw new IllegalStateException(e);
     }
   }
 }

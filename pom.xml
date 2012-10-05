@@ -5,7 +5,7 @@
 
 	<groupId>org.mccaughey</groupId>
 	<artifactId>walkability</artifactId>
-	<version>0.2.0-SNAPSHOT</version>
+	<version>0.2.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>Walkability</name>
@@ -138,11 +138,6 @@
 			<version>${geotools.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.jgrasstools</groupId>
-			<artifactId>jgt-oms3</artifactId>
-			<version>0.7.3</version>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>3.1</version>
@@ -166,6 +161,11 @@
 			<groupId>net.sf.opencsv</groupId>
 			<artifactId>opencsv</artifactId>
 			<version>2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>au.org.aurin</groupId>
+			<artifactId>annotations</artifactId>
+			<version>0.3.1-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 	<repositories>
