@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author amacaulay
  */
-public class NetworkBufferBatch extends RecursiveAction {
+public class NetworkBufferBatch { //extends RecursiveAction {
 
   // /**
   // * Some nonsense to satisfy sonar+findbugs
@@ -113,7 +113,9 @@ public class NetworkBufferBatch extends RecursiveAction {
     }
     for (Future future : futures) {
       try {
+        
         buffers.add((SimpleFeature)(future.get()));
+        LOGGER.info("Completing Buffer");
       } catch (InterruptedException e) {
         throw new IllegalStateException(e);
       } catch (ExecutionException e) {
@@ -144,15 +146,11 @@ public class NetworkBufferBatch extends RecursiveAction {
     }
 
     public SimpleFeature call() throws IOException {
+      LOGGER.info("Calculating service network");
       Map serviceArea = NetworkBuffer.findServiceArea(network, point, distance,
           bufferSize);
-      // if (serviceArea != null) {
-      // List<SimpleFeature> networkBuffer =
-      // NetworkBuffer.createLinesFromEdges(serviceArea);
-      // SimpleFeatureCollection graph = DataUtilities
-      // .collection(NetworkBuffer.createLinesFromEdges(serviceArea));
-      // LOGGER.info("Points CRS: {}",
-      // points.getSchema().getCoordinateReferenceSystem());
+      
+      LOGGER.info("Buffering service network");
       SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(
           serviceArea, bufferSize, points.getSchema()
               .getCoordinateReferenceSystem(), String.valueOf(point.getID()));
@@ -161,90 +159,90 @@ public class NetworkBufferBatch extends RecursiveAction {
     }
   }
 
-  @Override
-  protected void compute() {
-    SimpleFeatureIterator features = points.features();
-    try {
-      if (points.size() <= pointsPerThread) { // if less points than threshold
-                                              // then compute buffers
-        // network region and store in buffers
-        LOGGER.info("Computing buffers for {} points", points.size());
-        // SimpleFeatureIterator features = points.features();
-        calculateServiceAreas(features);
+//  @Override
+//  protected void compute() {
+//    SimpleFeatureIterator features = points.features();
+//    try {
+//      if (points.size() <= pointsPerThread) { // if less points than threshold
+//                                              // then compute buffers
+//        // network region and store in buffers
+//        LOGGER.info("Computing buffers for {} points", points.size());
+//        // SimpleFeatureIterator features = points.features();
+//        calculateServiceAreas(features);
+//
+//      } else { // otherwise split the points into smaller feature collections
+//               // and work on those
+//        forkJoin(features);
+//      }
+//    } finally {
+//      features.close();
+//    }
+//  }
 
-      } else { // otherwise split the points into smaller feature collections
-               // and work on those
-        forkJoin(features);
-      }
-    } finally {
-      features.close();
-    }
-  }
+//  private void calculateServiceAreas(SimpleFeatureIterator features) {
+//    int count = 0;
+//
+//    while (features.hasNext()) {
+//      try {
+//        LOGGER.info("Buffer count {}", ++count);
+//        SimpleFeature point = features.next();
+//        // LOGGER.info("+");
+//        Map serviceArea = NetworkBuffer.findServiceArea(network, point,
+//            distance, bufferSize);
+//        if (serviceArea != null) {
+//          // List<SimpleFeature> networkBuffer =
+//          // NetworkBuffer.createLinesFromEdges(serviceArea);
+//          SimpleFeatureCollection graph = DataUtilities
+//              .collection(NetworkBuffer.createLinesFromEdges(serviceArea));
+//          // LOGGER.info("Points CRS: {}",
+//          // points.getSchema().getCoordinateReferenceSystem());
+//          SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(
+//              serviceArea, bufferSize, points.getSchema()
+//                  .getCoordinateReferenceSystem(),
+//              String.valueOf(point.getID()));
+//          if (networkBuffer != null) {
+//            buffers.add(networkBuffer); // .addAll(DataUtilities.collection(networkBuffer));
+//            graphs.addAll(graph);
+//          }
+//        }
+//      } catch (Exception e) {
+//        LOGGER.error("Buffer creation failed for some reason, {}",
+//            e.getMessage());
+//        // e.printStackTrace();
+//      }
+//    }
+//    LOGGER.info("Completed {} buffers", points.size());
+//  }
 
-  private void calculateServiceAreas(SimpleFeatureIterator features) {
-    int count = 0;
-
-    while (features.hasNext()) {
-      try {
-        LOGGER.info("Buffer count {}", ++count);
-        SimpleFeature point = features.next();
-        // LOGGER.info("+");
-        Map serviceArea = NetworkBuffer.findServiceArea(network, point,
-            distance, bufferSize);
-        if (serviceArea != null) {
-          // List<SimpleFeature> networkBuffer =
-          // NetworkBuffer.createLinesFromEdges(serviceArea);
-          SimpleFeatureCollection graph = DataUtilities
-              .collection(NetworkBuffer.createLinesFromEdges(serviceArea));
-          // LOGGER.info("Points CRS: {}",
-          // points.getSchema().getCoordinateReferenceSystem());
-          SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(
-              serviceArea, bufferSize, points.getSchema()
-                  .getCoordinateReferenceSystem(),
-              String.valueOf(point.getID()));
-          if (networkBuffer != null) {
-            buffers.add(networkBuffer); // .addAll(DataUtilities.collection(networkBuffer));
-            graphs.addAll(graph);
-          }
-        }
-      } catch (Exception e) {
-        LOGGER.error("Buffer creation failed for some reason, {}",
-            e.getMessage());
-        // e.printStackTrace();
-      }
-    }
-    LOGGER.info("Completed {} buffers", points.size());
-  }
-
-  private void forkJoin(SimpleFeatureIterator features) {
-    ArrayList<NetworkBufferBatch> buffernators = new ArrayList();
-
-    SimpleFeatureCollection pointsSubCollection = FeatureCollections
-        .newCollection();
-    // int count = 0;
-    while (features.hasNext()) { // && (count < 10000)) {
-      SimpleFeature feature = (SimpleFeature) features.next();
-      pointsSubCollection.add(feature);
-      if (pointsSubCollection.size() == this.pointsPerThread) {
-        NetworkBufferBatch nbb = new NetworkBufferBatch(network,
-            pointsSubCollection, distance, bufferSize);
-        buffernators.add(nbb);
-        pointsSubCollection = FeatureCollections.newCollection();
-      }
-      // count++;
-    }
-    if (pointsSubCollection.size() > 0) {
-      NetworkBufferBatch nbb = new NetworkBufferBatch(network,
-          pointsSubCollection, distance, bufferSize);
-      buffernators.add(nbb);
-    }
-    invokeAll(buffernators);
-    for (NetworkBufferBatch nbb : buffernators) {
-      // if (nbb.isCompletedAbnormally()) {
-      // this.completeExceptionally(nbb.getException());
-      // }
-      buffers.addAll(nbb.buffers);
-      graphs.addAll(nbb.graphs);
-    }
-  }
+//  private void forkJoin(SimpleFeatureIterator features) {
+//    ArrayList<NetworkBufferBatch> buffernators = new ArrayList();
+//
+//    SimpleFeatureCollection pointsSubCollection = FeatureCollections
+//        .newCollection();
+//    // int count = 0;
+//    while (features.hasNext()) { // && (count < 10000)) {
+//      SimpleFeature feature = (SimpleFeature) features.next();
+//      pointsSubCollection.add(feature);
+//      if (pointsSubCollection.size() == this.pointsPerThread) {
+//        NetworkBufferBatch nbb = new NetworkBufferBatch(network,
+//            pointsSubCollection, distance, bufferSize);
+//        buffernators.add(nbb);
+//        pointsSubCollection = FeatureCollections.newCollection();
+//      }
+//      // count++;
+//    }
+//    if (pointsSubCollection.size() > 0) {
+//      NetworkBufferBatch nbb = new NetworkBufferBatch(network,
+//          pointsSubCollection, distance, bufferSize);
+//      buffernators.add(nbb);
+//    }
+//    invokeAll(buffernators);
+//    for (NetworkBufferBatch nbb : buffernators) {
+//      // if (nbb.isCompletedAbnormally()) {
+//      // this.completeExceptionally(nbb.getException());
+//      // }
+//      buffers.addAll(nbb.buffers);
+//      graphs.addAll(nbb.graphs);
+//    }
+//  }
 }

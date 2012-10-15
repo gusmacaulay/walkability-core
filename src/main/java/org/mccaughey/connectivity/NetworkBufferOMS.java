@@ -92,6 +92,13 @@ public class NetworkBufferOMS {
       SimpleFeatureSource networkSource = network;
       SimpleFeatureSource pointsSource = points;
 
+      assert (network.getSchema().getCoordinateReferenceSystem() != null);
+      //LOGGER.info("Coordinate Units: {}", network.getSchema()
+      //    .getCoordinateReferenceSystem().getCoordinateSystem().getAxis(0)
+      //    .getUnit().toString());
+      assert (network.getSchema().getCoordinateReferenceSystem()
+          .getCoordinateSystem().getAxis(0).getUnit().toString().equals("m"));
+
       LOGGER.info("Received network data containing {} features",
           networkSource.getCount(new Query()));
       LOGGER.info("Received points data containing {} features",
@@ -103,9 +110,10 @@ public class NetworkBufferOMS {
       NetworkBufferBatch nbb = new NetworkBufferBatch(networkSource,
           pointsSource.getFeatures(), distance, bufferSize);
       SimpleFeatureCollection buffers = nbb.createBuffers();
-      
+
       if (buffers.isEmpty()) {
-        throw new IllegalStateException("No buffers were generated. Aborting process");
+        throw new IllegalStateException(
+            "No buffers were generated. Aborting process");
       }
 
       // File file = new File("service_areas_oms.geojson");

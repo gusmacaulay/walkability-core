@@ -385,12 +385,13 @@ public final class NetworkBuffer {
    */
   public static SimpleFeature createBufferFromEdges(Map serviceArea,
       Double distance, CoordinateReferenceSystem crs, String id) {
+    LOGGER.info("Creating Buffer");
     Set<Edge> edges = serviceArea.keySet();
     SimpleFeatureType type = createBufferFeatureType(crs);
     Geometry all = null;
-    // int loopcount = 0;
+    int loopcount = 0;
     while (edges.size() > 0) {
-      // LOGGER.info("loopcount: {}",loopcount++);
+      LOGGER.info("loopcount: {}",loopcount++);
       Set<Edge> unjoined = new HashSet();
       for (Edge edge : edges) {
         // SimpleFeature feature = ((SimpleFeature) serviceArea.get(edge));
@@ -413,12 +414,13 @@ public final class NetworkBuffer {
         try {
           if (all != null) {
             all = all.union().union();
+            LOGGER.info("Adding buffered edge");
           }
           if (all == null) {
             all = geom;
+            LOGGER.info("New All");
           } else if (!(all.covers(geom))) {
-            // LOGGER.info("ALL TYPE: {} GEOM TYPE: {}",
-            // all.getGeometryType(), geom.getGeometryType());
+            LOGGER.info("ALL TYPE: {} GEOM TYPE: {}", all.getGeometryType(), geom.getGeometryType());
             if (all.intersects(geom)) {
               all = all.union(geom);
             } else {
