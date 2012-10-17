@@ -386,14 +386,14 @@ public final class NetworkBuffer {
   public static SimpleFeature createBufferFromEdges(Map serviceArea,
       Double distance, CoordinateReferenceSystem crs, String id) {
     LOGGER.info("Creating Buffer");
-    List<SimpleFeature> serviceNetwork = createLinesFromEdges(serviceArea);
-    GeoJSONUtilities.writeFeatures(DataUtilities.collection(serviceNetwork), new File("serviceNetwork" + serviceArea.hashCode() + ".geojson"));
+//    List<SimpleFeature> serviceNetwork = createLinesFromEdges(serviceArea);
+//    GeoJSONUtilities.writeFeatures(DataUtilities.collection(serviceNetwork), new File("serviceNetwork" + serviceArea.hashCode() + ".geojson"));
     Set<Edge> edges = serviceArea.keySet();
     SimpleFeatureType type = createBufferFeatureType(crs);
     Geometry all = null;
-    int loopcount = 0;
+    //int loopcount = 0;
     while (edges.size() > 0) {
-      LOGGER.info("loopcount: {}",loopcount++);
+      //LOGGER.info("loopcount: {}",loopcount++);
       Set<Edge> unjoined = new HashSet();
       for (Edge edge : edges) {
         // SimpleFeature feature = ((SimpleFeature) serviceArea.get(edge));
@@ -420,7 +420,7 @@ public final class NetworkBuffer {
           }
           if (all == null) {
             all = geom;
-            LOGGER.info("New All");
+          //  LOGGER.info("New All");
           } else if (!(all.covers(geom))) {
             //LOGGER.info("ALL TYPE: {} GEOM TYPE: {}", all.getGeometryType(), geom.getGeometryType());
             if (all.intersects(geom)) {
@@ -443,7 +443,7 @@ public final class NetworkBuffer {
       if (unjoined.size() < edges.size())
         edges = unjoined;
       else 
-        break;
+        break; //FIXME: if this happens it means buffering has repeatedly failed for unjoined edges -> should throw an exception
       LOGGER.info("unjoined edges {}", edges.size());
     }
     // LOGGER.info("CRS: " + type.getCoordinateReferenceSystem());

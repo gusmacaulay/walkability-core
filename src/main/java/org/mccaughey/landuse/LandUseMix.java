@@ -16,11 +16,14 @@
  */
 package org.mccaughey.landuse;
 
-import com.vividsolutions.jts.geom.Geometry;
 import java.io.IOException;
-import java.util.*;
-import org.geotools.data.DataUtilities;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
@@ -28,15 +31,16 @@ import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.TopologyException;
 
 /**
  * Calculates the Land Use Mix Measure for a given land use dataset, region/s,
@@ -102,23 +106,25 @@ public final class LandUseMix {
       double totalArea = 0.0;
       while (parcels.hasNext()) {
         SimpleFeature parcel = parcels.next();
-        Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-        String classification = String.valueOf(parcel
-            .getAttribute(classificationAttribute));
-        // LOGGER.info("Classification: {}", classification);
-        if (classifications.contains(classification)) {
+        try {
+          Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
+          String classification = String.valueOf(parcel
+              .getAttribute(classificationAttribute));
           // LOGGER.info("Classification: {}", classification);
-          Double parcelArea = parcelGeom.intersection(regionGeom).getArea();
-          // LOGGER.info("Parcel Area:, {}", parcelArea);
-          totalArea += parcelArea;
-          Double area = parcelArea;
-          if (classificationAreas.containsKey(classification)) {
-            area = (Double) classificationAreas.get(classification) + area;
+          if (classifications.contains(classification)) {
+            // LOGGER.info("Classification: {}", classification);
+            Double parcelArea = parcelGeom.intersection(regionGeom).getArea();
+            // LOGGER.info("Parcel Area:, {}", parcelArea);
+            totalArea += parcelArea;
+            Double area = parcelArea;
+            if (classificationAreas.containsKey(classification)) {
+              area = (Double) classificationAreas.get(classification) + area;
+            }
+            classificationAreas.put(classification, area);
           }
-          classificationAreas.put(classification, area);
-
+        } catch (TopologyException e1) {
+          LOGGER.info("Ignoring TopologyException, {}", e1.getMessage());
         }
-
       }
 
       Collection<Double> areas = classificationAreas.values();
@@ -146,9 +152,10 @@ public final class LandUseMix {
       sfb.add(landUseMixMeasure);
       return sfb.buildFeature(region.getID());
       // LOGGER.info("Land Use Mix Measure: {}", landUseMixMeasure);
-    } catch (IOException e) {
+    }  catch (IOException e) {
       LOGGER.error("Failed to select land use features in region: {}",
           e.getMessage());
+      // File file = new File("landUseMixRegions.geojson");
       return null;
     }
     // return region;
