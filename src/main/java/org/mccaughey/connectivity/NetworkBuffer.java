@@ -386,6 +386,8 @@ public final class NetworkBuffer {
   public static SimpleFeature createBufferFromEdges(Map serviceArea,
       Double distance, CoordinateReferenceSystem crs, String id) {
     LOGGER.info("Creating Buffer");
+    List<SimpleFeature> serviceNetwork = createLinesFromEdges(serviceArea);
+    GeoJSONUtilities.writeFeatures(DataUtilities.collection(serviceNetwork), new File("serviceNetwork" + serviceArea.hashCode() + ".geojson"));
     Set<Edge> edges = serviceArea.keySet();
     SimpleFeatureType type = createBufferFeatureType(crs);
     Geometry all = null;
@@ -414,17 +416,17 @@ public final class NetworkBuffer {
         try {
           if (all != null) {
             all = all.union().union();
-            LOGGER.info("Adding buffered edge");
+           // LOGGER.info("Adding buffered edge");
           }
           if (all == null) {
             all = geom;
             LOGGER.info("New All");
           } else if (!(all.covers(geom))) {
-            LOGGER.info("ALL TYPE: {} GEOM TYPE: {}", all.getGeometryType(), geom.getGeometryType());
+            //LOGGER.info("ALL TYPE: {} GEOM TYPE: {}", all.getGeometryType(), geom.getGeometryType());
             if (all.intersects(geom)) {
               all = all.union(geom);
             } else {
-              // LOGGER.info("No intersection ...");
+              //LOGGER.info("No intersection ...");
               unjoined.add(edge);
             }
           }
@@ -438,7 +440,11 @@ public final class NetworkBuffer {
           }
         }
       }
-      edges = unjoined;
+      if (unjoined.size() < edges.size())
+        edges = unjoined;
+      else 
+        break;
+      LOGGER.info("unjoined edges {}", edges.size());
     }
     // LOGGER.info("CRS: " + type.getCoordinateReferenceSystem());
     return buildFeatureFromGeometry(type, all, id);
