@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import jsr166y.ForkJoinPool;
 import jsr166y.RecursiveAction;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
@@ -57,37 +58,58 @@ public class ConnectivityIndexFJ extends RecursiveAction {
    */
   @Override
   protected void compute() {
-    if (regions.size() == 1) { // if there is only one region compute the
-                               // connectivity and store in results
+    if (regions.size() <= 100) { // if there is only one region compute the
+      SimpleFeatureIterator regionsIter = regions.features(); // connectivity
+                                                              // and store in
+                                                              // results
       try {
-        SimpleFeature connectivityFeature = ConnectivityIndex.connectivity(
-            roadsFeatureSource, regions.features().next());
-        results.add(connectivityFeature);
+
+        while (regionsIter.hasNext()) {
+          SimpleFeature region = regionsIter.next();
+          SimpleFeature connectivityFeature = ConnectivityIndex.connectivity(
+              roadsFeatureSource, region);
+          results.add(connectivityFeature);
+        }
+        LOGGER.info("Completed {} features connectivity",regions.size());
       } catch (Exception e) {
+        LOGGER.info("Completing with exception {}",e.getMessage());
         this.completeExceptionally(e);
+      } finally {
+        regionsIter.close();
       }
     } else { // otherwise split the regions into single region arrays and
              // invokeAll
       ArrayList<ConnectivityIndexFJ> indexers = new ArrayList();
       // for (int i = 0; i < regions.length; i++) {
       FeatureIterator features = regions.features();
+      int featureCount = 0;
+      SimpleFeatureCollection regionsSubCollection = FeatureCollections
+          .newCollection();
       while (features.hasNext()) {
-        SimpleFeatureCollection singleRegionCollection = FeatureCollections
-            .newCollection();
         SimpleFeature feature = (SimpleFeature) features.next();
-        singleRegionCollection.add(feature);
-        ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(roadsFeatureSource,
-            singleRegionCollection);
-        indexers.add(cifj);
+        regionsSubCollection.add(feature);
+       
+        featureCount++;
+        if (featureCount == 100) {
+          ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(roadsFeatureSource,
+              regionsSubCollection);
+          indexers.add(cifj);
+          regionsSubCollection = FeatureCollections.newCollection();
+          featureCount = 0;
+        }
       }
+      ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(roadsFeatureSource,
+          regionsSubCollection);
+      indexers.add(cifj);
       invokeAll(indexers);
-      for (ConnectivityIndexFJ cifj : indexers) {
+      features.close();
+      for (ConnectivityIndexFJ ci : indexers) {
         // System.out.println("Appending result: " +
         // String.valueOf(cifj.results[0]));
-        if (cifj.isCompletedAbnormally()) {
-          this.completeExceptionally(cifj.getException());
+        if (ci.isCompletedAbnormally()) {
+          this.completeExceptionally(ci.getException());
         }
-        results.addAll(cifj.results);
+        results.addAll(ci.results);
 
       }
     }

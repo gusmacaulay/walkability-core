@@ -66,6 +66,7 @@ public class ConnectivityIndexOMS {
 
       ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(networkSource,
           regionSource.getFeatures());
+      //LOGGER.info("Computing connectivity for {} regions");
       cifj.connectivity();
 
       // File file = new File("connectivity_regions_oms.geojson");
