@@ -5,10 +5,10 @@
 package org.mccaughey.connectivity;
 
 import java.util.ArrayList;
-//import java.util.concurrent.ForkJoinPool;
-//import java.util.concurrent.RecursiveAction;
+
 import jsr166y.ForkJoinPool;
 import jsr166y.RecursiveAction;
+
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureCollections;
@@ -106,11 +106,17 @@ public class ConnectivityIndexFJ extends RecursiveAction {
     LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
     // Fork/Join handles threads for me, all I do is invoke
     ForkJoinPool fjPool = new ForkJoinPool(nThreads);
-    fjPool.invoke(this);
-    if (this.isCompletedAbnormally()) {
-      LOGGER.error("ForkJoin connectivity calculation failed: {}", this
-          .getException().toString());
-      this.completeExceptionally(this.getException());
+
+    try {
+
+      fjPool.invoke(this);
+      if (this.isCompletedAbnormally()) {
+        LOGGER.error("ForkJoin connectivity calculation failed: {}", this
+            .getException().toString());
+        this.completeExceptionally(this.getException());
+      }
+    } finally {
+      fjPool.shutdown();
     }
   }
 }

@@ -26,9 +26,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import jsr166y.RecursiveAction;
-
-import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
@@ -99,6 +96,8 @@ public class NetworkBufferBatch { //extends RecursiveAction {
   public SimpleFeatureCollection createBuffers() {
     ExecutorService executorService = Executors.newFixedThreadPool(Runtime
         .getRuntime().availableProcessors());
+    
+    try {
     List<Future> futures = new ArrayList<Future>();
     int count = 0;
     SimpleFeatureIterator features = points.features();
@@ -113,16 +112,19 @@ public class NetworkBufferBatch { //extends RecursiveAction {
     }
     for (Future future : futures) {
       try {
-        
         buffers.add((SimpleFeature)(future.get()));
         LOGGER.info("Completing Buffer");
-      } catch (InterruptedException e) {
-        throw new IllegalStateException(e);
       } catch (ExecutionException e) {
         LOGGER.error("Buffer generation failed for a point", e);
       }
     }
     LOGGER.info("Completed {} buffers for {} points", buffers.size(), points.size());
+    } catch (InterruptedException e) {
+      throw new IllegalStateException(e);
+    } finally {
+      executorService.shutdownNow();
+    }
+    
     return buffers;
     // Runtime runtime = Runtime.getRuntime();
     // int nProcessors = runtime.availableProcessors();

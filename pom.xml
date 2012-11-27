@@ -14,11 +14,16 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<geotools.version>8.0</geotools.version>
+		<geotools.version>8.4</geotools.version>
 		<slf4jVersion>1.6.1</slf4jVersion>
 		<netbeans.hint.license>gpl30</netbeans.hint.license>
 		<sonar.cpd.minimumTokens>30</sonar.cpd.minimumTokens>
 	</properties>
+
+        <scm>
+		<url>http://github.com/AURIN/walkability</url>
+		<connection>scm:git:git://github.com/AURIN/walkability.git</connection>
+	</scm>
 
 	<developers>
 		<developer>
@@ -80,12 +85,13 @@
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-shapefile</artifactId>
 			<version>${geotools.version}</version>
+			<scope>test</scope>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-swing</artifactId>
 			<version>${geotools.version}</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-process-feature</artifactId>
@@ -117,7 +123,7 @@
 			<artifactId>gt-epsg-hsql</artifactId>
 			<version>${geotools.version}</version>
 		</dependency>
-		<dependency>
+	<!-- 	<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-geotiff</artifactId>
 			<version>${geotools.version}</version>
@@ -126,12 +132,12 @@
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-image</artifactId>
 			<version>${geotools.version}</version>
-		</dependency>
-		<dependency>
+		</dependency> -->
+		<!-- <dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-wms</artifactId>
 			<version>${geotools.version}</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-process</artifactId>

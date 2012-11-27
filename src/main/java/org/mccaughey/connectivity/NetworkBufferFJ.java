@@ -102,7 +102,7 @@ public class NetworkBufferFJ extends RecursiveAction {
   @Override
   protected void compute() {
     
-    LOGGER.debug("Computing network buffer, current path: {}" + currentPath.size());
+    LOGGER.trace("Computing network buffer, current path: {}" + currentPath.size());
     
     if (currentPath.size() == 0) {
       return;
@@ -124,7 +124,7 @@ public class NetworkBufferFJ extends RecursiveAction {
         }
       }
     }
-    LOGGER.debug("Nextpaths For path {} - {}",currentPath, nextPaths.size());
+    LOGGER.trace("Nextpaths For path {} - {}",currentPath, nextPaths.size());
     for (Path nextPath : nextPaths) {
       NetworkBufferFJ nbfj = new NetworkBufferFJ(network, nextPath, distance,
           serviceArea);
