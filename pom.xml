@@ -1,11 +1,10 @@
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.mccaughey</groupId>
 	<artifactId>walkability</artifactId>
-	<version>0.2.1-SNAPSHOT</version>
+	<version>0.2.2-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>Walkability</name>
@@ -14,11 +13,17 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<geotools.version>8.0</geotools.version>
+		<geotools.version>8.4</geotools.version>
 		<slf4jVersion>1.6.1</slf4jVersion>
 		<netbeans.hint.license>gpl30</netbeans.hint.license>
 		<sonar.cpd.minimumTokens>30</sonar.cpd.minimumTokens>
 	</properties>
+
+        <scm>
+		<url>http://github.com/AURIN/walkability</url>
+		<connection>scm:git:git://github.com/AURIN/walkability.git</connection>
+	  <tag>HEAD</tag>
+  </scm>
 
 	<developers>
 		<developer>
@@ -80,12 +85,13 @@
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-shapefile</artifactId>
 			<version>${geotools.version}</version>
+			<scope>test</scope>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-swing</artifactId>
 			<version>${geotools.version}</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-process-feature</artifactId>
@@ -117,7 +123,7 @@
 			<artifactId>gt-epsg-hsql</artifactId>
 			<version>${geotools.version}</version>
 		</dependency>
-		<dependency>
+	<!-- 	<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-geotiff</artifactId>
 			<version>${geotools.version}</version>
@@ -126,12 +132,12 @@
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-image</artifactId>
 			<version>${geotools.version}</version>
-		</dependency>
-		<dependency>
+		</dependency> -->
+		<!-- <dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-wms</artifactId>
 			<version>${geotools.version}</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-process</artifactId>
@@ -165,7 +171,7 @@
 		<dependency>
 			<groupId>au.org.aurin</groupId>
 			<artifactId>annotations</artifactId>
-			<version>0.3.1-SNAPSHOT</version>
+			<version>0.3.1</version>
 		</dependency>
 	</dependencies>
 	<repositories>
@@ -262,6 +268,15 @@
 				<version>2.3.2</version>
 				<configuration>
 					<showDeprecation>false</showDeprecation>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-release-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<localCheckout>true</localCheckout>
+					<pushChanges>false</pushChanges>
 				</configuration>
 			</plugin>
 		</plugins>
