@@ -192,7 +192,7 @@ public final class LandUseMix {
     // filters with intersections of roi
     FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
     FeatureType schema = featureSource.getSchema();
-    LOGGER.info("FEATURE SOURCE SCHEMA: ", schema.toString());
+    //LOGGER.info("FEATURE SOURCE SCHEMA: ", schema.toString());
     String geometryPropertyName = schema.getGeometryDescriptor().getLocalName();
 
     Filter filter = ff.intersects(ff.property(geometryPropertyName),
