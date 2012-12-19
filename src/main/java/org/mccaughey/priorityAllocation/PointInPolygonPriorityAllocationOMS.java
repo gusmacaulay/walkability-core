@@ -405,9 +405,12 @@ public class PointInPolygonPriorityAllocationOMS {
 
           String landUse = comparisonFeature.getAttribute(landUseAttribute)
               .toString();
+          
           try {
             String priorityClass = String.valueOf(classificationLookup
                 .get(landUse));
+            
+            LOGGER.info("Comparison Feature LandUse " + landUse);
             int comparisonPriority = priorityOrder.get(priorityClass);
             if (comparisonPriority > currentPriority) { // TODO: generalise this
                                                         // for
