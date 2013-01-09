@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.PrecisionModel;
 
 /**
  * Performs Nett Density calculation, which is the ratio of the number of
@@ -80,7 +81,9 @@ public class NettDensityOMS {
       SimpleFeatureCollection pipFeatures;// = DataUtilities.collection(new
                                           // SimpleFeature[0]);
       try {
-        while (regions.hasNext()) {
+        int count_dbg = 0;
+        while ((regions.hasNext()) && (count_dbg < 10)) {
+          count_dbg++;
           SimpleFeature regionOfInterest = regions.next();
           // Do an intersection of parcels with service areas
           intersectingFeatures = intersection(parcels, regionOfInterest);
@@ -88,13 +91,17 @@ public class NettDensityOMS {
           // Do a point in polygon intersection parcel/service with residential
           // points
           pipFeatures = pipIntersection(residentialPoints, intersectingFeatures);
-
+         // resultsSource = DataUtilities.source(pipFeatures);
           // Dissolve parcel/residential intersection
-          SimpleFeature dissolvedResidential = dissolve(pipFeatures,
-              regionOfInterest);
+          //SimpleFeature dissolvedResidential = dissolve(pipFeatures,
+           //   regionOfInterest);
+          
+          
           // Calculate total residential area
-          double residentialAreaHectares = ((Geometry) dissolvedResidential
-              .getDefaultGeometry()).getArea() / 10000;// getTotalArea(pipFeatures)/10000;
+          
+          //double residentialAreaHectares = ((Geometry) dissolvedResidential
+          //    .getDefaultGeometry()).getArea() / 10000;// getTotalArea(pipFeatures)/10000;
+          double residentialAreaHectares = getTotalArea(pipFeatures);
           // double parcelArea = getTotalArea(intersectingFeatures);
           int pipCount = pipCount(residentialPoints, pipFeatures);
           double density = (pipCount / residentialAreaHectares);
@@ -109,7 +116,7 @@ public class NettDensityOMS {
           outputAttrs.add("NettDensity");
           outputAttrs.add("AreaResidentialHA");
           outputAttrs.add("PointsCountResidential");
-          SimpleFeature densityFeature = buildFeature(dissolvedResidential,
+          SimpleFeature densityFeature = buildFeature(regionOfInterest,
               outputAttrs);
           densityFeature.setAttribute("NettDensity", density);
           densityFeature.setAttribute("AreaResidentialHA",
@@ -124,7 +131,7 @@ public class NettDensityOMS {
 
       } catch (Exception e) {
         LOGGER.error("Failed to complete process for all features");
-        // e.printStackTrace();
+        e.printStackTrace();
       } finally {
         regions.close();
       }
@@ -134,6 +141,20 @@ public class NettDensityOMS {
     }
   }
 
+private Double getTotalArea(SimpleFeatureCollection features) {
+  double area = 0.0;
+  SimpleFeatureIterator iter = features.features();
+  List<Geometry> geometries = new ArrayList();
+  while (iter.hasNext()) {
+  SimpleFeature feature = iter.next();
+  geometries.add((Geometry) (feature.getDefaultGeometry()));
+  //area += ((Geometry) (feature.getDefaultGeometry())).getArea();
+  //System.out.println("area: " + area);
+  }
+  return union(geometries).getArea();
+  //return area;
+  }
+  
   private static SimpleFeature buildFeature(SimpleFeature region,
       List<String> attributes) {
 
@@ -172,46 +193,19 @@ public class NettDensityOMS {
 
   }
 
-  // private Double getTotalArea(SimpleFeatureCollection features) {
-  // double area = 0.0;
-  // SimpleFeatureIterator iter = features.features();
-  // List<Geometry> geometries = new ArrayList();
-  // while (iter.hasNext()) {
-  // SimpleFeature feature = iter.next();
-  // geometries.add((Geometry) (feature.getDefaultGeometry()));
-  // //area += ((Geometry) (feature.getDefaultGeometry())).getArea();
-  // //System.out.println("area: " + area);
-  // }
-  // return union(geometries).getArea();
-  // //return area;
-  // }
-
   private Geometry union(List geometries) {
-    // double t1 = new Date().getTime();
     Geometry[] geom = new Geometry[geometries.size()];
     geometries.toArray(geom);
     GeometryFactory fact = geom[0].getFactory();
-    // PrecisionModel precision = new PrecisionModel(100); // FIXME: should be
+    //PrecisionModel precision = new PrecisionModel(100); // FIXME: should be
     // configurable
-    // GeometryFactory fact = new GeometryFactory(precision);
+    //GeometryFactory fact = new GeometryFactory(precision);
     Geometry geomColl = fact.createGeometryCollection(geom);
-    Geometry union = geomColl.union(); // geomColl.buffer(0.0);
-    // double t2 = new Date().getTime();
-    // LOGGER.info("Time taken Union: " + (t2 - t1) / 1000);
+    //return geomColl;
+    Geometry union = geomColl.union();
+
     return union;
   }
-
-  // private static SimpleFeature buildFeatureFromGeometry(SimpleFeatureType
-  // featureType, Geometry geom, String id) {
-  //
-  // SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
-  // stb.init(featureType);
-  // SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(featureType);
-  // sfb.add(geom);
-  // sfb.add(id);
-  //
-  // return sfb.buildFeature(id);
-  // }
 
   private int pipCount(SimpleFeatureSource points,
       SimpleFeatureCollection regions) throws IOException {
