@@ -81,9 +81,9 @@ public class NettDensityOMS {
       SimpleFeatureCollection pipFeatures;// = DataUtilities.collection(new
                                           // SimpleFeature[0]);
       try {
-        int count_dbg = 0;
-        while ((regions.hasNext()) && (count_dbg < 10)) {
-          count_dbg++;
+        //int count_dbg = 0;
+        while (regions.hasNext()) {
+          //count_dbg++;
           SimpleFeature regionOfInterest = regions.next();
           // Do an intersection of parcels with service areas
           intersectingFeatures = intersection(parcels, regionOfInterest);
