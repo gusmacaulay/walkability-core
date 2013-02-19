@@ -79,7 +79,9 @@ public final class DwellingDensity {
       SimpleFeatureIterator subRegions = featuresInRegion(dwellingSource,
           (Geometry) roi.getDefaultGeometry()).features();
       Double totalDensity = 0.0;
-      Double count = 0.0;
+      int totalDwellings = 0;
+      Double totalArea = 0.0;
+      int count = 0;
       while (subRegions.hasNext()) {
         SimpleFeature dwelling = subRegions.next();
         Double population = (Double) dwelling.getAttribute(densityAttribute);
@@ -88,10 +90,17 @@ public final class DwellingDensity {
                                                                                     // geotools
                                                                                     // unit
                                                                                     // conversion!
-        totalDensity += population / area;
-        count++;
+        totalDwellings += population;
+        totalArea += area;
+        LOGGER.info("area " + area);
+        LOGGER.info("dwellings" + population);
+        if (population != 0) {
+          totalDensity += (population / area);
+          count++;
+        }
       }
-
+      // totalDensity = totalDwellings / totalArea;
+      LOGGER.info("Dwelling regions: " + count);
       return buildFeature(roi, totalDensity / count);
     } catch (IOException ioe) {
       LOGGER.error("Error selecting features in region");

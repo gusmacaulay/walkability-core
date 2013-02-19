@@ -91,11 +91,13 @@ public class PointInPolygonPriorityAllocationOMS {
   @In
   public Map<String, Integer> priorityOrder;
 
-  /**
-   * A URL for a csvTable which can be used as a lookup for land use types
-   */
+  // /**
+  // * A URL for a csvTable which can be used as a lookup for land use types
+  // */
+  // @In
+  // public URL csvTable;
   @In
-  public URL csvTable;
+  public SimpleFeatureSource landUseLookupSource;
 
   /**
    * The resulting parcels with re-allocated land use types
@@ -109,8 +111,7 @@ public class PointInPolygonPriorityAllocationOMS {
    */
   @Execute
   public void allocate() {
-    Map<String, String> classificationLookup = createLanduseLookup(csvTable,
-        landUseAttribute, priorityAttribute);
+    Map<String, String> classificationLookup = createLanduseLookup(landUseLookupSource, landUseAttribute, priorityAttribute);
     try {
       FeatureIterator<SimpleFeature> regions = regionsOfInterest.getFeatures()
           .features();
@@ -123,6 +124,7 @@ public class PointInPolygonPriorityAllocationOMS {
             .getRuntime().availableProcessors());
         List<Future> futures = new ArrayList<Future>();
         while (regions.hasNext()) {
+          LOGGER.info("Doing something ..");
           SimpleFeature regionOfInterest = regions.next();
           Allocater ac = new Allocater(regionOfInterest, classificationLookup);
           Future future = executorService.submit(ac);
@@ -405,11 +407,11 @@ public class PointInPolygonPriorityAllocationOMS {
 
           String landUse = comparisonFeature.getAttribute(landUseAttribute)
               .toString();
-          
+
           try {
             String priorityClass = String.valueOf(classificationLookup
                 .get(landUse));
-            
+
             LOGGER.info("Comparison Feature LandUse " + landUse);
             int comparisonPriority = priorityOrder.get(priorityClass);
             if (comparisonPriority > currentPriority) { // TODO: generalise this
@@ -450,10 +452,27 @@ public class PointInPolygonPriorityAllocationOMS {
       sfb.addAll(baseFeature.getAttributes());
       for (String value : newValues) {
         sfb.add(value);
-      } 
+      }
       return sfb.buildFeature(baseFeature.getID());
     }
 
+  }
+
+  private Map<String, String> createLanduseLookup(
+      SimpleFeatureSource lookupSource, String keyColumn, String valueColumn) {
+    SimpleFeatureIterator lookupFeatures;
+    Map<String, String> lookupTable = new HashMap<String, String>();
+    try {
+      lookupFeatures = lookupSource.getFeatures().features();
+      while (lookupFeatures.hasNext()) {
+        SimpleFeature lookupFeature = lookupFeatures.next();
+        lookupTable.put((String) lookupFeature.getAttribute(keyColumn),
+            (String) lookupFeature.getAttribute(valueColumn));
+      }
+    } catch (IOException e) {
+      LOGGER.error("Failed to read SimpleFeaturSource input");
+    }
+    return lookupTable;
   }
 
   private Map<String, String> createLanduseLookup(URL csvTable,
@@ -480,7 +499,8 @@ public class PointInPolygonPriorityAllocationOMS {
       while ((nextLine = reader.readNext()) != null) {
         String key = null;
         String value = null;
-        for (int i = 0; i < nextLine.length; i++) {
+        for (int i = 0; i < nextLine.length; i++) { // FIXME: this only works
+                                                    // for two columns
           if (header[i].equals(keyColumn)) {
             key = nextLine[i];
           } else if (header[i].equals(valueColumn)) {
