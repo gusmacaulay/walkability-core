@@ -17,8 +17,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
+import oms3.annotations.Name;
 import oms3.annotations.Out;
 
 import org.geotools.data.DataUtilities;
@@ -50,6 +52,8 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * @author amacaulay
  * 
  */
+@Name("Priority Allocation") 
+@Description("The Point in Polygon Priority Allocation process creates a land use mix parcel layer based on point features,parcel features and a classification table")
 public class PointInPolygonPriorityAllocationOMS {
   static final Logger LOGGER = LoggerFactory
       .getLogger(PointInPolygonPriorityAllocationOMS.class);
@@ -59,44 +63,53 @@ public class PointInPolygonPriorityAllocationOMS {
    * data which isn't needed
    */
   @In
+  @Name("Regions Of Interest")
+  @Description("Regions of interest, used to filter data to relevant areas")
   public SimpleFeatureSource regionsOfInterest;
 
   /**
    * A land parcel type data set (eg. cadastre)
    */
   @In
+  @Name("Parcels")
+  @Description("Parcels used to provide geometry of land use mix layer")
   public SimpleFeatureSource parcels;
 
   /**
    * Point features which will be used to reallocate parcel land use types
    */
   @In
+  @Name("Points")
+  @Description("Point features used to identify land use type")
   public SimpleFeatureSource pointFeatures;
 
   /**
    * Attribute in pointFeatures which represents land use type
    */
   @In
+  @Name("Land Use Attribute")
+  @Description("The Land use attribute in both the points layer and the land use lookup")
   public String landUseAttribute;
 
   /**
    * Attribute in mapping table which maps landUse attribute to priority
    */
   @In
+  @Name("Priority Attribute")
+  @Description("The Attribute on which to apply the priority order")
   public String priorityAttribute;
 
   /**
    * The priority list of which land uses, to figure out which one to allocate
    */
   @In
+  @Name("Priority Order")
+  @Description("An ordered list of attributes")
   public Map<String, Integer> priorityOrder;
 
-  // /**
-  // * A URL for a csvTable which can be used as a lookup for land use types
-  // */
-  // @In
-  // public URL csvTable;
   @In
+  @Name("Land Use Lookup")
+  @Description("A lookup table with columns matching land use attributes to classifications")
   public SimpleFeatureSource landUseLookupSource;
 
   /**
