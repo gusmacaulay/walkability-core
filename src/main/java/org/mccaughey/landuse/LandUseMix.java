@@ -195,11 +195,11 @@ public final class LandUseMix {
     } else {
       for (Double area : areas) {
         Double proportion = area / totalArea;
-        LOGGER.info("Class Area: {} Total Area: {}", area, totalArea);
+        //LOGGER.info("Class Area: {} Total Area: {}", area, totalArea);
         landUseMixMeasure += (((proportion) * (Math.log(proportion))) / (Math
             .log(totalClasses)));//.log(areas.size())));
-        LOGGER.info("Areas: " + areas.size());
-        LOGGER.info("Classes:" + totalClasses);
+        //LOGGER.info("Areas: " + areas.size());
+        //LOGGER.info("Classes:" + totalClasses);
       }
       landUseMixMeasure = -1 * landUseMixMeasure;
     }
