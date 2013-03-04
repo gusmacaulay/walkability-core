@@ -122,7 +122,7 @@ public final class NetworkBuffer {
         networkDistance, serviceArea);
     serviceArea = nbfj.createBuffer();
     LOGGER.info("Found service area for point {} with {} Edges", pointFeature.getID(),serviceArea.size());
-    writeNetworkFromEdges(serviceArea);
+   // writeNetworkFromEdges(serviceArea);
     return serviceArea;
   }
 
@@ -362,16 +362,16 @@ public final class NetworkBuffer {
     return index;
   }
 
-  private static void writeNetworkFromEdges(Map<Edge, SimpleFeature> serviceArea) {
-    List<SimpleFeature> featuresList = new ArrayList();
-    Collection<SimpleFeature> features = serviceArea.values();
-    for (SimpleFeature feature : features) {
-      featuresList.add(feature);
-    }
-    File file = new File("bufferNetwork.json");
-    GeoJSONUtilities
-        .writeFeatures(DataUtilities.collection(featuresList), file);
-  }
+//  private static void writeNetworkFromEdges(Map<Edge, SimpleFeature> serviceArea) {
+//    List<SimpleFeature> featuresList = new ArrayList();
+//    Collection<SimpleFeature> features = serviceArea.values();
+//    for (SimpleFeature feature : features) {
+//      featuresList.add(feature);
+//    }
+//    File file = new File("bufferNetwork.json");
+//    GeoJSONUtilities
+//        .writeFeatures(DataUtilities.collection(featuresList), file);
+//  }
 
   /**
    * Generates a buffered service area from a set of network edges
