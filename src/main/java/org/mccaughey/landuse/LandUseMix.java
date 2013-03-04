@@ -148,7 +148,7 @@ public final class LandUseMix {
         }
         sfb.add(area);
       }
-      Double landUseMixMeasure = calculateLUM(areas, totalArea);
+      Double landUseMixMeasure = calculateLUM(areas, totalArea, classifications.size());
       sfb.add(landUseMixMeasure);
       return sfb.buildFeature(region.getID());
       // LOGGER.info("Land Use Mix Measure: {}", landUseMixMeasure);
@@ -170,16 +170,18 @@ public final class LandUseMix {
    *          The total area covered by all the land use classifications
    * @return The Land Use Mix Measure
    */
-  private static Double calculateLUM(Collection<Double> areas, Double totalArea) {
+  private static Double calculateLUM(Collection<Double> areas, Double totalArea, Integer totalClasses) {
     Double landUseMixMeasure = 0.0;
     if (areas.size() == 1) {
       landUseMixMeasure = 0.0;
     } else {
       for (Double area : areas) {
         Double proportion = area / totalArea;
-        // LOGGER.info("Class Area: {} Total Area: {}", area, totalArea);
+        LOGGER.info("Class Area: {} Total Area: {}", area, totalArea);
         landUseMixMeasure += (((proportion) * (Math.log(proportion))) / (Math
-            .log(areas.size())));
+            .log(totalClasses)));//.log(areas.size())));
+        LOGGER.info("Areas: " + areas.size());
+        LOGGER.info("Classes:" + totalClasses);
       }
       landUseMixMeasure = -1 * landUseMixMeasure;
     }
