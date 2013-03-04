@@ -18,6 +18,7 @@ package org.mccaughey.landuse;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +52,7 @@ import com.vividsolutions.jts.geom.TopologyException;
 public final class LandUseMix {
 
   static final Logger LOGGER = LoggerFactory.getLogger(LandUseMix.class);
+  private static String AttributePrefix = "LUM_";
 
   private LandUseMix() {
   }
@@ -96,6 +98,8 @@ public final class LandUseMix {
   public static SimpleFeature summarise(SimpleFeatureSource landUse,
       SimpleFeature region, List<String> classifications,
       String classificationAttribute) {
+    
+    Map<String,String> classificationsAttributesMap = getSubClassifications(classifications);
 
     try {
       Geometry regionGeom = (Geometry) region.getDefaultGeometry();
@@ -108,10 +112,12 @@ public final class LandUseMix {
         SimpleFeature parcel = parcels.next();
         try {
           Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-          String classification = String.valueOf(parcel
+          String subClassification = String.valueOf(parcel
               .getAttribute(classificationAttribute));
+          
           // LOGGER.info("Classification: {}", classification);
-          if (classifications.contains(classification)) {
+          if (classificationsAttributesMap.containsKey((subClassification))) {
+            String classification = classificationsAttributesMap.get(subClassification);
             // LOGGER.info("Classification: {}", classification);
             Double parcelArea = parcelGeom.intersection(regionGeom).getArea();
             // LOGGER.info("Parcel Area:, {}", parcelArea);
@@ -134,7 +140,7 @@ public final class LandUseMix {
       stb.setName("landUseMixFeatureType");
 
       for (String classification : classifications) {
-        stb.add(classification, Double.class);
+        stb.add(AttributePrefix + classification.replace("+","_and_"), Double.class);
       }
       // Add the land use mix attribute
       stb.add("LandUseMixMeasure", Double.class);
@@ -159,6 +165,18 @@ public final class LandUseMix {
       return null;
     }
     // return region;
+  }
+
+  private static Map<String,String> getSubClassifications(List<String> classifications) {
+    // TODO Auto-generated method stub
+    Map<String,String> classificationsMap = new HashMap();
+    for(String classification : classifications) {
+      //classificationsMap.addAll( Arrays.asList( classification.split("\\+")));
+      for (String subClassification : Arrays.asList( classification.split("\\+"))) { // use + to combine classes -> hidden bonus feature ;)
+        classificationsMap.put(subClassification, classification);
+      }
+    }
+    return classificationsMap;
   }
 
   /**
