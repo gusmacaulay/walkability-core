@@ -59,6 +59,7 @@ public final class LandUseMix {
 
 	static final Logger LOGGER = LoggerFactory.getLogger(LandUseMix.class);
 	private static String AttributePrefix = "LUM_";
+	//private static List<SimpleFeature> allClippedParcels = new ArrayList(); 
 
 	private LandUseMix() {
 	}
@@ -84,11 +85,12 @@ public final class LandUseMix {
 			List<String> classifications, String classificationAttribute) throws NoSuchElementException, Exception {
 		List<SimpleFeature> lumFeatures = new ArrayList();
 		while (regions.hasNext()) {
-			LOGGER.info("Summarising Land Use ...");
+			//LOGGER.info("Summarising Land Use ...");
 			SimpleFeature lumFeature = summarise(landUse, regions.next(),
 					classifications, classificationAttribute);
 			lumFeatures.add(lumFeature);
 		}
+		//GeoJSONUtilities.writeFeatures(DataUtilities.collection(allClippedParcels), new File("clippedLandUse" + allClippedParcels.hashCode() + ".json"));
 		return DataUtilities.collection(lumFeatures);
 	}
 
@@ -271,6 +273,7 @@ public final class LandUseMix {
 			iter.close();
 		}
 		//GeoJSONUtilities.writeFeatures(DataUtilities.collection(trimmedFeatures), new File("test_output/trimmedFeatures" + roi.hashCode() + ".json"));
+		//allClippedParcels.addAll(trimmedFeatures);
 		return DataUtilities.collection(trimmedFeatures);
 
 	}
