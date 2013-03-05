@@ -17,6 +17,7 @@
 package org.mccaughey.landuse;
 
 import java.io.IOException;
+import java.util.NoSuchElementException;
 
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
@@ -77,9 +78,11 @@ public class LandUseMixOMS {
   /**
    * Reads in the land use layer and regions layer from given URLs, writes out
    * results to resultsURL
+ * @throws Exception 
+ * @throws NoSuchElementException 
    */
   @Execute
-  public void landUseMixMeasure() {
+  public void landUseMixMeasure() throws NoSuchElementException, Exception {
     
     try {
       validateInputs();
