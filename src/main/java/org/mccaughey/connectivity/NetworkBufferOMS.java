@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * @author amacaulay
  */
 @Name("netbuffer")
-@Description("Generates network service areas for points on a network")
+@Description("Generates neibourhood polygons as service areas for points on a network")
 public class NetworkBufferOMS {
 
   static final Logger LOGGER = LoggerFactory.getLogger(NetworkBufferOMS.class);
@@ -44,28 +44,28 @@ public class NetworkBufferOMS {
    */
   @In
   @Name("Road Network")
-  @Description("The road network to count connections from")
+  @Description("The network data set to generate service areas from")
   public SimpleFeatureSource network;
   /**
    * The points of interest
    */
   @In
   @Name("Points of Interest")
-  @Description("Points of Interest")
+  @Description("Sample point data set to act as service area origins")
   public SimpleFeatureSource points;
   /**
    * The network distance for the service areas (maximum walk distance)
    */
   @In
   @Name("Maximum walk distance")
-  @Description("The network distance for the service areas (maximum walk distance)")
+  @Description("The maximum distance to traverse the network in all possible directions")
   public Double distance;
   /**
    * The buffer size
    */
   @In
   @Name("Buffer size")
-  @Description("Buffer size")
+  @Description("Trim service area neighbourhoods to within X metres of network lines")
   public Double bufferSize;
 
   /**
@@ -78,6 +78,7 @@ public class NetworkBufferOMS {
   @Out
   @Name("The original road network")
   public SimpleFeatureSource networkOut;
+
 
   /**
    * Reads the input network and point datasets then uses NetworkBufferBatch to

@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * @author amacaulay
  */
 @Name("connectivity")
-@Description("Calculates Connectivity for a given network and region")
+@Description("Calculates the connectivity for a set of neighbourhoods based on the chosen network data set")
 public class ConnectivityIndexOMS {
 
   static final Logger LOGGER = LoggerFactory
@@ -33,14 +33,14 @@ public class ConnectivityIndexOMS {
    * The road network to count connections from
    */
   @In
-  @Name("Road network")
-  @Description("The road network to count connections from")
+  @Name("Network data set")
+  @Description("The network data set to count connections from")
   public SimpleFeatureSource network;
   /**
    * The region if interest
    */
   @In
-  @Name("Regions of Interest")
+  @Name("Neighbourhoods")
   public SimpleFeatureSource regions;
 
   /**

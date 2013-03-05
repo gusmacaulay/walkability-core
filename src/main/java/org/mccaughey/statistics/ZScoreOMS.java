@@ -55,7 +55,7 @@ public class ZScoreOMS {
    * Regions of interest (GeoJSON)
    */
   @In
-  @Name("Regions of interest")
+  @Name("Neighbourhoods")
   public SimpleFeatureSource regionsSource;
   /**
    * Resulting regions with z-scores for each attribute and sum of z-scores

@@ -41,7 +41,7 @@ import au.org.aurin.types.NominalAttributeClassification;
  * @author amacaulay
  */
 @Name("landmix")
-@Description("Calculates Land Use Mix Measure for a given land use layer and set of regions")
+@Description("Calculates Land Use Mix Measure for a set of neighbourhoods over a land use polygon data set ")
 public class LandUseMixOMS {
 
   static final Logger LOGGER = LoggerFactory.getLogger(LandUseMixOMS.class);
@@ -49,8 +49,8 @@ public class LandUseMixOMS {
    * Dataset containing Land Use regions.
    */
   @In
-  @Name("Land use source dataset")
-  @Description("Dataset containing Land Use regions.")
+  @Name("Land use polygon data set")
+  @Description("Dataset containing land use polygons.")
   public SimpleFeatureSource landUseSource;
 
   /**
@@ -58,14 +58,14 @@ public class LandUseMixOMS {
    */
   @In
   @Name("Classification attribute")
-  @Description("The attribute (column) containing the classification categories and the classification categories")
+  @Description("The attribute (column) containing the land use classification categories")
   public NominalAttributeClassification classificationAttribute;
 
   /**
    * The set of regions to calculate Land Use Mix for
    */
   @In
-  @Name("Regions of interest")
+  @Name("Neighbourhoods")
   public SimpleFeatureSource regionsSource;
 
   /**

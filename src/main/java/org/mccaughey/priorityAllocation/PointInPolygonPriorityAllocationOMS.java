@@ -53,7 +53,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * 
  */
 @Name("Priority Allocation") 
-@Description("The Point in Polygon Priority Allocation process creates a land use mix parcel layer based on point features,parcel features and a classification table")
+@Description("The Point in Polygon Priority Allocation process creates a land use polygon data set based on point features,parcel features and a classification priority")
 public class PointInPolygonPriorityAllocationOMS {
   static final Logger LOGGER = LoggerFactory
       .getLogger(PointInPolygonPriorityAllocationOMS.class);
@@ -63,8 +63,8 @@ public class PointInPolygonPriorityAllocationOMS {
    * data which isn't needed
    */
   @In
-  @Name("Regions Of Interest")
-  @Description("Regions of interest, used to filter data to relevant areas")
+  @Name("Neighbourhoods")
+  @Description("The extent of the neighbourhoods are used to limit the analysis extent")
   public SimpleFeatureSource regionsOfInterest;
 
   /**
@@ -72,15 +72,15 @@ public class PointInPolygonPriorityAllocationOMS {
    */
   @In
   @Name("Parcels")
-  @Description("Parcels used to provide geometry of land use mix layer")
+  @Description("Cadastral parcels used to provide an areal extent to resulting land use polygons")
   public SimpleFeatureSource parcels;
 
   /**
    * Point features which will be used to reallocate parcel land use types
    */
   @In
-  @Name("Points")
-  @Description("Point features used to identify land use type")
+  @Name("Land Use Feature Points")
+  @Description("Point feature data set with land use categories stored ina an attribute")
   public SimpleFeatureSource pointFeatures;
 
   /**
@@ -88,14 +88,14 @@ public class PointInPolygonPriorityAllocationOMS {
    */
   @In
   @Name("Land Use Attribute")
-  @Description("The Land use attribute in both the points layer and the land use lookup")
+  @Description("The land use attribute in the point data set which will be used to allocate land uses to the parcels")
   public String landUseAttribute;
 
   /**
    * Attribute in mapping table which maps landUse attribute to priority
    */
   @In
-  @Name("Priority Attribute")
+  @Name("Priority Attribute - $$$$$$$$$$$$$$$$$$ THIS WILL GO TO JOIN TOOL")
   @Description("The Attribute on which to apply the priority order")
   public String priorityAttribute;
 
@@ -104,7 +104,7 @@ public class PointInPolygonPriorityAllocationOMS {
    */
   @In
   @Name("Priority Order")
-  @Description("An ordered list of attributes")
+  @Description("An ordered list of land use categories that will be used to allocate a single land use to parcels where multiple category types may exisit within them.")
   public Map<String, Integer> priorityOrder;
 
   @In

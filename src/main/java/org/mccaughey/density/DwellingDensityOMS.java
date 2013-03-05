@@ -40,7 +40,7 @@ import au.org.aurin.types.AttributeSelector;
  * @author amacaulay
  */
 @Name("dwellingdensity")
-@Description("Calculates Average Density for a given region population count layer and set of regions of interest")
+@Description("Calculates Average Residential or Dwelling Density for a set of Neighbourhoods Based on a Polygon Data Set with Population or Dwelling Counts")
 public class DwellingDensityOMS {
 
   static final Logger LOGGER = LoggerFactory
@@ -51,7 +51,7 @@ public class DwellingDensityOMS {
    */
   @In
   @Name("Population dataset")
-  @Description("A dataset containting a set of regions with a population attribute")
+  @Description("A polygon data set with a population dwelling count attribute")
   public SimpleFeatureSource populationSource;
 
   /**
@@ -59,14 +59,14 @@ public class DwellingDensityOMS {
    */
   @In
   @Name("Population attribute")
-  @Description("The attribute to use for population")
+  @Description("The attribute containing the population or dwelling counts")
   public AttributeSelector countAttribute;
 
   /**
    * The input regions to calculate density for
    */
   @In
-  @Name("Regions of interest")
+  @Name("Neighbourhoods")
   public SimpleFeatureSource regionsSource;
 
   /**
@@ -75,6 +75,7 @@ public class DwellingDensityOMS {
   @Out
   @Name("Resulting regions")
   public SimpleFeatureSource resultsSource;
+
 
   /**
    * Reads in the population count layer and regions layer from given URLs,
