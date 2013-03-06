@@ -11,8 +11,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
+import oms3.annotations.Name;
 import oms3.annotations.Out;
 
 import org.geotools.data.DataStore;
@@ -39,19 +41,27 @@ import au.com.bytecode.opencsv.CSVReader;
  * 
  * @author amacaulay
  * 
+ *
  */
+@Name("join")
 public class JoinOMS {
   private static final int FEATURE_STORE_THRESHOLD = 10000;
 
   static final Logger LOGGER = LoggerFactory.getLogger(JoinOMS.class);
 
   @In
-  URL csvTable;
+  @Name("Non-spatial Table")
+  @Description("Tabular data with no geometry attribute")
+  SimpleFeatureSource nonSpatialTable;
 
   @In
+  @Name("Spatial Table")
+  @Description("Data Source including geometry attribute")
   SimpleFeatureSource spatialTable;
 
   @In
+  @Name("Join Attribute")
+  @Description("The common attribute between tables")
   String joinColumn;
 
   @In
@@ -65,54 +75,6 @@ public class JoinOMS {
    */
   @Execute
   public void join() {
-    CSVReader reader;
-    Map<String, List<String>> lookupTable = new HashMap();
-
-    try {
-      reader = new CSVReader(new FileReader(csvTable.getFile()));
-
-      // Assume column names in first line ...
-      String[] header = reader.readNext();
-      List<String> newAttrs = new ArrayList();
-      // List of new attribute names (columns - join column)
-      for (String attribute : header) {
-        if (!(attribute.equals(joinColumn))) {
-          newAttrs.add(attribute);
-        }
-      }
-      SimpleFeatureType newFeatureType = createNewFeatureType(
-          spatialTable.getSchema(), newAttrs);
-
-      FileDataStoreFactorySpi factory = FileDataStoreFinder
-          .getDataStoreFactory("shp");
-
-      File file = new File("new_tenure.shp");
-      Map map = Collections.singletonMap("url", file.toURI().toURL());
-
-      DataStore myData = factory.createNewDataStore(map);
-
-      myData.createSchema(newFeatureType);
-
-      String[] nextLine;
-      while ((nextLine = reader.readNext()) != null) {
-        String key = null;
-        List<String> values = new ArrayList<String>();
-        for (int i = 0; i < nextLine.length; i++) {
-          if (header[i].equals(joinColumn)) {
-            key = nextLine[i];
-          } else {
-            values.add(nextLine[i]);
-          }
-        }
-        // System.out.println("Adding values for key: " + key);
-        lookupTable.put(key, values);
-      }
-      joinDataSets(lookupTable, newFeatureType, myData);
-    } catch (FileNotFoundException e) {
-      LOGGER.error("File Not Found");
-    } catch (IOException e) {
-      LOGGER.error("Join failed due to IOException withe feature store");
-    }
     result = null;
   }
 

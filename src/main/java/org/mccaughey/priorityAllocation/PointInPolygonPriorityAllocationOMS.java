@@ -413,7 +413,7 @@ public class PointInPolygonPriorityAllocationOMS {
       SimpleFeatureType allocatedFT = createNewFeatureType(
           parcel.getFeatureType(), additionalAttributes);
       try {
-        int currentPriority = -1;
+        int currentPriority = priorityOrder.size()+1;
         String currentPriorityClass = "";
         while (pFeatures.hasNext()) {
           SimpleFeature comparisonFeature = pFeatures.next();
@@ -427,7 +427,7 @@ public class PointInPolygonPriorityAllocationOMS {
 
             LOGGER.info("Comparison Feature LandUse " + landUse);
             int comparisonPriority = priorityOrder.get(priorityClass);
-            if (comparisonPriority > currentPriority) { // TODO: generalise this
+            if (comparisonPriority < currentPriority) { // TODO: generalise this
                                                         // for
                                                         // ascending/descending
               currentPriority = comparisonPriority;
