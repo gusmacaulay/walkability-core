@@ -116,7 +116,7 @@ public class PointInPolygonPriorityAllocationOMS {
    * The resulting parcels with re-allocated land use types
    */
   @Out
-  public SimpleFeatureCollection resultParcels;
+  public SimpleFeatureSource resultParcels;
 
   /**
    * Reads in the population count layer and regions layer from given URLs,
@@ -150,10 +150,10 @@ public class PointInPolygonPriorityAllocationOMS {
           allocatedParcels.addAll((SimpleFeatureCollection) future.get());
           // System.out.println("Completed");
         }
-        resultParcels = prioritiseOverlap(allocatedParcels,/* priorityLookup, */
-            priorityAttribute, priorityOrder);
-        resultParcels = dissolveByCategory(DataUtilities.source(resultParcels),
-            classificationLookup, priorityAttribute);
+        resultParcels = DataUtilities.source(prioritiseOverlap(allocatedParcels,/* priorityLookup, */
+            priorityAttribute, priorityOrder));
+        resultParcels = DataUtilities.source(dissolveByCategory(resultParcels,
+            classificationLookup, priorityAttribute));
 
         // System.out.println("Sourcification Complete");
 
