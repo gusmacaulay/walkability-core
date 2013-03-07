@@ -55,17 +55,19 @@ public class JoinOMS {
   SimpleFeatureSource nonSpatialTable;
 
   @In
+  @Name("Non-spatial Join Attribute")
+  @Description("The common attribute between tables")
+  String nonSpatialjoinColumn;
+  
+  @In
   @Name("Spatial Table")
   @Description("Data Source including geometry attribute")
   SimpleFeatureSource spatialTable;
 
   @In
-  @Name("Join Attribute")
+  @Name("Spatial Join Attribute")
   @Description("The common attribute between tables")
   String joinColumn;
-
-  @In
-  URL dataStore;
 
   @Out
   SimpleFeatureSource result;
