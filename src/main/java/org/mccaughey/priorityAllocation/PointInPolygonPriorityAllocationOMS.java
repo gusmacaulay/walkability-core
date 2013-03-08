@@ -1,18 +1,13 @@
 package org.mccaughey.priorityAllocation;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -43,8 +38,6 @@ import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import au.com.bytecode.opencsv.CSVReader;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -125,9 +118,10 @@ public class PointInPolygonPriorityAllocationOMS {
 	/**
 	 * Reads in the population count layer and regions layer from given URLs,
 	 * writes out average density results to resultsURL
+	 * @throws CQLException 
 	 */
 	@Execute
-	public void allocate() {
+	public void allocate() throws CQLException {
 		Map<String, String> classificationLookup = createLanduseLookup(
 				landUseLookupSource, landUseAttribute, priorityAttribute);
 		try {
@@ -135,34 +129,43 @@ public class PointInPolygonPriorityAllocationOMS {
 					.getFeatures().features();
 			// SimpleFeatureCollection intersectingParcels =
 			// DataUtilities.collection(new SimpleFeature[0]);
-			SimpleFeatureCollection allocatedParcels = DataUtilities
-					.collection(new SimpleFeature[0]);
+			List<SimpleFeature> allocatedParcels = new ArrayList<SimpleFeature>();
 			try {
+				// ExecutorService executorService = Executors
+				// .newFixedThreadPool(Runtime.getRuntime()
+				// .availableProcessors());
 				ExecutorService executorService = Executors
-						.newFixedThreadPool(Runtime.getRuntime()
-								.availableProcessors());
-				List<Future> futures = new ArrayList<Future>();
+						.newFixedThreadPool(1);
+				List<Future<List<SimpleFeature>>> futures = new ArrayList<Future<List<SimpleFeature>>>();
 				while (regions.hasNext()) {
 					LOGGER.info("Calculating priority allocation for service area ..");
 					SimpleFeature regionOfInterest = regions.next();
 					Allocater ac = new Allocater(regionOfInterest,
 							classificationLookup);
-					Future future = executorService.submit(ac);
+					Future<List<SimpleFeature>> future = executorService.submit(ac);
 					futures.add(future);
 					// System.out.println("Started .. ");
 					// break;
 				}
-				for (Future future : futures) {
+				for (Future<List<SimpleFeature>> future : futures) {
 
-					allocatedParcels.addAll((SimpleFeatureCollection) future
-							.get());
+					List features = future.get();
+					LOGGER.info("Received {} parcels",features.size());
+					allocatedParcels.addAll(features);
 					// System.out.println("Completed");
 				}
 				resultParcels = DataUtilities.source(prioritiseOverlap(
-						allocatedParcels, priorityAttribute, priorityOrder));
-				resultParcels = DataUtilities
-						.source(dissolveByCategory(resultParcels,
-								classificationLookup, priorityAttribute));
+						DataUtilities.collection(allocatedParcels), priorityAttribute, priorityOrder));
+				LOGGER.info("Combined list {} parcels",allocatedParcels.size());
+				Set<String> ids = new HashSet();
+				for(SimpleFeature parcel : allocatedParcels) {
+					ids.add(parcel.getID());
+				}
+				LOGGER.info("Unique features {}", ids.size());
+
+					resultParcels = DataUtilities.source(DataUtilities.collection(dissolveByCategory(DataUtilities.collection(allocatedParcels),
+									classificationLookup, priorityAttribute)));
+		
 
 				// System.out.println("Sourcification Complete");
 
@@ -230,17 +233,24 @@ public class PointInPolygonPriorityAllocationOMS {
 							.next();
 					if (!(intersectingParcel.getID().equals(parcel.getID()))) {
 						{
-							String parcelCategory = (String) parcel.getAttribute(categoryAttribute) ;
-							String intersectingParcelCategory = (String) intersectingParcel.getAttribute(categoryAttribute);
-							if ((priorityOrder.get(parcelCategory)!=null) && (priorityOrder.get(intersectingParcelCategory)!=null)) {
-							//if (!= null) && )!=null)) {
+							String parcelCategory = (String) parcel
+									.getAttribute(categoryAttribute);
+							String intersectingParcelCategory = (String) intersectingParcel
+									.getAttribute(categoryAttribute);
+							if ((priorityOrder.get(parcelCategory) != null)
+									&& (priorityOrder
+											.get(intersectingParcelCategory) != null)) {
+								// if (!= null) && )!=null)) {
 								int parcelPriority = priorityOrder
 										.get((String) parcel
 												.getAttribute(categoryAttribute)); // priorityLookup.get(parcel.getAttribute(categoryAttribute));
 								int intersectingPriority = priorityOrder
 										.get((String) intersectingParcel
 												.getAttribute(categoryAttribute));// priorityLookup.get(intersectingParcel.getAttribute(categoryAttribute));
-								if (parcelPriority > intersectingPriority) { //-->intersectingParcel is more important
+								if (parcelPriority > intersectingPriority) { // -->intersectingParcel
+																				// is
+																				// more
+																				// important
 									Geometry parcelGeometry = (Geometry) uniqueParcels
 											.get(parcel.getID())
 											.getDefaultGeometry();
@@ -267,39 +277,45 @@ public class PointInPolygonPriorityAllocationOMS {
 		return DataUtilities.collection(new ArrayList(features));
 	}
 
-	private SimpleFeatureCollection dissolveByCategory(
-			SimpleFeatureSource parcels,
-			Map<String, String> classificationLookup, String categoryAttribute) {
+	private List<SimpleFeature> dissolveByCategory(
+			SimpleFeatureCollection parcels,
+			Map<String, String> classificationLookup, String categoryAttribute) throws IOException, CQLException {
 
 		List<SimpleFeature> dissolved = new ArrayList<SimpleFeature>();
 		try {
 			Set<String> uniqueClassifications = new HashSet<String>(
 					classificationLookup.values());
 			// for (Entry e : classificationLookup.entrySet()) {
+			LOGGER.info("Allocated parcels size: {}", parcels.size());
+			SimpleFeatureSource parcelsSource = DataUtilities.source(parcels);
 			for (String classification : uniqueClassifications) {
 				LOGGER.info("Dissolving category {}", classification);
 				Filter filter = CQL.toFilter(categoryAttribute + "="
 						+ classification);
+//				LOGGER.info(filter.toString());
 				// + e.getValue());
-				SimpleFeatureCollection categoryCollection = parcels
-						.getFeatures(filter);
+				SimpleFeatureCollection categoryCollection = parcelsSource.getFeatures(filter);
 				if (categoryCollection.size() > 0) {
 					LOGGER.info("Found {} parcels for classification {}",
 							categoryCollection.size(), classification);
-					dissolved.addAll(dissolve(categoryCollection));
+					List<SimpleFeature> sc = dissolve(categoryCollection);
+					LOGGER.info("Dissolved into {} parcels",sc.size());
+					dissolved.addAll(sc);
+					
 					// dissolved.addAll(DataUtilities.list((categoryCollection)));
 				} else {
 					LOGGER.info("No parcels found for classification {}",
 							classification);
 				}
 			}
-			return DataUtilities.collection(dissolved);
+			LOGGER.info("Total dissolved {}",dissolved.size());
+			return dissolved;
+			//return DataUtilities.collection(dissolved);
 		} catch (IOException e1) {
-			LOGGER.error("Failed dissolve by category process");
+			throw new IOException("Failed dissolve by category process",e1);
 		} catch (CQLException e) {
-			LOGGER.error("Failed dissolve by category process");
+			throw new CQLException("Failed dissolve by category process: " + e.getMessage());
 		}
-		return null;
 	}
 
 	private List<SimpleFeature> dissolve(SimpleFeatureCollection collection)
@@ -318,7 +334,7 @@ public class PointInPolygonPriorityAllocationOMS {
 				Geometry split = dissolved.getGeometryN(n);
 				SimpleFeature splitFeature = buildFeatureFromGeometry(feature,
 						feature.getFeatureType(), split,
-						new ArrayList<String>(), feature.getID() + n);
+						new ArrayList<String>(), "id." + collection.hashCode() + "." + n);
 				// splitFeature.setDefaultGeometry(split);
 				dissolvedFeatures.add(splitFeature);
 			}
@@ -371,7 +387,7 @@ public class PointInPolygonPriorityAllocationOMS {
 
 	/**
 	 * Performs the priority allocation in a region of interest, according to a
-	 * priority lookup. This is called by and executor service
+	 * priority lookup. This is called by an executor service
 	 * 
 	 * @author amacaulay
 	 * 
@@ -390,8 +406,9 @@ public class PointInPolygonPriorityAllocationOMS {
 		/**
 		 * Does and intersection of parcels with the region of interest and then
 		 * allocates each parcel.
+		 * @throws CQLException 
 		 */
-		public SimpleFeatureCollection call() throws IOException {
+		public List<SimpleFeature> call() throws IOException, CQLException {
 			// Do an intersection of parcels with service areas
 			SimpleFeatureCollection intersectingParcels = intersection(parcels,
 					regionOfInterest);
@@ -410,16 +427,21 @@ public class PointInPolygonPriorityAllocationOMS {
 						parcel, classificationLookup, priorityOrder);
 				allocatedParcels.add(allocatedParcel);
 			}
-			// GeoJSONUtilities.writeFeatures(DataUtilities.collection(allocatedParcels),
-			// new File("test_output/allocated_" + allocatedParcels.hashCode() +
-			// ".json"));
+			unAllocatedParcels.close();
+			GeoJSONUtilities.writeFeatures(DataUtilities
+					.collection(allocatedParcels), new File(
+					"test_output/allocated_" + allocatedParcels.hashCode()
+							+ ".json"));
 			// System.out.println("Dissolving: " + index);
 			LOGGER.info("Allocated parcels size: {}", allocatedParcels.size());
-			return DataUtilities.collection(allocatedParcels);
-			// return dissolveByCategory(DataUtilities.source(DataUtilities
-			// .collection(allocatedParcels)), classificationLookup,
-			// priorityAttribute);
+//			return allocatedParcels;
+			SimpleFeatureCollection allocatedFeatures = DataUtilities.collection(allocatedParcels);
+			SimpleFeatureSource source = DataUtilities.source(prioritiseOverlap(allocatedFeatures, priorityAttribute, priorityOrder));
+			return dissolveByCategory(source.getFeatures(), classificationLookup,
+					priorityAttribute);
 		}
+		
+	
 
 		private SimpleFeature allocateParcel(
 				SimpleFeatureSource pointPriorityFeatures,
@@ -462,14 +484,18 @@ public class PointInPolygonPriorityAllocationOMS {
 							currentPriorityClass = priorityClass;
 						}
 					} catch (NullPointerException e) {
-						LOGGER.error("Missing priority value for landuse "
-								+ landUse);
+						// LOGGER.info("Missing priority value for landuse "
+						// + landUse);
 					}
 				}
-				List<String> priorityValue = new ArrayList<String>();
-				priorityValue.add(currentPriorityClass);
-				return buildFeature(parcelOfInterest, allocatedFT,
-						priorityValue);
+				if (currentPriorityClass != "") {
+					List<String> priorityValue = new ArrayList<String>();
+					priorityValue.add(currentPriorityClass);
+					return buildFeature(parcelOfInterest, allocatedFT,
+							priorityValue);
+				} else { //don't add parcels which have no classification of interest
+					return null;
+				}
 			} finally {
 				pointFeatures.close();
 			}
@@ -516,50 +542,6 @@ public class PointInPolygonPriorityAllocationOMS {
 			}
 		} catch (IOException e) {
 			LOGGER.error("Failed to read SimpleFeaturSource input");
-		}
-		return lookupTable;
-	}
-
-	private Map<String, String> createLanduseLookup(URL csvTable,
-			String keyColumn, String valueColumn) {
-		CSVReader reader;
-		Map<String, String> lookupTable = new HashMap<String, String>();
-
-		try {
-			// reader = new CSVReader(new FileReader(csvTable.getFile()));
-			reader = new CSVReader(new InputStreamReader(new FileInputStream(
-					(csvTable.getFile())), "UTF-8"));
-			// Assume column names in first line ...
-			String[] header = reader.readNext();
-			List<String> newAttrs = new ArrayList<String>();
-			// List of new attribute names (columns - join column)
-			for (String attribute : header) {
-				if (!attribute.equals(keyColumn)) {
-					// System.out.println(attribute);
-					newAttrs.add(attribute);
-				}
-			}
-
-			String[] nextLine;
-			while ((nextLine = reader.readNext()) != null) {
-				String key = null;
-				String value = null;
-				for (int i = 0; i < nextLine.length; i++) { // FIXME: this only
-															// works
-															// for two columns
-					if (header[i].equals(keyColumn)) {
-						key = nextLine[i];
-					} else if (header[i].equals(valueColumn)) {
-						value = nextLine[i];
-					}
-				}
-				lookupTable.put(key, value);
-			}
-			return lookupTable;
-		} catch (FileNotFoundException e) {
-			LOGGER.error("Failed to read CSV input, file not found");
-		} catch (IOException e) {
-			LOGGER.error("Failed to read CSV input");
 		}
 		return lookupTable;
 	}
