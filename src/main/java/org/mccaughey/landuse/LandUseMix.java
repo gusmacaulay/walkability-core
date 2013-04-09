@@ -59,7 +59,8 @@ public final class LandUseMix {
 
 	static final Logger LOGGER = LoggerFactory.getLogger(LandUseMix.class);
 	private static String AttributePrefix = "LUM_";
-	//private static List<SimpleFeature> allClippedParcels = new ArrayList(); 
+
+	// private static List<SimpleFeature> allClippedParcels = new ArrayList();
 
 	private LandUseMix() {
 	}
@@ -76,21 +77,23 @@ public final class LandUseMix {
 	 *            A List of classifications of interest
 	 * @return The set of regions augmented with summary of classification areas
 	 *         and land use mix measure as attributes
-	 * @throws Exception 
-	 * @throws NoSuchElementException 
+	 * @throws Exception
+	 * @throws NoSuchElementException
 	 */
 	public static SimpleFeatureCollection summarise(
 			SimpleFeatureSource landUse,
 			FeatureIterator<SimpleFeature> regions,
-			List<String> classifications, String classificationAttribute) throws NoSuchElementException, Exception {
+			List<String> classifications, String classificationAttribute)
+			throws NoSuchElementException, Exception {
 		List<SimpleFeature> lumFeatures = new ArrayList();
 		while (regions.hasNext()) {
-			//LOGGER.info("Summarising Land Use ...");
+			// LOGGER.info("Summarising Land Use ...");
 			SimpleFeature lumFeature = summarise(landUse, regions.next(),
 					classifications, classificationAttribute);
 			lumFeatures.add(lumFeature);
 		}
-		//GeoJSONUtilities.writeFeatures(DataUtilities.collection(allClippedParcels), new File("clippedLandUse" + allClippedParcels.hashCode() + ".json"));
+		// GeoJSONUtilities.writeFeatures(DataUtilities.collection(allClippedParcels),
+		// new File("clippedLandUse" + allClippedParcels.hashCode() + ".json"));
 		return DataUtilities.collection(lumFeatures);
 	}
 
@@ -106,7 +109,7 @@ public final class LandUseMix {
 	 *            A List of classifications of interest
 	 * @return The region feature augmented with summary of classification areas
 	 *         and land use mix measure as attributes
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public static SimpleFeature summarise(SimpleFeatureSource landUse,
 			SimpleFeature region, List<String> classifications,
@@ -116,9 +119,10 @@ public final class LandUseMix {
 
 		try {
 			Geometry regionGeom = (Geometry) region.getDefaultGeometry();
-
-			SimpleFeatureIterator parcels = trimFeaturesToRegion((featuresInRegion(landUse,
-					regionGeom)),regionGeom).features();
+			
+			SimpleFeatureIterator parcels = trimFeaturesToRegion(
+					(featuresInRegion(landUse, regionGeom)), regionGeom)
+					.features();
 			Map classificationAreas = new HashMap();
 			double totalArea = 0.0;
 			while (parcels.hasNext()) {
@@ -129,15 +133,15 @@ public final class LandUseMix {
 					String subClassification = String.valueOf(parcel
 							.getAttribute(classificationAttribute));
 
-					// LOGGER.info("Classification: {}", classification);
+					//LOGGER.info("Classification: {}", subClassification);
 					if (classificationsAttributesMap
 							.containsKey((subClassification))) {
 						String classification = classificationsAttributesMap
 								.get(subClassification);
-						// LOGGER.info("Classification: {}", classification);
+						//LOGGER.info("Classification: {}", classification);
 						Double parcelArea = parcelGeom.intersection(regionGeom)
 								.getArea();
-						// LOGGER.info("Parcel Area:, {}", parcelArea);
+						//	LOGGER.info("Parcel Area:, {}", parcelArea);
 						totalArea += parcelArea;
 						Double area = parcelArea;
 						if (classificationAreas.containsKey(classification)) {
@@ -253,7 +257,7 @@ public final class LandUseMix {
 	}
 
 	private static SimpleFeatureCollection trimFeaturesToRegion(
-			SimpleFeatureCollection features, Geometry roi) throws Exception {
+			SimpleFeatureCollection features, Geometry roi) {
 		List<SimpleFeature> trimmedFeatures = new ArrayList<SimpleFeature>();
 
 		SimpleFeatureIterator iter = features.features();
@@ -261,57 +265,72 @@ public final class LandUseMix {
 			while (iter.hasNext()) {
 				SimpleFeature feature = iter.next();
 				Geometry parcelGeom = (Geometry) feature.getDefaultGeometry();
-				Geometry trimmedGeom = parcelGeom.intersection(roi);
 			
-				for (int i=0; i < trimmedGeom.getNumGeometries(); i++) {
-					//LOGGER.info("Geom: " + trimmedGeom.getGeometryN(i).toText());
-					trimmedFeatures.add(buildFeature(feature, trimmedGeom.getGeometryN(i),i));
+				Geometry trimmedGeom = parcelGeom.intersection(roi.buffer(0));
+
+				for (int i = 0; i < trimmedGeom.getNumGeometries(); i++) {
+				//	LOGGER.info("Geom: " + trimmedGeom.getGeometryN(i).toText());
+					trimmedFeatures.add(buildFeature(feature,
+							trimmedGeom.getGeometryN(i), i));
 				}
 			}
-			
+//		} catch (TopologyException t) {
+//			if (roi.isValid()) {
+//				LOGGER.info("ROI Geom valid");
+//			} else {
+//				LOGGER.info("ROI Geom invalid");
+//			}
+//			LOGGER.info(roi.toString());
 		} finally {
 			iter.close();
 		}
-		//GeoJSONUtilities.writeFeatures(DataUtilities.collection(trimmedFeatures), new File("test_output/trimmedFeatures" + roi.hashCode() + ".json"));
-		//allClippedParcels.addAll(trimmedFeatures);
+		// GeoJSONUtilities.writeFeatures(DataUtilities.collection(trimmedFeatures),
+		// new File("test_output/trimmedFeatures" + roi.hashCode() + ".json"));
+		// allClippedParcels.addAll(trimmedFeatures);
 		return DataUtilities.collection(trimmedFeatures);
 
 	}
 
 	private static SimpleFeature buildFeature(SimpleFeature feature,
 			Geometry trimmedGeom, int subID) {
-		
-		  SimpleFeatureType featureType = buildPolygonFeatureType(feature.getFeatureType());
-		  
-		  SimpleFeatureBuilder builder = new SimpleFeatureBuilder(featureType);
-		 
-		  //Add everything the geometry
-		  for (AttributeDescriptor attrName : featureType.getAttributeDescriptors()){
-			  if(attrName.getLocalName() != featureType.getGeometryDescriptor().getLocalName()) {
-				  builder.set(attrName.getLocalName(), feature.getAttribute(attrName.getLocalName()));
-			  }
-		  }
-		  
-		  //Add the geometry
-		  builder.set(feature.getDefaultGeometryProperty().getName(), trimmedGeom);
-		  
-		  return builder.buildFeature(feature.getID() + "." + subID);
+
+		SimpleFeatureType featureType = buildPolygonFeatureType(feature
+				.getFeatureType());
+
+		SimpleFeatureBuilder builder = new SimpleFeatureBuilder(featureType);
+
+		// Add everything the geometry
+		for (AttributeDescriptor attrName : featureType
+				.getAttributeDescriptors()) {
+			if (attrName.getLocalName() != featureType.getGeometryDescriptor()
+					.getLocalName()) {
+				builder.set(attrName.getLocalName(),
+						feature.getAttribute(attrName.getLocalName()));
+			}
+		}
+
+		// Add the geometry
+		builder.set(feature.getDefaultGeometryProperty().getName(), trimmedGeom);
+
+		return builder.buildFeature(feature.getID() + "." + subID);
 	}
 
 	private static SimpleFeatureType buildPolygonFeatureType(
 			SimpleFeatureType featureType) {
 		SimpleFeatureTypeBuilder b = new SimpleFeatureTypeBuilder();
 
-		//set the name
-		b.setName( "Parcel" );
+		// set the name
+		b.setName("Parcel");
 
-		//add some properties
+		// add some properties
 		b.addAll(featureType.getAttributeDescriptors());
 		b.remove(featureType.getGeometryDescriptor().getLocalName());
-		//add a geometry property
-		b.setCRS( featureType.getCoordinateReferenceSystem()); // set crs first
-		b.add(featureType.getGeometryDescriptor().getLocalName(), Polygon.class ); // then add geometry
-		//LOGGER.info(featureType.getGeometryDescriptor().getLocalName());
+		// add a geometry property
+		b.setCRS(featureType.getCoordinateReferenceSystem()); // set crs first
+		b.add(featureType.getGeometryDescriptor().getLocalName(), Polygon.class); // then
+																					// add
+																					// geometry
+		// LOGGER.info(featureType.getGeometryDescriptor().getLocalName());
 		b.setDefaultGeometry(featureType.getGeometryDescriptor().getLocalName());
 		return b.buildFeatureType();
 	}
