@@ -264,7 +264,7 @@ public final class LandUseMix {
 		try {
 			while (iter.hasNext()) {
 				SimpleFeature feature = iter.next();
-				Geometry parcelGeom = (Geometry) feature.getDefaultGeometry();
+				Geometry parcelGeom = ((Geometry) feature.getDefaultGeometry()).buffer(0);
 			
 				Geometry trimmedGeom = parcelGeom.intersection(roi.buffer(0));
 
