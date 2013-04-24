@@ -40,77 +40,83 @@ import org.slf4j.LoggerFactory;
  */
 public final class ZScore {
 
-  static final Logger LOGGER = LoggerFactory.getLogger(ZScore.class);
+	static final Logger LOGGER = LoggerFactory.getLogger(ZScore.class);
 
-  private ZScore() {
-  }
+	private ZScore() {
+	}
 
-  /**
-   * Calculates z-score and sum of z-scores
-   * 
-   * @param features
-   *          Regions of interest
-   * @param attributes
-   *          Attributes to calculate z-scores for
-   * @return
-   */
-  public static SimpleFeatureCollection sumZScores(
-      FeatureIterator<SimpleFeature> features, List<String> attributes) {
-    List<SimpleFeature> results = new ArrayList();
-    // SummaryStatistics stats = new SummaryStatistics();
+	/**
+	 * Calculates z-score and sum of z-scores
+	 * 
+	 * @param features
+	 *            Regions of interest
+	 * @param attributes
+	 *            Attributes to calculate z-scores for
+	 * @return
+	 */
+	public static SimpleFeatureCollection sumZScores(
+			FeatureIterator<SimpleFeature> features, List<String> attributes) {
+		List<SimpleFeature> results = new ArrayList();
+		// SummaryStatistics stats = new SummaryStatistics();
 
-    Map<String, SummaryStatistics> stats = new HashMap();
-    for (String attr : attributes) {
-      SummaryStatistics s = new SummaryStatistics();
-      stats.put(attr, s);
-    }
-    try {
-      // Build up summary statistics for each attribute across all features
-      while (features.hasNext()) {
-        SimpleFeature region = features.next();
-        for (String attr : attributes) {
-          stats.get(attr).addValue((Double) region.getAttribute(attr));
-        }
-        results.add(buildFeature(region, attributes));
-      }
-    } finally {
-      features.close();
-    }
+		Map<String, SummaryStatistics> stats = new HashMap();
+		for (String attr : attributes) {
+			SummaryStatistics s = new SummaryStatistics();
+			stats.put(attr, s);
+		}
+		try {
+			// Build up summary statistics for each attribute across all
+			// features
+			while (features.hasNext()) {
+				SimpleFeature region = features.next();
+				for (String attr : attributes) {
+					stats.get(attr)
+							.addValue((Double) region.getAttribute(attr));
+				}
+				results.add(buildFeature(region, attributes));
+			}
+		} finally {
+			features.close();
+		}
 
-    // Calculate Z-Score for each attribute in each feature and also sum the
-    // z-scores for the set of attributes
-    for (SimpleFeature region : results) {
-      Double totalZ = 0.0;
-      for (String attr : attributes) {
-        Double rawScore = (Double) region.getAttribute(attr);
-        Double zScore = (rawScore - stats.get(attr).getMean())
-            / stats.get(attr).getStandardDeviation();
-        region.setAttribute(attr + "_ZScore", zScore);
-        totalZ += zScore;
-      }
-      region.setAttribute("SumZScore", totalZ);
-      LOGGER.info("Z-score: {}", totalZ);
-    }
+		// Calculate Z-Score for each attribute in each feature and also sum the
+		// z-scores for the set of attributes
+		for (SimpleFeature region : results) {
+			Double totalZ = 0.0;
+			for (String attr : attributes) {
+				Double rawScore = (Double) region.getAttribute(attr);
+				Double zScore = (rawScore - stats.get(attr).getMean())
+						/ stats.get(attr).getStandardDeviation();
+				if (zScore != Double.NaN) {
+					region.setAttribute(attr + "_ZScore", zScore);
+					totalZ += zScore;
+				} else {
+					region.setAttribute(attr + "_ZScore", null);
+				}
+			}
+			region.setAttribute("SumZScore", totalZ);
+			LOGGER.info("Z-score: {}", totalZ);
+		}
 
-    return DataUtilities.collection(results);
-  }
+		return DataUtilities.collection(results);
+	}
 
-  private static SimpleFeature buildFeature(SimpleFeature region,
-      List<String> attributes) {
+	private static SimpleFeature buildFeature(SimpleFeature region,
+			List<String> attributes) {
 
-    SimpleFeatureType sft = (SimpleFeatureType) region.getType();
-    SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
-    stb.init(sft);
-    stb.setName("statisticsFeatureType");
-    for (String attr : attributes) {
-      stb.add(attr + "_ZScore", Double.class);
-    }
-    stb.add("SumZScore", Double.class);
-    SimpleFeatureType statsFT = stb.buildFeatureType();
-    SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(statsFT);
-    sfb.addAll(region.getAttributes());
+		SimpleFeatureType sft = (SimpleFeatureType) region.getType();
+		SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+		stb.init(sft);
+		stb.setName("statisticsFeatureType");
+		for (String attr : attributes) {
+			stb.add(attr + "_ZScore", Double.class);
+		}
+		stb.add("SumZScore", Double.class);
+		SimpleFeatureType statsFT = stb.buildFeatureType();
+		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(statsFT);
+		sfb.addAll(region.getAttributes());
 
-    return sfb.buildFeature(region.getID());
+		return sfb.buildFeature(region.getID());
 
-  }
+	}
 }

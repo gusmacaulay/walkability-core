@@ -118,7 +118,7 @@ public final class LandUseMix {
 		Map<String, String> classificationsAttributesMap = getSubClassifications(classifications);
 
 		try {
-			Geometry regionGeom = (Geometry) region.getDefaultGeometry();
+			Geometry regionGeom = ((Geometry) region.getDefaultGeometry()).buffer(0);
 			
 			SimpleFeatureIterator parcels = trimFeaturesToRegion(
 					(featuresInRegion(landUse, regionGeom)), regionGeom)
@@ -128,8 +128,8 @@ public final class LandUseMix {
 			while (parcels.hasNext()) {
 				SimpleFeature parcel = parcels.next();
 				try {
-					Geometry parcelGeom = (Geometry) parcel
-							.getDefaultGeometry();
+					Geometry parcelGeom = ((Geometry) parcel
+							.getDefaultGeometry()).buffer(0);
 					String subClassification = String.valueOf(parcel
 							.getAttribute(classificationAttribute));
 
