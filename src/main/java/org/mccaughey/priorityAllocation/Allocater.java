@@ -67,22 +67,16 @@ class Allocater implements Callable<List<SimpleFeature>> {
 		// for each intersecting parcel
 		FeatureIterator<SimpleFeature> unAllocatedParcels = intersectingParcels
 				.features();
-		// GeoJSONUtilities.writeFeatures(intersectingParcels, new
-		// File("test_output/intersecting_" + intersectingParcels.hashCode()
-		// + ".json"));
+
 		List<SimpleFeature> allocatedParcels = new ArrayList<SimpleFeature>();
 		while (unAllocatedParcels.hasNext()) {
 			SimpleFeature parcel = unAllocatedParcels.next();
-			// intersect with points
+			
 			SimpleFeature allocatedParcel = allocateParcel(pointFeatures,
 					parcel, classificationLookup, priorityOrder);
 			allocatedParcels.add(allocatedParcel);
 		}
 		unAllocatedParcels.close();
-		// GeoJSONUtilities.writeFeatures(DataUtilities
-		// .collection(allocatedParcels), new File(
-		// "test_output/allocated_" + allocatedParcels.hashCode()
-		// + ".json"));
 
 		SimpleFeatureCollection allocatedFeatures = DataUtilities
 				.collection(allocatedParcels);
@@ -122,19 +116,23 @@ class Allocater implements Callable<List<SimpleFeature>> {
 				String landUse = comparisonPoint.getAttribute(landUseAttribute)
 						.toString();
 
-				try {
+				if (classificationLookup.containsKey(landUse)) {
 					String priorityClass = String.valueOf(classificationLookup
 							.get(landUse));
-
-					// LOGGER.info("Comparison Feature LandUse " + landUse);
-					int comparisonPriority = priorityOrder.get(priorityClass);
-					if (comparisonPriority < currentPriority) {
-						currentPriority = comparisonPriority;
-						currentPriorityClass = priorityClass;
+					if (priorityOrder.containsKey(priorityClass)) {
+						int comparisonPriority = priorityOrder
+								.get(priorityClass);
+						if (comparisonPriority < currentPriority) {
+							currentPriority = comparisonPriority;
+							currentPriorityClass = priorityClass;
+						}
+					} else {
+						LOGGER.info("Misssing priority value for classification "
+								+ priorityClass);
 					}
-				} catch (NullPointerException e) {
-					// LOGGER.info("Missing priority value for landuse "
-					// + landUse);
+				} else {
+					LOGGER.info("Missing classification value for landuse "
+							+ landUse);
 				}
 			}
 			if (currentPriorityClass != "") {
@@ -150,6 +148,4 @@ class Allocater implements Callable<List<SimpleFeature>> {
 			pointFeatures.close();
 		}
 	}
-
-
 }

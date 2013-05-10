@@ -214,7 +214,6 @@
 				<configuration>
 					<forkMode>pertest</forkMode>
 					<argLine>-Xms512m -Xmx16184m</argLine>
-					<testFailureIgnore>false</testFailureIgnore>
 					<skip>false</skip>
 					<excludes>
 						<exclude>**/*Integration*.java</exclude>
