@@ -87,7 +87,7 @@ public final class LandUseMix {
 			throws NoSuchElementException, Exception {
 		List<SimpleFeature> lumFeatures = new ArrayList();
 		while (regions.hasNext()) {
-			// LOGGER.info("Summarising Land Use ...");
+			// LOGGER.debug("Summarising Land Use ...");
 			SimpleFeature lumFeature = summarise(landUse, regions.next(),
 					classifications, classificationAttribute);
 			lumFeatures.add(lumFeature);
@@ -133,15 +133,15 @@ public final class LandUseMix {
 					String subClassification = String.valueOf(parcel
 							.getAttribute(classificationAttribute));
 
-					//LOGGER.info("Classification: {}", subClassification);
+					//LOGGER.debug("Classification: {}", subClassification);
 					if (classificationsAttributesMap
 							.containsKey((subClassification))) {
 						String classification = classificationsAttributesMap
 								.get(subClassification);
-						//LOGGER.info("Classification: {}", classification);
+						//LOGGER.debug("Classification: {}", classification);
 						Double parcelArea = parcelGeom.intersection(regionGeom)
 								.getArea();
-						//	LOGGER.info("Parcel Area:, {}", parcelArea);
+						//	LOGGER.debug("Parcel Area:, {}", parcelArea);
 						totalArea += parcelArea;
 						Double area = parcelArea;
 						if (classificationAreas.containsKey(classification)) {
@@ -151,7 +151,7 @@ public final class LandUseMix {
 						classificationAreas.put(classification, area);
 					}
 				} catch (TopologyException e1) {
-					LOGGER.info("Ignoring TopologyException, {}",
+					LOGGER.debug("Ignoring TopologyException, {}",
 							e1.getMessage());
 				}
 			}
@@ -183,7 +183,7 @@ public final class LandUseMix {
 					classifications.size());
 			sfb.add(landUseMixMeasure);
 			return sfb.buildFeature(region.getID());
-			// LOGGER.info("Land Use Mix Measure: {}", landUseMixMeasure);
+			// LOGGER.debug("Land Use Mix Measure: {}", landUseMixMeasure);
 		} catch (IOException e) {
 			LOGGER.error("Failed to select land use features in region: {}",
 					e.getMessage());
@@ -226,12 +226,12 @@ public final class LandUseMix {
 		} else {
 			for (Double area : areas) {
 				Double proportion = area / totalArea;
-				// LOGGER.info("Class Area: {} Total Area: {}", area,
+				// LOGGER.debug("Class Area: {} Total Area: {}", area,
 				// totalArea);
 				landUseMixMeasure += (((proportion) * (Math.log(proportion))) / (Math
 						.log(totalClasses)));// .log(areas.size())));
-				// LOGGER.info("Areas: " + areas.size());
-				// LOGGER.info("Classes:" + totalClasses);
+				// LOGGER.debug("Areas: " + areas.size());
+				// LOGGER.debug("Classes:" + totalClasses);
 			}
 			landUseMixMeasure = -1 * landUseMixMeasure;
 		}
@@ -245,7 +245,7 @@ public final class LandUseMix {
 		// filters with intersections of roi
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		FeatureType schema = featureSource.getSchema();
-		// LOGGER.info("FEATURE SOURCE SCHEMA: ", schema.toString());
+		// LOGGER.debug("FEATURE SOURCE SCHEMA: ", schema.toString());
 		String geometryPropertyName = schema.getGeometryDescriptor()
 				.getLocalName();
 
@@ -269,18 +269,18 @@ public final class LandUseMix {
 				Geometry trimmedGeom = parcelGeom.intersection(roi.buffer(0));
 
 				for (int i = 0; i < trimmedGeom.getNumGeometries(); i++) {
-				//	LOGGER.info("Geom: " + trimmedGeom.getGeometryN(i).toText());
+				//	LOGGER.debug("Geom: " + trimmedGeom.getGeometryN(i).toText());
 					trimmedFeatures.add(buildFeature(feature,
 							trimmedGeom.getGeometryN(i), i));
 				}
 			}
 //		} catch (TopologyException t) {
 //			if (roi.isValid()) {
-//				LOGGER.info("ROI Geom valid");
+//				LOGGER.debug("ROI Geom valid");
 //			} else {
-//				LOGGER.info("ROI Geom invalid");
+//				LOGGER.debug("ROI Geom invalid");
 //			}
-//			LOGGER.info(roi.toString());
+//			LOGGER.debug(roi.toString());
 		} finally {
 			iter.close();
 		}
@@ -330,7 +330,7 @@ public final class LandUseMix {
 		b.add(featureType.getGeometryDescriptor().getLocalName(), Polygon.class); // then
 																					// add
 																					// geometry
-		// LOGGER.info(featureType.getGeometryDescriptor().getLocalName());
+		// LOGGER.debug(featureType.getGeometryDescriptor().getLocalName());
 		b.setDefaultGeometry(featureType.getGeometryDescriptor().getLocalName());
 		return b.buildFeatureType();
 	}

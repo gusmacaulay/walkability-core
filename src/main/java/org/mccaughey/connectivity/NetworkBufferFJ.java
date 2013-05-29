@@ -179,13 +179,13 @@ public class NetworkBufferFJ extends RecursiveAction {
 
       Edge choppedEdge = chopEdge(currentPath, graphEdge, distance
           - pathLength(currentPath));
-      // LOGGER.info("Chopped edge should be {} long",distance -
+      // LOGGER.debug("Chopped edge should be {} long",distance -
       // pathLength(currentPath));
       Path newPath = currentPath.duplicate();
       if (newPath.addEdge(choppedEdge)) {
         addNewEdge(serviceArea, currentPath, graphEdge, choppedEdge);
       }
-      // LOGGER.info("New path length: {}", pathLength(newPath));
+      // LOGGER.debug("New path length: {}", pathLength(newPath));
     }
   }
 
@@ -203,16 +203,16 @@ public class NetworkBufferFJ extends RecursiveAction {
       if (minimalDistance > pathLength) {
         edgeFeature.setAttribute(distanceAttribute, pathLength);
         serviceArea.put(newEdge, edgeFeature);
-        // LOGGER.info("Adding edge {} - minimal distance {}",newEdge,pathLength);
+        // LOGGER.debug("Adding edge {} - minimal distance {}",newEdge,pathLength);
         return true;
       } else {
-        // LOGGER.info("NOT Adding edge {} - minimaldistance {}",newEdge,minimalDistance);
+        // LOGGER.debug("NOT Adding edge {} - minimaldistance {}",newEdge,minimalDistance);
         return false;
       }
     } else {
       edgeFeature.setAttribute(distanceAttribute, pathLength);
       serviceArea.put(newEdge, edgeFeature);
-      // LOGGER.info("Adding edge {} - minimal distance {}",newEdge,pathLength);
+      // LOGGER.debug("Adding edge {} - minimal distance {}",newEdge,pathLength);
       return true;
     }
   }
@@ -271,9 +271,9 @@ public class NetworkBufferFJ extends RecursiveAction {
       SimpleFeature newFeature = buildFeatureFromGeometry(
           ((SimpleFeature) edge.getObject()).getType(), newLine);
       newEdge.setObject(newFeature);
-      // LOGGER.info("...To {}",newLine.getLength());
+      // LOGGER.debug("...To {}",newLine.getLength());
       // Double delta = 1500.0 - pathLength(path) - newLine.getLength();
-      // LOGGER.info("Delta Length A: " + delta);//(newLine.getLength() -
+      // LOGGER.debug("Delta Length A: " + delta);//(newLine.getLength() -
       // length) );
       return newEdge;
     } else if (node.equals(edge.getNodeB())) {
@@ -281,9 +281,9 @@ public class NetworkBufferFJ extends RecursiveAction {
       SimpleFeature newFeature = buildFeatureFromGeometry(
           ((SimpleFeature) edge.getObject()).getType(), newLine);
       newEdge.setObject(newFeature);
-      // LOGGER.info("...To {}",newLine.getLength());
+      // LOGGER.debug("...To {}",newLine.getLength());
       // Double delta = 1500.0 - pathLength(path) - newLine.getLength();
-      // LOGGER.info("Delta Length B: " + delta);//(newLine.getLength() -
+      // LOGGER.debug("Delta Length B: " + delta);//(newLine.getLength() -
       // length) );
       return newEdge;
     } else {
@@ -308,9 +308,9 @@ public class NetworkBufferFJ extends RecursiveAction {
       SimpleFeature newFeature = buildFeatureFromGeometry(
           ((SimpleFeature) edge.getObject()).getType(), newLine);
       newEdge.setObject(newFeature);
-      // LOGGER.info("...To {}",newLine.getLength());
+      // LOGGER.debug("...To {}",newLine.getLength());
       // Double delta = 1500.0 - pathLength(path) - newLine.getLength();
-      // LOGGER.info("Delta Length A: " + delta);//(newLine.getLength() -
+      // LOGGER.debug("Delta Length A: " + delta);//(newLine.getLength() -
       // length) );
       return newEdge;
     } else if (node.equals(edge.getNodeB())) {
@@ -318,9 +318,9 @@ public class NetworkBufferFJ extends RecursiveAction {
       SimpleFeature newFeature = buildFeatureFromGeometry(
           ((SimpleFeature) edge.getObject()).getType(), newLine);
       newEdge.setObject(newFeature);
-      // LOGGER.info("...To {}",newLine.getLength());
+      // LOGGER.debug("...To {}",newLine.getLength());
       // Double delta = 1500.0 - pathLength(path) - newLine.getLength();
-      // LOGGER.info("Delta Length B: " + delta);//(newLine.getLength() -
+      // LOGGER.debug("Delta Length B: " + delta);//(newLine.getLength() -
       // length) );
       return newEdge;
     } else {

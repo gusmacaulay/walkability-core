@@ -65,14 +65,14 @@ public final class GeoJSONUtilities {
           fjson.setEncodeFeatureCollectionBounds(true);
           fjson.setEncodeFeatureCollectionCRS(true);
         } else {
-          LOGGER.info("CRS is null");
+          LOGGER.debug("CRS is null");
         }
-     //   LOGGER.info("CRS: {}", features.getSchema()
+     //   LOGGER.debug("CRS: {}", features.getSchema()
      //       .getCoordinateReferenceSystem().toString());
         // if
         // (features.getSchema().getCoordinateReferenceSystem().toString().contains("UNIT[\"m"))
         // {
-        // LOGGER.info("CRS in metres!");
+        // LOGGER.debug("CRS in metres!");
         // } else {
         // LOGGER.error("CRS not in metres");
         // }
@@ -100,7 +100,7 @@ public final class GeoJSONUtilities {
     String dataStore = dataStoreURL.toString();
 
     try {
-      LOGGER.info("Writing to File resource {}", dataStore);
+      LOGGER.debug("Writing to File resource {}", dataStore);
       writeFeatures(features, new File(dataStoreURL.toURI()));
       return dataStoreURL;
     } catch (Exception e) {
@@ -156,7 +156,7 @@ public final class GeoJSONUtilities {
    */
   public static FeatureIterator<SimpleFeature> getFeatureIterator(URL url)
       throws IOException {
-    LOGGER.info("Reading features from URL {}", url);
+    LOGGER.debug("Reading features from URL {}", url);
     FeatureJSON io = new FeatureJSON();
     // SslUtil.trustSelfSignedSSL();
     io.setEncodeFeatureCollectionCRS(true);
@@ -176,7 +176,7 @@ public final class GeoJSONUtilities {
     FeatureJSON io = new FeatureJSON();
     // io.setEncodeFeatureCollectionCRS(true);
 
-    LOGGER.info("READING GeoJSON from {}", url);
+    LOGGER.debug("READING GeoJSON from {}", url);
     // io.readCRS(url.openConnection().getInputStream()));
     FeatureIterator<SimpleFeature> features = io.streamFeatureCollection(url
         .openConnection().getInputStream());

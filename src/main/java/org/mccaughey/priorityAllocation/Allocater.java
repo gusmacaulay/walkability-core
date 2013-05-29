@@ -127,11 +127,11 @@ class Allocater implements Callable<List<SimpleFeature>> {
 							currentPriorityClass = priorityClass;
 						}
 					} else {
-						LOGGER.info("Misssing priority value for classification "
+						LOGGER.debug("Misssing priority value for classification "
 								+ priorityClass);
 					}
 				} else {
-					LOGGER.info("Missing classification value for landuse "
+					LOGGER.debug("Missing classification value for landuse "
 							+ landUse);
 				}
 			}

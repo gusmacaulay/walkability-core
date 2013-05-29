@@ -104,6 +104,7 @@ public class PointInPolygonPriorityAllocationOMS {
 	 */
 	@Execute
 	public void allocate() throws CQLException {
+		LOGGER.info("Calculating Priority Allocation");
 		Map<String, String> classificationLookup = AllocationUtils
 				.createLanduseLookup(landUseLookupSource, landUseAttribute,
 						priorityAttribute);
@@ -121,7 +122,7 @@ public class PointInPolygonPriorityAllocationOMS {
 				// .newFixedThreadPool(1);
 				List<Future<List<SimpleFeature>>> futures = new ArrayList<Future<List<SimpleFeature>>>();
 				while (regions.hasNext()) {
-					LOGGER.info("Calculating priority allocation for service area ..");
+					LOGGER.debug("Calculating priority allocation for service area ..");
 					SimpleFeature regionOfInterest = regions.next();
 					Allocater ac = new Allocater(regionOfInterest,
 							classificationLookup, pointFeatures, priorityOrder,
@@ -141,6 +142,7 @@ public class PointInPolygonPriorityAllocationOMS {
 						.collection(AllocationUtils.dissolveByCategory(
 								DataUtilities.collection(allocatedParcels),
 								classificationLookup, priorityAttribute)));
+				LOGGER.info("Completed Priority Allocation");
 
 			} catch (ExecutionException e) {
 				LOGGER.error(

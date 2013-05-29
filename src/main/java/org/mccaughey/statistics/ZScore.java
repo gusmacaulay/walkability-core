@@ -95,7 +95,7 @@ public final class ZScore {
 				}
 			}
 			region.setAttribute("SumZScore", totalZ);
-			LOGGER.info("Z-score: {}", totalZ);
+			LOGGER.debug("Z-score: {}", totalZ);
 		}
 
 		return DataUtilities.collection(results);
