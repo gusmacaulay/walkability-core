@@ -102,23 +102,23 @@ public class NetworkBufferBatch { //extends RecursiveAction {
     int count = 0;
     SimpleFeatureIterator features = points.features();
     while (features.hasNext()) {
-        LOGGER.info("Buffer count {}", ++count);
+        LOGGER.debug("Buffer count {}", ++count);
         SimpleFeature point = features.next();
         Buffernator ac = new Buffernator(point, network);
         Future future = executorService.submit(ac);
         futures.add(future);
-        // LOGGER.info("+");
+        // LOGGER.debug("+");
              // .addAll(DataUtilities.collection(networkBuffer)) 
     }
     for (Future future : futures) {
       try {
         buffers.add((SimpleFeature)(future.get()));
-        LOGGER.info("Completing Buffer");
+        LOGGER.debug("Completing Buffer");
       } catch (ExecutionException e) {
         LOGGER.error("Buffer generation failed for a point", e);
       }
     }
-    LOGGER.info("Completed {} buffers for {} points", buffers.size(), points.size());
+    LOGGER.debug("Completed {} buffers for {} points", buffers.size(), points.size());
     } catch (InterruptedException e) {
       throw new IllegalStateException(e);
     } finally {
@@ -148,11 +148,11 @@ public class NetworkBufferBatch { //extends RecursiveAction {
     }
 
     public SimpleFeature call() throws IOException {
-      LOGGER.info("Calculating service network");
+      LOGGER.debug("Calculating service network");
       Map serviceArea = NetworkBuffer.findServiceArea(network, point, distance,
           bufferSize);
       
-      LOGGER.info("Buffering service network");
+      LOGGER.debug("Buffering service network");
       SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(
           serviceArea, bufferSize, points.getSchema()
               .getCoordinateReferenceSystem(), String.valueOf(point.getID()));
@@ -168,7 +168,7 @@ public class NetworkBufferBatch { //extends RecursiveAction {
 //      if (points.size() <= pointsPerThread) { // if less points than threshold
 //                                              // then compute buffers
 //        // network region and store in buffers
-//        LOGGER.info("Computing buffers for {} points", points.size());
+//        LOGGER.debug("Computing buffers for {} points", points.size());
 //        // SimpleFeatureIterator features = points.features();
 //        calculateServiceAreas(features);
 //
@@ -186,9 +186,9 @@ public class NetworkBufferBatch { //extends RecursiveAction {
 //
 //    while (features.hasNext()) {
 //      try {
-//        LOGGER.info("Buffer count {}", ++count);
+//        LOGGER.debug("Buffer count {}", ++count);
 //        SimpleFeature point = features.next();
-//        // LOGGER.info("+");
+//        // LOGGER.debug("+");
 //        Map serviceArea = NetworkBuffer.findServiceArea(network, point,
 //            distance, bufferSize);
 //        if (serviceArea != null) {
@@ -196,7 +196,7 @@ public class NetworkBufferBatch { //extends RecursiveAction {
 //          // NetworkBuffer.createLinesFromEdges(serviceArea);
 //          SimpleFeatureCollection graph = DataUtilities
 //              .collection(NetworkBuffer.createLinesFromEdges(serviceArea));
-//          // LOGGER.info("Points CRS: {}",
+//          // LOGGER.debug("Points CRS: {}",
 //          // points.getSchema().getCoordinateReferenceSystem());
 //          SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(
 //              serviceArea, bufferSize, points.getSchema()
@@ -213,7 +213,7 @@ public class NetworkBufferBatch { //extends RecursiveAction {
 //        // e.printStackTrace();
 //      }
 //    }
-//    LOGGER.info("Completed {} buffers", points.size());
+//    LOGGER.debug("Completed {} buffers", points.size());
 //  }
 
 //  private void forkJoin(SimpleFeatureIterator features) {

@@ -66,15 +66,11 @@ public class ConnectivityIndexOMS {
 
       ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(networkSource,
           regionSource.getFeatures());
-      //LOGGER.info("Computing connectivity for {} regions");
+      LOGGER.info("Computing connectivity for {} regions");
       cifj.connectivity();
-
-      // File file = new File("connectivity_regions_oms.geojson");
       results = DataUtilities.source(cifj.getResults());
-      // FileUtils.writeStringToFile(file, writeFeatures(buffers));
-      // results = file.toURI().toURL();
 
-      // System.out.println(results);
+      LOGGER.info("Completed Connectivity calculation");
 
     } catch (IOException e) { // Can't do much here because of OMS?
       LOGGER.error(e.getMessage());

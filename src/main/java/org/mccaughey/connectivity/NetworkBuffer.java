@@ -121,7 +121,7 @@ public final class NetworkBuffer {
     NetworkBufferFJ nbfj = new NetworkBufferFJ(networkMap, startPath,
         networkDistance, serviceArea);
     serviceArea = nbfj.createBuffer();
-    LOGGER.info("Found service area for point {} with {} Edges", pointFeature.getID(),serviceArea.size());
+    LOGGER.debug("Found service area for point {} with {} Edges", pointFeature.getID(),serviceArea.size());
    // writeNetworkFromEdges(serviceArea);
     return serviceArea;
   }
@@ -141,7 +141,7 @@ public final class NetworkBuffer {
 
     if ((lineB.getLength() == 0.0) || (lineA.getLength() == 0.0)) {
 
-      // LOGGER.info("Line length: " + originalLine.getLength());
+      // LOGGER.debug("Line length: " + originalLine.getLength());
       FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
       // SimpleFeature featureA =
       // buildFeatureFromGeometry(networkRegion.getSchema(), lineA);
@@ -231,7 +231,7 @@ public final class NetworkBuffer {
           SimpleFeature edgeFeature = (SimpleFeature) edge.getObject();
           Geometry graphGeom = (Geometry) edgeFeature.getDefaultGeometry();
           if (graphGeom.buffer(1).contains(startLine)) {
-            LOGGER.info("Found start node");
+            LOGGER.debug("Found start node");
             return node;
           }
         }
@@ -251,14 +251,14 @@ public final class NetworkBuffer {
 
         if (edgeFeature1.getID().equals(featureA.getID())
             && edgeFeature2.getID().equals(featureB.getID())) {
-          // LOGGER.info("Found start node edges {},{}",
+          // LOGGER.debug("Found start node edges {},{}",
           // featureA.getDefaultGeometry(),featureB.getDefaultGeometry()
           // );
           return node;
         }
         if (edgeFeature2.getID().equals(featureA.getID())
             && edgeFeature1.getID().equals(featureB.getID())) {
-          // LOGGER.info("Found start node");
+          // LOGGER.debug("Found start node");
           return node;
         }
       }
@@ -282,10 +282,10 @@ public final class NetworkBuffer {
   private static Map graphToMap(Graph graph) {
     Map networkMap = new HashMap();
     for (Node node : (Collection<Node>) graph.getNodes()) {
-      // LOGGER.info("Node: " + node);
+      // LOGGER.debug("Node: " + node);
       // for (Edge edge : (List<Edge>) node.getEdges()) {
       // //
-      // LOGGER.info("Edge: {} Feature: {}",edge.getID(),((SimpleFeature)edge.getObject()).getID());
+      // LOGGER.debug("Edge: {} Feature: {}",edge.getID(),((SimpleFeature)edge.getObject()).getID());
       // }
       networkMap.put(node, node.getEdges());
     }
@@ -385,7 +385,7 @@ public final class NetworkBuffer {
    */
   public static SimpleFeature createBufferFromEdges(Map serviceArea,
       Double distance, CoordinateReferenceSystem crs, String id) {
-    LOGGER.info("Creating Buffer");
+    LOGGER.debug("Creating Buffer");
 //    List<SimpleFeature> serviceNetwork = createLinesFromEdges(serviceArea);
 //    GeoJSONUtilities.writeFeatures(DataUtilities.collection(serviceNetwork), new File("serviceNetwork" + serviceArea.hashCode() + ".geojson"));
     Set<Edge> edges = serviceArea.keySet();
@@ -393,15 +393,15 @@ public final class NetworkBuffer {
     Geometry all = null;
     //int loopcount = 0;
     while (edges.size() > 0) {
-      //LOGGER.info("loopcount: {}",loopcount++);
+      //LOGGER.debug("loopcount: {}",loopcount++);
       Set<Edge> unjoined = new HashSet();
       for (Edge edge : edges) {
         // SimpleFeature feature = ((SimpleFeature) serviceArea.get(edge));
         Geometry geom = (Geometry) ((SimpleFeature) serviceArea.get(edge))
             .getDefaultGeometry();
-        // LOGGER.info("GEOM TYPE: {}",geom.getGeometryType());
+        // LOGGER.debug("GEOM TYPE: {}",geom.getGeometryType());
         geom = geom.union();
-        // LOGGER.info("Unioned collection");
+        // LOGGER.debug("Unioned collection");
         // Double edgeWalkDistance = (Double)feature.getAttribute("Distance");
         double bufferDistance = distance;
         // if ((edgeWalkDistance + distance + geom.getLength()) > 1600) {
@@ -412,27 +412,27 @@ public final class NetworkBuffer {
         // }
         // System.out.println(bufferDistance);
         geom = geom.buffer(bufferDistance);
-        // LOGGER.info("Buffered geom");
+        // LOGGER.debug("Buffered geom");
         try {
           if (all != null) {
             all = all.union().union();
-           // LOGGER.info("Adding buffered edge");
+           // LOGGER.debug("Adding buffered edge");
           }
           if (all == null) {
             all = geom;
-          //  LOGGER.info("New All");
+          //  LOGGER.debug("New All");
           } else if (!(all.covers(geom))) {
-            //LOGGER.info("ALL TYPE: {} GEOM TYPE: {}", all.getGeometryType(), geom.getGeometryType());
+            //LOGGER.debug("ALL TYPE: {} GEOM TYPE: {}", all.getGeometryType(), geom.getGeometryType());
             if (all.intersects(geom)) {
               all = all.union(geom);
             } else {
-              //LOGGER.info("No intersection ...");
+              //LOGGER.debug("No intersection ...");
               unjoined.add(edge);
             }
           }
         } catch (Exception e) {
           if (e.getMessage().contains("non-noded")) {
-            LOGGER.info(e.getMessage());
+            LOGGER.debug(e.getMessage());
           } else {
             LOGGER.error("Failed to create buffer from network: "
                 + e.getMessage());
@@ -444,9 +444,9 @@ public final class NetworkBuffer {
         edges = unjoined;
       else 
         break; //FIXME: if this happens it means buffering has repeatedly failed for unjoined edges -> should throw an exception
-      LOGGER.info("unjoined edges {}", edges.size());
+      LOGGER.debug("unjoined edges {}", edges.size());
     }
-    // LOGGER.info("CRS: " + type.getCoordinateReferenceSystem());
+    // LOGGER.debug("CRS: " + type.getCoordinateReferenceSystem());
     return buildFeatureFromGeometry(type, all, id);
   }
 

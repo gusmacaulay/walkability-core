@@ -92,15 +92,15 @@ public final class DwellingDensity {
                                                                                     // conversion!
         totalDwellings += population;
         totalArea += area;
-        LOGGER.info("area " + area);
-        LOGGER.info("dwellings" + population);
+        LOGGER.debug("area " + area);
+        LOGGER.debug("dwellings" + population);
         if (population != 0) {
           totalDensity += (population / area);
           count++;
         }
       }
       // totalDensity = totalDwellings / totalArea;
-      LOGGER.info("Dwelling regions: " + count);
+      LOGGER.debug("Dwelling regions: " + count);
       return buildFeature(roi, totalDensity / count);
     } catch (IOException ioe) {
       LOGGER.error("Error selecting features in region");

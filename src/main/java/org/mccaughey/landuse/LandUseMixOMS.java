@@ -86,14 +86,14 @@ public class LandUseMixOMS {
     
     try {
       validateInputs();
-      
+      LOGGER.info("Calculating Land Use Mix");
       FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures()
           .features();
       SimpleFeatureSource landUse = landUseSource;
       SimpleFeatureCollection lumRegions = LandUseMix.summarise(landUse,
           regions, classificationAttribute.getValues(), classificationAttribute.getAttributeName());
       resultsSource = DataUtilities.source(lumRegions);
-
+      LOGGER.info("Completed :and Use Mix calculation");
     } catch (IOException e) {
       LOGGER.error("Failed to read input/s: {}", e.getMessage());
       throw new IllegalStateException(e);

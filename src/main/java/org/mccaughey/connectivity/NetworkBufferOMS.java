@@ -94,15 +94,15 @@ public class NetworkBufferOMS {
       SimpleFeatureSource pointsSource = points;
 
       assert (network.getSchema().getCoordinateReferenceSystem() != null);
-      //LOGGER.info("Coordinate Units: {}", network.getSchema()
+      //LOGGER.debug("Coordinate Units: {}", network.getSchema()
       //    .getCoordinateReferenceSystem().getCoordinateSystem().getAxis(0)
       //    .getUnit().toString());
       assert (network.getSchema().getCoordinateReferenceSystem()
           .getCoordinateSystem().getAxis(0).getUnit().toString().equals("m"));
 
-      LOGGER.info("Received network data containing {} features",
+      LOGGER.debug("Received network data containing {} features",
           networkSource.getCount(new Query()));
-      LOGGER.info("Received points data containing {} features",
+      LOGGER.debug("Received points data containing {} features",
           pointsSource.getCount(new Query()));
 
       LOGGER.debug("Points Source CRS: {}", pointsSource.getSchema()
