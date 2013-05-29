@@ -128,7 +128,7 @@ public class AllocationUtils {
 			for (String classification : uniqueClassifications) {
 				Filter filter = CQL.toFilter(categoryAttribute + "="
 						+ classification);
-				// LOGGER.info(filter.toString());
+				// LOGGER.debug(filter.toString());
 				// + e.getValue());
 				SimpleFeatureCollection categoryCollection = parcelsSource
 						.getFeatures(filter);
@@ -143,10 +143,7 @@ public class AllocationUtils {
 			// return DataUtilities.collection(dissolved);
 		} catch (IOException e1) {
 			throw new IOException("Failed dissolve by category process", e1);
-		} catch (CQLException e) {
-			throw new CQLException("Failed dissolve by category process: "
-					+ e.getMessage());
-		}
+		} 
 	}
 
 	public static List<SimpleFeature> dissolve(

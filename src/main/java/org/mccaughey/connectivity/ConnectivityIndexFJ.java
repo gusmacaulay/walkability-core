@@ -70,9 +70,9 @@ public class ConnectivityIndexFJ extends RecursiveAction {
               roadsFeatureSource, region);
           results.add(connectivityFeature);
         }
-        LOGGER.info("Completed {} features connectivity",regions.size());
+        LOGGER.debug("Completed {} features connectivity",regions.size());
       } catch (Exception e) {
-        LOGGER.info("Completing with exception {}",e.getMessage());
+        LOGGER.debug("Completing with exception {}",e.getMessage());
         this.completeExceptionally(e);
       } finally {
         regionsIter.close();

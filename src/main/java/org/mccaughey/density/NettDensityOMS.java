@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.PrecisionModel;
 
 /**
  * Performs Nett Density calculation, which is the ratio of the number of
@@ -65,9 +64,10 @@ public class NettDensityOMS {
 	/**
 	 * Reads in the population count layer and regions layer from given sources,
 	 * writes out Nett Density results to resultsSource
+	 * @throws IOException 
 	 */
 	@Execute
-	public void nettDensity() {
+	public void nettDensity() throws IOException {
 		try {
 
 			FeatureIterator<SimpleFeature> regions = regionsOfInterest
@@ -75,6 +75,7 @@ public class NettDensityOMS {
 			SimpleFeatureCollection intersectingFeatures;
 			List<SimpleFeature> densityFeatures = new ArrayList<SimpleFeature>();
 			SimpleFeatureCollection pipFeatures;
+			LOGGER.info("Calculating Density");
 			try {
 				while (regions.hasNext()) {
 
@@ -114,16 +115,14 @@ public class NettDensityOMS {
 				}
 				resultsSource = DataUtilities.source(DataUtilities
 						.collection(densityFeatures));
+				LOGGER.info("Completed density calculation");
 
-			} catch (Exception e) {
-				LOGGER.error("Failed to complete process for all features");
-				e.printStackTrace();
-			} finally {
+			}  finally {
 				regions.close();
 			}
 
 		} catch (IOException e) {
-			LOGGER.error("Failed to read input/s");
+			throw new IOException("Failed to read input/s for Nett Density",e);
 		}
 	}
 

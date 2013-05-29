@@ -43,59 +43,60 @@ import au.org.aurin.types.AttributeSelector;
 @Description("Calculates Average Residential or Dwelling Density for a set of Neighbourhoods Based on a Polygon Data Set with Population or Dwelling Counts")
 public class DwellingDensityOMS {
 
-  static final Logger LOGGER = LoggerFactory
-      .getLogger(DwellingDensityOMS.class);
-  /**
-   * A URL pointing to a GeoJSON representation of regions with a population
-   * attribute
-   */
-  @In
-  @Name("Population dataset")
-  @Description("A polygon data set with a population dwelling count attribute")
-  public SimpleFeatureSource populationSource;
+	static final Logger LOGGER = LoggerFactory
+			.getLogger(DwellingDensityOMS.class);
+	/**
+	 * A URL pointing to a GeoJSON representation of regions with a population
+	 * attribute
+	 */
+	@In
+	@Name("Population dataset")
+	@Description("A polygon data set with a population dwelling count attribute")
+	public SimpleFeatureSource populationSource;
 
-  /**
-   * The attribute to use for population
-   */
-  @In
-  @Name("Population attribute")
-  @Description("The attribute containing the population or dwelling counts")
-  public AttributeSelector countAttribute;
+	/**
+	 * The attribute to use for population
+	 */
+	@In
+	@Name("Population attribute")
+	@Description("The attribute containing the population or dwelling counts")
+	public AttributeSelector countAttribute;
 
-  /**
-   * The input regions to calculate density for
-   */
-  @In
-  @Name("Neighbourhoods")
-  public SimpleFeatureSource regionsSource;
+	/**
+	 * The input regions to calculate density for
+	 */
+	@In
+	@Name("Neighbourhoods")
+	public SimpleFeatureSource regionsSource;
 
-  /**
-   * The resulting regions with average density calculated
-   */
-  @Out
-  @Name("Resulting regions")
-  public SimpleFeatureSource resultsSource;
+	/**
+	 * The resulting regions with average density calculated
+	 */
+	@Out
+	@Name("Resulting regions")
+	public SimpleFeatureSource resultsSource;
 
+	/**
+	 * Reads in the population count layer and regions layer from given URLs,
+	 * writes out average density results to resultsURL
+	 */
+	@Execute
+	public void averageDensity() {
+		try {
 
-  /**
-   * Reads in the population count layer and regions layer from given URLs,
-   * writes out average density results to resultsURL
-   */
-  @Execute
-  public void averageDensity() {
-    try {
+			LOGGER.info("Calculating Density");
+			FeatureIterator<SimpleFeature> regions = regionsSource
+					.getFeatures().features();
 
-      FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures()
-          .features();
+			SimpleFeatureCollection densityRegions = DwellingDensity
+					.averageDensity(populationSource, regions,
+							countAttribute.getAttributeId());
 
-      SimpleFeatureCollection densityRegions = DwellingDensity.averageDensity(
-          populationSource, regions, countAttribute.getAttributeId());
-
-      resultsSource = DataUtilities.source(densityRegions);
-
-    } catch (IOException e) {
-      LOGGER.error("Failed to read input/s");
-      throw new IllegalStateException(e);
-    }
-  }
+			resultsSource = DataUtilities.source(densityRegions);
+			LOGGER.info("Completed density calculation");
+		} catch (IOException e) {
+			LOGGER.error("Failed to read input/s");
+			throw new IllegalStateException(e);
+		}
+	}
 }

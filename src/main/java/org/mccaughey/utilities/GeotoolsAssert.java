@@ -63,7 +63,7 @@ public final class GeotoolsAssert {
               "Geometry Areas not equal,expected: " + areaA + " but was: "
                   + areaB);
         }
-        LOGGER.info("Area A: " + areaA + " Area B: " + areaB);
+        LOGGER.debug("Area A: " + areaA + " Area B: " + areaB);
 
         // Test properties (excluding geometry) equivalence --> A can be a
         // *subset* of B, comparison is not symmetrical
@@ -72,7 +72,7 @@ public final class GeotoolsAssert {
             // System.out.println(("Comparing " + p.toString()));
             String valueB = featureB.getProperty(p.getName()).getValue()
                 .toString();
-            LOGGER.info("A {}, B {}.", p.getValue(), valueB);
+            LOGGER.debug("A {}, B {}.", p.getValue(), valueB);
             if (!p.getValue().toString().equals(valueB)) {
               throw new AssertionFailedException(
                   "Feature Properties not equal, expected:" + p.getValue()
