@@ -12,6 +12,7 @@ import jsr166y.RecursiveAction;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
+import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
 import org.opengis.feature.simple.SimpleFeature;
@@ -29,7 +30,7 @@ public class ConnectivityIndexFJ extends RecursiveAction {
   private static final long serialVersionUID = 1L;
   static final Logger LOGGER = LoggerFactory
       .getLogger(ConnectivityIndexFJ.class);
-  private transient SimpleFeatureCollection results;
+  private transient DefaultFeatureCollection results;
   private final transient SimpleFeatureSource roadsFeatureSource;
   private final transient SimpleFeatureCollection regions;
 
@@ -47,7 +48,7 @@ public class ConnectivityIndexFJ extends RecursiveAction {
       SimpleFeatureCollection regionsFeatureCollection) {
     this.roadsFeatureSource = roadsFeatureSource;
     this.regions = regionsFeatureCollection;
-    this.results = FeatureCollections.newCollection();
+    this.results = new DefaultFeatureCollection();
   }
 
   /**
@@ -79,14 +80,13 @@ public class ConnectivityIndexFJ extends RecursiveAction {
       }
     } else { // otherwise split the regions into single region arrays and
              // invokeAll
-      ArrayList<ConnectivityIndexFJ> indexers = new ArrayList();
+      ArrayList<ConnectivityIndexFJ> indexers = new ArrayList<ConnectivityIndexFJ>();
       // for (int i = 0; i < regions.length; i++) {
-      FeatureIterator features = regions.features();
+      SimpleFeatureIterator features = regions.features();
       int featureCount = 0;
-      SimpleFeatureCollection regionsSubCollection = FeatureCollections
-          .newCollection();
+      DefaultFeatureCollection regionsSubCollection = new DefaultFeatureCollection();
       while (features.hasNext()) {
-        SimpleFeature feature = (SimpleFeature) features.next();
+        SimpleFeature feature = features.next();
         regionsSubCollection.add(feature);
        
         featureCount++;
@@ -94,7 +94,7 @@ public class ConnectivityIndexFJ extends RecursiveAction {
           ConnectivityIndexFJ cifj = new ConnectivityIndexFJ(roadsFeatureSource,
               regionsSubCollection);
           indexers.add(cifj);
-          regionsSubCollection = FeatureCollections.newCollection();
+          regionsSubCollection = new DefaultFeatureCollection();
           featureCount = 0;
         }
       }
@@ -109,7 +109,7 @@ public class ConnectivityIndexFJ extends RecursiveAction {
         if (ci.isCompletedAbnormally()) {
           this.completeExceptionally(ci.getException());
         }
-        results.addAll(ci.results);
+        results.addAll((SimpleFeatureCollection)ci.results);
 
       }
     }

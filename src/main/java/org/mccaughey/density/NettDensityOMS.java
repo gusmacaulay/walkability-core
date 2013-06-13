@@ -13,6 +13,7 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
@@ -235,8 +236,7 @@ public class NettDensityOMS {
 	private SimpleFeatureCollection pipIntersection(SimpleFeatureSource points,
 			SimpleFeatureCollection regions) throws IOException {
 		SimpleFeatureIterator regionsIter = regions.features();
-		SimpleFeatureCollection pipFeatures = DataUtilities
-				.collection(new SimpleFeature[0]);
+		DefaultFeatureCollection pipFeatures = new DefaultFeatureCollection();
 		try {
 			while (regionsIter.hasNext()) {
 				SimpleFeature region = regionsIter.next();

@@ -24,6 +24,7 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.data.simple.SimpleFeatureStore;
+import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
@@ -89,8 +90,7 @@ public class JoinOMS {
       int i = 0;
       SimpleFeatureStore featureStore = (SimpleFeatureStore) myData
           .getFeatureSource(newFeatureType.getName());//
-      SimpleFeatureCollection collection = FeatureCollections
-          .newCollection("internal");
+      DefaultFeatureCollection collection = new DefaultFeatureCollection("internal");
       while (features.hasNext()) {
         SimpleFeature feature = features.next();
         List joinValues = lookupTable.get(feature.getAttribute(joinColumn)
@@ -106,7 +106,7 @@ public class JoinOMS {
           i++;
           if (i > FEATURE_STORE_THRESHOLD) {
             featureStore.addFeatures(collection);
-            collection = FeatureCollections.newCollection("internal");
+            collection = new DefaultFeatureCollection("internal");
             i = 0;
           }
         }
