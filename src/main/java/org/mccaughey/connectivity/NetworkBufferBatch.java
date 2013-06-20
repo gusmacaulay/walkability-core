@@ -18,6 +18,7 @@ package org.mccaughey.connectivity;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -29,7 +30,7 @@ import java.util.concurrent.Future;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
-import org.geotools.feature.FeatureCollections;
+import org.geotools.feature.DefaultFeatureCollection;
 import org.opengis.feature.simple.SimpleFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +51,8 @@ public class NetworkBufferBatch { //extends RecursiveAction {
       .getLogger(NetworkBufferBatch.class);
   private SimpleFeatureSource network;
   private SimpleFeatureCollection points;
-  private SimpleFeatureCollection buffers;
-  private SimpleFeatureCollection graphs;
+  private DefaultFeatureCollection buffers;
+  private DefaultFeatureCollection graphs;
   private Double distance;
   private Double bufferSize;
   private int pointsPerThread;
@@ -74,8 +75,8 @@ public class NetworkBufferBatch { //extends RecursiveAction {
     this.points = points;
     this.distance = distance;
     this.bufferSize = bufferSize;
-    this.buffers = FeatureCollections.newCollection();
-    this.graphs = FeatureCollections.newCollection();
+    this.buffers = new DefaultFeatureCollection();
+    this.graphs = new DefaultFeatureCollection();
     this.pointsPerThread = 1000; // TODO: make this dynamic
   }
 

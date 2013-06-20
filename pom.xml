@@ -14,8 +14,8 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<geotools.version>8.4</geotools.version>
-		<slf4jVersion>1.6.1</slf4jVersion>
+		<geotools.version>9.2</geotools.version>
+		<slf4jVersion>1.7.2</slf4jVersion>
 		<netbeans.hint.license>gpl30</netbeans.hint.license>
 		<sonar.cpd.minimumTokens>30</sonar.cpd.minimumTokens>
 	</properties>
@@ -64,11 +64,6 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>${slf4jVersion}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-simple</artifactId>
 			<version>${slf4jVersion}</version>
 		</dependency>
 		<dependency>
@@ -153,6 +148,12 @@
 			<artifactId>annotations</artifactId>
 			<version>0.3.3</version>
 		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>${slf4jVersion}</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 	
 	<repositories>
@@ -194,8 +195,9 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.8</version>
 				<configuration>
-					<forkMode>pertest</forkMode>
-					<argLine>-Xms512m -Xmx16184m</argLine>
+					<forkCount>8</forkCount>
+					<reuseForks>false</reuseForks>
+					<argLine>-Xms512m -Xmx8g</argLine>
 					<skip>false</skip>
 					<excludes>
 						<exclude>**/*Integration*.java</exclude>
@@ -204,13 +206,6 @@
 						<include>**/*.java</include>
 					</includes>
 				</configuration>
-				<dependencies>
-					<dependency>
-						<groupId>org.apache.maven.surefire</groupId>
-						<artifactId>surefire-junit4</artifactId>
-						<version>2.8</version>
-					</dependency>
-				</dependencies>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

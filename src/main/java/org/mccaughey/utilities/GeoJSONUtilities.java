@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.URL;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
@@ -180,10 +181,10 @@ public final class GeoJSONUtilities {
     // io.readCRS(url.openConnection().getInputStream()));
     FeatureIterator<SimpleFeature> features = io.streamFeatureCollection(url
         .openConnection().getInputStream());
-    SimpleFeatureCollection collection = FeatureCollections.newCollection();
+    DefaultFeatureCollection collection = new DefaultFeatureCollection();
 
     while (features.hasNext()) {
-      SimpleFeature feature = (SimpleFeature) features.next();
+      SimpleFeature feature = features.next();
       collection.add(feature);
     }
 
