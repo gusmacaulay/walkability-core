@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
+import oms3.annotations.Name;
 import oms3.annotations.Out;
 
 import org.geotools.data.DataUtilities;
@@ -42,24 +44,31 @@ public class NettDensityOMS {
 	 * The input regions to calculate density for
 	 */
 	@In
+	@Name("Neighbourhoods")
 	public SimpleFeatureSource regionsOfInterest;
 
 	/**
 	 * A land parcel type data set (eg. cadastre)
 	 */
 	@In
+	@Name("Land parcel type data set")
+	@Description("A land parcel type data set (eg. cadastre)")
 	public SimpleFeatureSource parcels;
 
 	/**
 	 * Residential points data set (for figuring out what is/isn't residential)
 	 */
 	@In
+	@Name("Residential points data set")
+	@Description("Residential points data set (for figuring out what is/isn't residential)")
 	public SimpleFeatureSource residentialPoints;
 
 	/**
 	 * The resulting regions with average density calculated
 	 */
 	@Out
+	@Name("Resulting regions")
+	@Description("The resulting regions with average density calculated")
 	public SimpleFeatureSource resultsSource;
 
 	/**

@@ -43,7 +43,7 @@ public class PointInPolygonPriorityAllocationOMS {
 	@In
 	@Name("Neighbourhoods")
 	@Description("The extent of the neighbourhoods are used to limit the analysis extent")
-	public SimpleFeatureSource regionsOfInterest;
+	public SimpleFeatureSource regionsSource;
 
 	/**
 	 * A land parcel type data set (eg. cadastre)
@@ -109,7 +109,7 @@ public class PointInPolygonPriorityAllocationOMS {
 				.createLanduseLookup(landUseLookupSource, landUseAttribute,
 						priorityAttribute);
 		try {
-			FeatureIterator<SimpleFeature> regions = regionsOfInterest
+			FeatureIterator<SimpleFeature> regions = regionsSource
 					.getFeatures().features();
 			// SimpleFeatureCollection intersectingParcels =
 			// DataUtilities.collection(new SimpleFeature[0]);
