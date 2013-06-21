@@ -146,7 +146,7 @@
 		<dependency>
 			<groupId>au.org.aurin</groupId>
 			<artifactId>annotations</artifactId>
-			<version>0.3.3</version>
+			<version>0.4</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -196,8 +196,8 @@
 				<version>2.8</version>
 				<configuration>
 					<forkCount>8</forkCount>
-					<reuseForks>false</reuseForks>
-					<argLine>-Xms512m -Xmx8g</argLine>
+					<reuseForks>true</reuseForks>
+					<argLine>-Xms512m -Xmx4g</argLine>
 					<skip>false</skip>
 					<excludes>
 						<exclude>**/*Integration*.java</exclude>
