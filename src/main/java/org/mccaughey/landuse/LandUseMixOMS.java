@@ -17,11 +17,13 @@
 package org.mccaughey.landuse;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
+import oms3.annotations.Initialize;
 import oms3.annotations.Name;
 import oms3.annotations.Out;
 
@@ -32,8 +34,6 @@ import org.geotools.feature.FeatureIterator;
 import org.opengis.feature.simple.SimpleFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import au.org.aurin.types.NominalAttributeClassification;
 
 /**
  * An OMS Wrapper for Land Use Mix
@@ -59,7 +59,15 @@ public class LandUseMixOMS {
   @In
   @Name("Classification attribute")
   @Description("The attribute (column) containing the land use classification categories")
-  public NominalAttributeClassification classificationAttribute;
+  public String classificationAttribute;
+  
+  /**
+   * The attribute (column) containing the classification categories
+   */
+  @In
+  @Name("Classification categories")
+  @Description("The land use classification categories")
+  public List<String> categories;
 
   /**
    * The set of regions to calculate Land Use Mix for
@@ -82,18 +90,17 @@ public class LandUseMixOMS {
  * @throws NoSuchElementException 
    */
   @Execute
-  public void landUseMixMeasure() throws NoSuchElementException, Exception {
+  public void landUseMixMeasure() {
     
     try {
-      validateInputs();
       LOGGER.info("Calculating Land Use Mix");
       FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures()
           .features();
       SimpleFeatureSource landUse = landUseSource;
       SimpleFeatureCollection lumRegions = LandUseMix.summarise(landUse,
-          regions, classificationAttribute.getValues(), classificationAttribute.getAttributeName());
+          regions, categories, classificationAttribute);
       resultsSource = DataUtilities.source(lumRegions);
-      LOGGER.info("Completed :and Use Mix calculation");
+      LOGGER.info("Completed Land Use Mix calculation");
     } catch (IOException e) {
       LOGGER.error("Failed to read input/s: {}", e.getMessage());
       throw new IllegalStateException(e);
@@ -103,7 +110,8 @@ public class LandUseMixOMS {
   /*
    * Clear error messages for invalid inputs
    */
-  private void validateInputs() throws IOException {
+  @Initialize
+  public void validateInputs() {
 
     if (regionsSource == null) {
       throw new IllegalArgumentException(
@@ -120,10 +128,14 @@ public class LandUseMixOMS {
           "Land Use Mix error: A land use dataset was provided");
     }
 
-    if (classificationAttribute == null || classificationAttribute.getValues() == null
-        || classificationAttribute.getAttributeName() == null) {
+    if (classificationAttribute == null) {
       throw new IllegalArgumentException(
           "Land Use Mix error: Invalid attribute classification");
+    }
+    
+    if (categories == null || categories.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Land Use Mix error: Invalid list of categories");
     }
   }
 }

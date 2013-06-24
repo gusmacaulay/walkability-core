@@ -83,9 +83,8 @@ public final class LandUseMix {
 	public static SimpleFeatureCollection summarise(
 			SimpleFeatureSource landUse,
 			FeatureIterator<SimpleFeature> regions,
-			List<String> classifications, String classificationAttribute)
-			throws NoSuchElementException, Exception {
-		List<SimpleFeature> lumFeatures = new ArrayList();
+			List<String> classifications, String classificationAttribute) {
+		List<SimpleFeature> lumFeatures = new ArrayList<SimpleFeature>();
 		while (regions.hasNext()) {
 			// LOGGER.debug("Summarising Land Use ...");
 			SimpleFeature lumFeature = summarise(landUse, regions.next(),
@@ -113,7 +112,7 @@ public final class LandUseMix {
 	 */
 	public static SimpleFeature summarise(SimpleFeatureSource landUse,
 			SimpleFeature region, List<String> classifications,
-			String classificationAttribute) throws Exception {
+			String classificationAttribute) {
 
 		Map<String, String> classificationsAttributesMap = getSubClassifications(classifications);
 

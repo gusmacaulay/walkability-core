@@ -16,10 +16,10 @@
  */
 package org.mccaughey.density;
 
-import com.vividsolutions.jts.geom.Geometry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -35,6 +35,8 @@ import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.vividsolutions.jts.geom.Geometry;
 
 /**
  * Calculates average density across a set of regions intersecting a region of
@@ -63,7 +65,7 @@ public final class DwellingDensity {
   public static SimpleFeatureCollection averageDensity(
       SimpleFeatureSource populationSource,
       FeatureIterator<SimpleFeature> regions, String populationAttribute) {
-    List<SimpleFeature> densityFeatures = new ArrayList();
+    List<SimpleFeature> densityFeatures = new ArrayList<SimpleFeature>();
     while (regions.hasNext()) {
       SimpleFeature lumFeature = averageDensity(populationSource,
           regions.next(), populationAttribute);
@@ -79,18 +81,18 @@ public final class DwellingDensity {
       SimpleFeatureIterator subRegions = featuresInRegion(dwellingSource,
           (Geometry) roi.getDefaultGeometry()).features();
       Double totalDensity = 0.0;
-      int totalDwellings = 0;
       Double totalArea = 0.0;
       int count = 0;
       while (subRegions.hasNext()) {
         SimpleFeature dwelling = subRegions.next();
-        Double population = (Double) dwelling.getAttribute(densityAttribute);
-        Double area = ((Geometry) dwelling.getDefaultGeometry()).getArea() / 10000; // FIXME:
+        Object densityAttrVal = dwelling.getAttribute(densityAttribute);
+        
+        int population =  ((Number) densityAttrVal).intValue();
+        double area = ((Geometry) dwelling.getDefaultGeometry()).getArea() / 10000D; // FIXME:
                                                                                     // Use
                                                                                     // geotools
                                                                                     // unit
                                                                                     // conversion!
-        totalDwellings += population;
         totalArea += area;
         LOGGER.debug("area " + area);
         LOGGER.debug("dwellings" + population);
