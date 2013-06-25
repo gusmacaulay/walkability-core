@@ -2,6 +2,7 @@ package org.mccaughey.priorityAllocation;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -16,6 +17,7 @@ import oms3.annotations.Name;
 import oms3.annotations.Out;
 
 import org.geotools.data.DataUtilities;
+import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.filter.text.cql2.CQLException;
@@ -83,7 +85,7 @@ public class PointInPolygonPriorityAllocationOMS {
 	@In
 	@Name("Priority Order")
 	@Description("An ordered list of land use categories that will be used to allocate a single land use to parcels where multiple category types may exisit within them.")
-	public Map<String, Integer> priorityOrder;
+	public SimpleFeatureSource priorityOrderSource;
 
 	@In
 	@Name("Land Use Lookup")
@@ -101,13 +103,16 @@ public class PointInPolygonPriorityAllocationOMS {
 	 * writes out average density results to resultsURL
 	 * 
 	 * @throws CQLException
+	 * @throws IOException 
 	 */
 	@Execute
-	public void allocate() throws CQLException {
+	public void allocate() throws CQLException, IOException {
 		LOGGER.info("Calculating Priority Allocation");
 		Map<String, String> classificationLookup = AllocationUtils
 				.createLanduseLookup(landUseLookupSource, landUseAttribute,
 						priorityAttribute);
+
+		Map<String, Integer> priorityOrder = priorityOrderMap(priorityOrderSource);
 		try {
 			FeatureIterator<SimpleFeature> regions = regionsSource
 					.getFeatures().features();
@@ -159,6 +164,22 @@ public class PointInPolygonPriorityAllocationOMS {
 			LOGGER.error("Failed to read features");
 		}
 
+	}
+
+	private Map<String, Integer> priorityOrderMap(SimpleFeatureSource source)
+			throws IOException {
+		SimpleFeatureIterator features = source.getFeatures().features();
+		Map<String, Integer> priorityOrder = new HashMap();
+		try {
+			while (features.hasNext()) {
+				SimpleFeature feature = features.next();
+				priorityOrder.put((String) feature.getAttribute("key"),
+						(Integer) feature.getAttribute("value"));
+			}
+		} finally {
+			features.close();
+		}
+		return priorityOrder;
 	}
 
 }
