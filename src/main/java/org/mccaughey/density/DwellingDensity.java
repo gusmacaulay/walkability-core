@@ -46,98 +46,107 @@ import com.vividsolutions.jts.geom.Geometry;
  */
 public final class DwellingDensity {
 
-  static final Logger LOGGER = LoggerFactory.getLogger(DwellingDensity.class);
+	static final Logger LOGGER = LoggerFactory.getLogger(DwellingDensity.class);
 
-  private DwellingDensity() {
-  }
+	private DwellingDensity() {
+	}
 
-  /**
-   * Calculates average density for regions
-   * 
-   * @param populationSource
-   *          The set of regions with a population attribute
-   * @param regions
-   *          The regions of interest
-   * @param populationAttribute
-   *          The attribute containing the population value
-   * @return
-   */
-  public static SimpleFeatureCollection averageDensity(
-      SimpleFeatureSource populationSource,
-      FeatureIterator<SimpleFeature> regions, String populationAttribute) {
-    List<SimpleFeature> densityFeatures = new ArrayList<SimpleFeature>();
-    while (regions.hasNext()) {
-      SimpleFeature lumFeature = averageDensity(populationSource,
-          regions.next(), populationAttribute);
-      densityFeatures.add(lumFeature);
-    }
-    return DataUtilities.collection(densityFeatures);
-  }
+	/**
+	 * Calculates average density for regions
+	 * 
+	 * @param populationSource
+	 *            The set of regions with a population attribute
+	 * @param regions
+	 *            The regions of interest
+	 * @param populationAttribute
+	 *            The attribute containing the population value
+	 * @return
+	 */
+	public static SimpleFeatureCollection averageDensity(
+			SimpleFeatureSource populationSource,
+			FeatureIterator<SimpleFeature> regions, String populationAttribute) {
+		List<SimpleFeature> densityFeatures = new ArrayList<SimpleFeature>();
+		while (regions.hasNext()) {
+			SimpleFeature lumFeature = averageDensity(populationSource,
+					regions.next(), populationAttribute);
+			densityFeatures.add(lumFeature);
+		}
+		return DataUtilities.collection(densityFeatures);
+	}
 
-  private static SimpleFeature averageDensity(
-      SimpleFeatureSource dwellingSource, SimpleFeature roi,
-      String densityAttribute) {
-    try {
-      SimpleFeatureIterator subRegions = featuresInRegion(dwellingSource,
-          (Geometry) roi.getDefaultGeometry()).features();
-      Double totalDensity = 0.0;
-      Double totalArea = 0.0;
-      int count = 0;
-      while (subRegions.hasNext()) {
-        SimpleFeature dwelling = subRegions.next();
-        Object densityAttrVal = dwelling.getAttribute(densityAttribute);
-        
-        int population =  ((Number) densityAttrVal).intValue();
-        double area = ((Geometry) dwelling.getDefaultGeometry()).getArea() / 10000D; // FIXME:
-                                                                                    // Use
-                                                                                    // geotools
-                                                                                    // unit
-                                                                                    // conversion!
-        totalArea += area;
-        LOGGER.debug("area " + area);
-        LOGGER.debug("dwellings" + population);
-        if (population != 0) {
-          totalDensity += (population / area);
-          count++;
-        }
-      }
-      // totalDensity = totalDwellings / totalArea;
-      LOGGER.debug("Dwelling regions: " + count);
-      return buildFeature(roi, totalDensity / count);
-    } catch (IOException ioe) {
-      LOGGER.error("Error selecting features in region");
-      return null;
-    }
+	private static SimpleFeature averageDensity(
+			SimpleFeatureSource dwellingSource, SimpleFeature roi,
+			String densityAttribute) {
+		try {
+			SimpleFeatureIterator subRegions = featuresInRegion(dwellingSource,
+					(Geometry) roi.getDefaultGeometry()).features();
+			Double totalDensity = 0.0;
+			Double totalArea = 0.0;
+			int count = 0;
+			while (subRegions.hasNext()) {
+				SimpleFeature dwelling = subRegions.next();
+				Object densityAttrVal = dwelling.getAttribute(densityAttribute);
 
-  }
+				int population = ((Number) densityAttrVal).intValue();
+				double area = ((Geometry) dwelling.getDefaultGeometry())
+						.getArea() / 10000D; // FIXME:
+												// Use
+												// geotools
+												// unit
+												// conversion!
+				totalArea += area;
+				LOGGER.debug("area " + area);
+				LOGGER.debug("dwellings" + population);
+				if (population != 0) {
+					totalDensity += (population / area);
+					count++;
+				}
+			}
+			// totalDensity = totalDwellings / totalArea;
+			LOGGER.debug("Dwelling regions: " + count);
+			if (totalDensity != 0) {
+				return buildFeature(roi, totalDensity / count);
+			} else {
+				return null;//Regions without population have no walkability
+			}
+		} catch (IOException ioe) {
+			LOGGER.error("Error selecting features in region");
+			return null;
+		}
 
-  private static SimpleFeature buildFeature(SimpleFeature region, Double density) {
+	}
 
-    SimpleFeatureType sft = (SimpleFeatureType) region.getType();
-    SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
-    stb.init(sft);
-    stb.setName("densityFeatureType");
-    stb.add("AverageDensity", Double.class);
-    SimpleFeatureType landUseMixFeatureType = stb.buildFeatureType();
-    SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(landUseMixFeatureType);
-    sfb.addAll(region.getAttributes());
-    sfb.add(density);
-    return sfb.buildFeature(region.getID());
-  }
+	private static SimpleFeature buildFeature(SimpleFeature region,
+			Double density) {
 
-  private static SimpleFeatureCollection featuresInRegion(
-      SimpleFeatureSource featureSource, Geometry roi) throws IOException {
-    // Construct a filter which first filters within the bbox of roi and then
-    // filters with intersections of roi
-    FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-    FeatureType schema = featureSource.getSchema();
+		SimpleFeatureType sft = (SimpleFeatureType) region.getType();
+		SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
+		stb.init(sft);
+		stb.setName("densityFeatureType");
+		stb.add("AverageDensity", Double.class);
+		SimpleFeatureType landUseMixFeatureType = stb.buildFeatureType();
+		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(
+				landUseMixFeatureType);
+		sfb.addAll(region.getAttributes());
+		sfb.add(density);
+		return sfb.buildFeature(region.getID());
+	}
 
-    String geometryPropertyName = schema.getGeometryDescriptor().getLocalName();
+	private static SimpleFeatureCollection featuresInRegion(
+			SimpleFeatureSource featureSource, Geometry roi) throws IOException {
+		// Construct a filter which first filters within the bbox of roi and
+		// then
+		// filters with intersections of roi
+		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+		FeatureType schema = featureSource.getSchema();
 
-    Filter filter = ff.intersects(ff.property(geometryPropertyName),
-        ff.literal(roi));
+		String geometryPropertyName = schema.getGeometryDescriptor()
+				.getLocalName();
 
-    // collection of filtered features
-    return featureSource.getFeatures(filter);
-  }
+		Filter filter = ff.intersects(ff.property(geometryPropertyName),
+				ff.literal(roi));
+
+		// collection of filtered features
+		return featureSource.getFeatures(filter);
+	}
 }
