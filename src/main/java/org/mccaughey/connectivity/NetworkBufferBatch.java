@@ -108,8 +108,6 @@ public class NetworkBufferBatch { //extends RecursiveAction {
         Buffernator ac = new Buffernator(point, network);
         Future future = executorService.submit(ac);
         futures.add(future);
-        // LOGGER.debug("+");
-             // .addAll(DataUtilities.collection(networkBuffer)) 
     }
     for (Future future : futures) {
       try {
@@ -127,16 +125,6 @@ public class NetworkBufferBatch { //extends RecursiveAction {
     }
     
     return buffers;
-    // Runtime runtime = Runtime.getRuntime();
-    // int nProcessors = runtime.availableProcessors();
-    // int nThreads = nProcessors/2;
-    //
-    // LOGGER.debug("Initialising ForkJoinPool with {}", nThreads);
-    // // Fork/Join handles threads for me, all I do is invoke
-    // ForkJoinPool fjPool = new ForkJoinPool(nThreads);
-    // fjPool.invoke(this);
-    //
-    // return buffers;
   }
 
   class Buffernator implements Callable<SimpleFeature> {
@@ -155,97 +143,9 @@ public class NetworkBufferBatch { //extends RecursiveAction {
       
       LOGGER.debug("Buffering service network");
       SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(
-          serviceArea, bufferSize, points.getSchema()
-              .getCoordinateReferenceSystem(), String.valueOf(point.getID()));
+          serviceArea, bufferSize, point, String.valueOf(point.getID()));
       // if (networkBuffer != null) {
       return networkBuffer;
     }
   }
-
-//  @Override
-//  protected void compute() {
-//    SimpleFeatureIterator features = points.features();
-//    try {
-//      if (points.size() <= pointsPerThread) { // if less points than threshold
-//                                              // then compute buffers
-//        // network region and store in buffers
-//        LOGGER.debug("Computing buffers for {} points", points.size());
-//        // SimpleFeatureIterator features = points.features();
-//        calculateServiceAreas(features);
-//
-//      } else { // otherwise split the points into smaller feature collections
-//               // and work on those
-//        forkJoin(features);
-//      }
-//    } finally {
-//      features.close();
-//    }
-//  }
-
-//  private void calculateServiceAreas(SimpleFeatureIterator features) {
-//    int count = 0;
-//
-//    while (features.hasNext()) {
-//      try {
-//        LOGGER.debug("Buffer count {}", ++count);
-//        SimpleFeature point = features.next();
-//        // LOGGER.debug("+");
-//        Map serviceArea = NetworkBuffer.findServiceArea(network, point,
-//            distance, bufferSize);
-//        if (serviceArea != null) {
-//          // List<SimpleFeature> networkBuffer =
-//          // NetworkBuffer.createLinesFromEdges(serviceArea);
-//          SimpleFeatureCollection graph = DataUtilities
-//              .collection(NetworkBuffer.createLinesFromEdges(serviceArea));
-//          // LOGGER.debug("Points CRS: {}",
-//          // points.getSchema().getCoordinateReferenceSystem());
-//          SimpleFeature networkBuffer = NetworkBuffer.createBufferFromEdges(
-//              serviceArea, bufferSize, points.getSchema()
-//                  .getCoordinateReferenceSystem(),
-//              String.valueOf(point.getID()));
-//          if (networkBuffer != null) {
-//            buffers.add(networkBuffer); // .addAll(DataUtilities.collection(networkBuffer));
-//            graphs.addAll(graph);
-//          }
-//        }
-//      } catch (Exception e) {
-//        LOGGER.error("Buffer creation failed for some reason, {}",
-//            e.getMessage());
-//        // e.printStackTrace();
-//      }
-//    }
-//    LOGGER.debug("Completed {} buffers", points.size());
-//  }
-
-//  private void forkJoin(SimpleFeatureIterator features) {
-//    ArrayList<NetworkBufferBatch> buffernators = new ArrayList();
-//
-//    SimpleFeatureCollection pointsSubCollection = FeatureCollections
-//        .newCollection();
-//    // int count = 0;
-//    while (features.hasNext()) { // && (count < 10000)) {
-//      SimpleFeature feature = (SimpleFeature) features.next();
-//      pointsSubCollection.add(feature);
-//      if (pointsSubCollection.size() == this.pointsPerThread) {
-//        NetworkBufferBatch nbb = new NetworkBufferBatch(network,
-//            pointsSubCollection, distance, bufferSize);
-//        buffernators.add(nbb);
-//        pointsSubCollection = FeatureCollections.newCollection();
-//      }
-//      // count++;
-//    }
-//    if (pointsSubCollection.size() > 0) {
-//      NetworkBufferBatch nbb = new NetworkBufferBatch(network,
-//          pointsSubCollection, distance, bufferSize);
-//      buffernators.add(nbb);
-//    }
-//    invokeAll(buffernators);
-//    for (NetworkBufferBatch nbb : buffernators) {
-//      // if (nbb.isCompletedAbnormally()) {
-//      // this.completeExceptionally(nbb.getException());
-//      // }
-//      buffers.addAll(nbb.buffers);
-//      graphs.addAll(nbb.graphs);
-//    }
-//  }
 }
