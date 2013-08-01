@@ -93,8 +93,10 @@ public final class ZScore {
 				} else {
 					region.setAttribute(attr + "_ZScore", null);
 				}
+				if (attributes.size() > 1) {
+					region.setAttribute("SumZScore", totalZ);
+				}
 			}
-			region.setAttribute("SumZScore", totalZ);
 			LOGGER.debug("Z-score: {}", totalZ);
 		}
 
@@ -111,7 +113,9 @@ public final class ZScore {
 		for (String attr : attributes) {
 			stb.add(attr + "_ZScore", Double.class);
 		}
-		stb.add("SumZScore", Double.class);
+		if (attributes.size() > 1) {
+			stb.add("SumZScore", Double.class);
+		}
 		SimpleFeatureType statsFT = stb.buildFeatureType();
 		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(statsFT);
 		sfb.addAll(region.getAttributes());
