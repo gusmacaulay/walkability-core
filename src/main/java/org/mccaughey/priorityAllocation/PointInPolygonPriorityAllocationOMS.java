@@ -75,7 +75,7 @@ public class PointInPolygonPriorityAllocationOMS {
 	 * Attribute in mapping table which maps landUse attribute to priority
 	 */
 	@In
-	@Name("Priority Attribute - $$$$$$$$$$$$$$$$$$ THIS WILL GO TO JOIN TOOL")
+	@Name("Priority Attribute")
 	@Description("The Attribute on which to apply the priority order")
 	public String priorityAttribute;
 
