@@ -103,7 +103,7 @@ public class PointInPolygonPriorityAllocationOMS {
 	 * writes out average density results to resultsURL
 	 * 
 	 * @throws CQLException
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	@Execute
 	public void allocate() throws CQLException, IOException {
@@ -173,8 +173,17 @@ public class PointInPolygonPriorityAllocationOMS {
 		try {
 			while (features.hasNext()) {
 				SimpleFeature feature = features.next();
-				priorityOrder.put((String) feature.getAttribute("key"),
-						(Integer) feature.getAttribute("value"));
+				Integer value;
+				Object valueObj = feature.getAttribute("value");
+				if (valueObj.getClass() == Integer.class) {
+					value = (Integer) valueObj;
+				} else if (valueObj.getClass() == String.class) {
+					value = Integer.parseInt((String) (valueObj));
+				} else {
+					throw new IOException("Cannot parse value object");
+				}
+				priorityOrder
+						.put(feature.getAttribute("key").toString(), value);
 			}
 		} finally {
 			features.close();
