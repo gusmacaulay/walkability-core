@@ -109,7 +109,7 @@ class Allocater implements Callable<List<SimpleFeature>> {
 				parcelOfInterest.getFeatureType(), additionalAttributes);
 		try {
 			int currentPriority = priorityOrder.size() + 1;
-			String currentPriorityClass = "";
+			String currentPriorityClass = null;
 			while (pointFeatures.hasNext()) {
 				SimpleFeature comparisonPoint = pointFeatures.next();
 
@@ -135,15 +135,15 @@ class Allocater implements Callable<List<SimpleFeature>> {
 							+ landUse);
 				}
 			}
-			if (currentPriorityClass != "") {
+			if (currentPriorityClass != null) {
 				List<String> priorityValue = new ArrayList<String>();
 				priorityValue.add(currentPriorityClass);
 				return AllocationUtils.buildFeature(parcelOfInterest,
 						allocatedFT, priorityValue);
-			} else { // don't add parcels which have no classification of
-						// interest
-				return null;
 			}
+      // don't add parcels which have no classification of
+      // interest
+      return null;
 		} finally {
 			pointFeatures.close();
 		}

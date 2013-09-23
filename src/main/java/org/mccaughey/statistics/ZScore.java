@@ -87,14 +87,14 @@ public final class ZScore {
 				Double rawScore = (Double) region.getAttribute(attr);
 				Double zScore = (rawScore - stats.get(attr).getMean())
 						/ stats.get(attr).getStandardDeviation();
-				if (zScore != Double.NaN) {
+				if (isValidDouble(zScore)) {
+					region.setAttribute(attr + "_ZScore", null);
+				} else {
 					region.setAttribute(attr + "_ZScore", zScore);
 					totalZ += zScore;
-				} else {
-					region.setAttribute(attr + "_ZScore", null);
 				}
 				if (attributes.size() > 1) {
-					region.setAttribute("SumZScore", totalZ);
+					region.setAttribute("SumZScore", isValidDouble(totalZ) ? totalZ : null);
 				}
 			}
 			LOGGER.debug("Z-score: {}", totalZ);
@@ -102,6 +102,12 @@ public final class ZScore {
 
 		return DataUtilities.collection(results);
 	}
+
+  protected static boolean isValidDouble(Double zScore) {
+    return !(zScore.equals(Double.NaN)
+        || zScore.equals(Double.NEGATIVE_INFINITY) || zScore
+          .equals(Double.POSITIVE_INFINITY));
+  }
 
 	private static SimpleFeature buildFeature(SimpleFeature region,
 			List<String> attributes) {
