@@ -28,6 +28,7 @@ import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.mccaughey.utilities.ValidationUtils;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
@@ -128,7 +129,7 @@ public final class DwellingDensity {
 		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(
 				landUseMixFeatureType);
 		sfb.addAll(region.getAttributes());
-		sfb.add(density);
+		sfb.add(ValidationUtils.isValidDouble(density) ? density : null);
 		return sfb.buildFeature(region.getID());
 	}
 

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
@@ -22,6 +23,7 @@ import org.geotools.graph.build.line.LineStringGraphGenerator;
 import org.geotools.graph.structure.Edge;
 import org.geotools.graph.structure.Graph;
 import org.geotools.graph.structure.Node;
+import org.mccaughey.utilities.ValidationUtils;
 import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -84,7 +86,7 @@ public final class ConnectivityIndex {
     double connectivity = countConnections(graph, roiFeature)
         / (area / 1000000); // FIXME: converting to sq. km. -- bit dodgy should
                             // check units but assuming in metres
-    sfb.add(connectivity);
+    sfb.add(ValidationUtils.isValidDouble(connectivity) ? connectivity : null);
     sfb.add(area);
 
     sfb.add(countConnections(graph, roiFeature));

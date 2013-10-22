@@ -35,6 +35,7 @@ import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.mccaughey.utilities.GeoJSONUtilities;
+import org.mccaughey.utilities.ValidationUtils;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
@@ -180,7 +181,7 @@ public final class LandUseMix {
 			}
 			Double landUseMixMeasure = calculateLUM(areas, totalArea,
 					classifications.size());
-			sfb.add(landUseMixMeasure);
+      sfb.add(ValidationUtils.isValidDouble(landUseMixMeasure) ? landUseMixMeasure : null);
 			return sfb.buildFeature(region.getID());
 			// LOGGER.debug("Land Use Mix Measure: {}", landUseMixMeasure);
 		} catch (IOException e) {
