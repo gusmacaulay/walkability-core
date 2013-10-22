@@ -27,6 +27,7 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.mccaughey.utilities.ValidationUtils;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.slf4j.Logger;
@@ -87,14 +88,14 @@ public final class ZScore {
 				Double rawScore = (Double) region.getAttribute(attr);
 				Double zScore = (rawScore - stats.get(attr).getMean())
 						/ stats.get(attr).getStandardDeviation();
-				if (isValidDouble(zScore)) {
+				if (ValidationUtils.isValidDouble(zScore)) {
 					region.setAttribute(attr + "_ZScore", null);
 				} else {
 					region.setAttribute(attr + "_ZScore", zScore);
 					totalZ += zScore;
 				}
 				if (attributes.size() > 1) {
-					region.setAttribute("SumZScore", isValidDouble(totalZ) ? totalZ : null);
+					region.setAttribute("SumZScore", ValidationUtils.isValidDouble(totalZ) ? totalZ : null);
 				}
 			}
 			LOGGER.debug("Z-score: {}", totalZ);
@@ -103,13 +104,7 @@ public final class ZScore {
 		return DataUtilities.collection(results);
 	}
 
-  protected static boolean isValidDouble(Double zScore) {
-    return !(zScore.equals(Double.NaN)
-        || zScore.equals(Double.NEGATIVE_INFINITY) || zScore
-          .equals(Double.POSITIVE_INFINITY));
-  }
-
-	private static SimpleFeature buildFeature(SimpleFeature region,
+  private static SimpleFeature buildFeature(SimpleFeature region,
 			List<String> attributes) {
 
 		SimpleFeatureType sft = (SimpleFeatureType) region.getType();
