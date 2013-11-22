@@ -88,7 +88,7 @@ public class NettDensityOMS {
 			LOGGER.info("Calculating Density");
 			try {
 				while (regions.hasNext()) {
-
+				  
 					SimpleFeature regionOfInterest = regions.next();
 					// Do an intersection of parcels with service areas
 					intersectingFeatures = intersection(parcels,
@@ -122,6 +122,10 @@ public class NettDensityOMS {
 					densityFeature.setAttribute("PointsCountResidential",
 							pipCount);
 					densityFeatures.add(densityFeature);
+          LOGGER
+              .debug(
+                  "Calculated density for region {}, residentialAreaHectares {}, pipCount {}",
+                  regionOfInterest.getID(), residentialAreaHectares, pipCount);
 				}
 				resultsSource = DataUtilities.source(DataUtilities
 						.collection(densityFeatures));
