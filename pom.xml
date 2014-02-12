@@ -12,7 +12,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<geotools.version>9.2</geotools.version>
+		<geotools.version>10.4</geotools.version>
 		<slf4jVersion>1.7.2</slf4jVersion>
 		<netbeans.hint.license>gpl30</netbeans.hint.license>
 		<sonar.cpd.minimumTokens>30</sonar.cpd.minimumTokens>
