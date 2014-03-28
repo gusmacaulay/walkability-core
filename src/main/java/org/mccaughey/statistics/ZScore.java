@@ -58,7 +58,6 @@ public final class ZScore {
 	public static SimpleFeatureCollection sumZScores(
 			FeatureIterator<SimpleFeature> features, List<String> attributes) {
 		List<SimpleFeature> results = new ArrayList();
-		// SummaryStatistics stats = new SummaryStatistics();
 
 		Map<String, SummaryStatistics> stats = new HashMap();
 		for (String attr : attributes) {
@@ -83,12 +82,12 @@ public final class ZScore {
 		// Calculate Z-Score for each attribute in each feature and also sum the
 		// z-scores for the set of attributes
 		for (SimpleFeature region : results) {
-			Double totalZ = 0.0;
+			double totalZ = 0.0;
 			for (String attr : attributes) {
-				Double rawScore = (Double) region.getAttribute(attr);
-				Double zScore = (rawScore - stats.get(attr).getMean())
+				double rawScore = (Double) region.getAttribute(attr);
+				double zScore = (rawScore - stats.get(attr).getMean())
 						/ stats.get(attr).getStandardDeviation();
-				if (ValidationUtils.isValidDouble(zScore)) {
+				if (!ValidationUtils.isValidDouble(zScore)) {
 					region.setAttribute(attr + "_ZScore", null);
 				} else {
 					region.setAttribute(attr + "_ZScore", zScore);
