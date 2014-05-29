@@ -50,8 +50,7 @@ public class AllocationUtils {
 	}
 
 	public static SimpleFeatureCollection prioritiseOverlap(
-			SimpleFeatureCollection parcels, String categoryAttribute,
-			Map<String, Integer> priorityOrder) {
+			SimpleFeatureCollection parcels, String categoryAttribute,Map<String, Integer> priorityOrder) {
 		SimpleFeatureIterator parcelIterator = parcels.features();
 		SimpleFeatureSource parcelSource = DataUtilities.source(parcels);
 		Map<String, SimpleFeature> uniqueParcels = new HashMap();
@@ -116,31 +115,23 @@ public class AllocationUtils {
 	}
 
 	public static List<SimpleFeature> dissolveByCategory(
-			SimpleFeatureCollection parcels,
-			Map<String, String> classificationLookup, String categoryAttribute)
+			SimpleFeatureCollection parcels, String categoryAttribute, Set<String> uniqueClassifications)
 			throws IOException, CQLException {
 
 		List<SimpleFeature> dissolved = new ArrayList<SimpleFeature>();
 		try {
-			Set<String> uniqueClassifications = new HashSet<String>(
-					classificationLookup.values());
 			SimpleFeatureSource parcelsSource = DataUtilities.source(parcels);
 			for (String classification : uniqueClassifications) {
 				Filter filter = CQL.toFilter(categoryAttribute + "="
 						+ classification);
-				// LOGGER.debug(filter.toString());
-				// + e.getValue());
 				SimpleFeatureCollection categoryCollection = parcelsSource
 						.getFeatures(filter);
 				if (categoryCollection.size() > 0) {
 					List<SimpleFeature> sc = dissolve(categoryCollection);
 					dissolved.addAll(sc);
-
-					// dissolved.addAll(DataUtilities.list((categoryCollection)));
 				}
 			}
 			return dissolved;
-			// return DataUtilities.collection(dissolved);
 		} catch (IOException e1) {
 			throw new IOException("Failed dissolve by category process", e1);
 		} 
@@ -208,23 +199,9 @@ public class AllocationUtils {
 		return union;
 	}
 
-	static SimpleFeatureType createNewFeatureType(
-			SimpleFeatureType baseFeatureType, List<String> newAttributeNames) {
-		// SimpleFeatureType baseFeatureType = (SimpleFeatureType)
-		// baseFeature.getType();
-		SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
-		stb.init(baseFeatureType);
-		stb.setName("newFeatureType");
-		// Add new attributes to feature type
-		for (String attr : newAttributeNames) {
-			stb.add(attr, String.class);
-		}
-		return stb.buildFeatureType();
-	}
-
 	static SimpleFeature buildFeature(SimpleFeature baseFeature,
-			SimpleFeatureType newFT, List<String> newValues) {
-		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(newFT);
+			List<String> newValues) {
+		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(baseFeature.getFeatureType());
 		sfb.addAll(baseFeature.getAttributes());
 		for (String value : newValues) {
 			sfb.add(value);

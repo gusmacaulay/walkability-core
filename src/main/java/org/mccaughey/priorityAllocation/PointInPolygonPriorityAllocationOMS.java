@@ -26,8 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class performs the point in polygon priority allocation process, for
- * allocating land use types to cadastral/parcel data
+ * This class performs the point in polygon priority allocation process, for allocating land use types to
+ * cadastral/parcel data
  * 
  * @author amacaulay
  * 
@@ -35,160 +35,122 @@ import org.slf4j.LoggerFactory;
 @Name("Priority Allocation")
 @Description("The Point in Polygon Priority Allocation process creates a land use polygon data set based on point features,parcel features and a classification priority")
 public class PointInPolygonPriorityAllocationOMS {
-	static final Logger LOGGER = LoggerFactory
-			.getLogger(PointInPolygonPriorityAllocationOMS.class);
+  static final Logger LOGGER = LoggerFactory.getLogger(PointInPolygonPriorityAllocationOMS.class);
 
-	/**
-	 * Region(s) of Interest, this is used to filter down and avoid processing
-	 * data which isn't needed
-	 */
-	@In
-	@Name("Neighbourhoods")
-	@Description("The extent of the neighbourhoods are used to limit the analysis extent")
-	public SimpleFeatureSource regionsSource;
+  /**
+   * Region(s) of Interest, this is used to filter down and avoid processing data which isn't needed
+   */
+  @In
+  @Name("Neighbourhoods")
+  @Description("The extent of the neighbourhoods are used to limit the analysis extent")
+  public SimpleFeatureSource regionsSource;
 
-	/**
-	 * A land parcel type data set (eg. cadastre)
-	 */
-	@In
-	@Name("Parcels")
-	@Description("Cadastral parcels used to provide an areal extent to resulting land use polygons")
-	public SimpleFeatureSource parcels;
+  /**
+   * A land parcel type data set (eg. cadastre)
+   */
+  @In
+  @Name("Parcels")
+  @Description("Cadastral parcels used to provide an areal extent to resulting land use polygons")
+  public SimpleFeatureSource parcels;
 
-	/**
-	 * Point features which will be used to reallocate parcel land use types
-	 */
-	@In
-	@Name("Land Use Feature Points")
-	@Description("Point feature data set with land use categories stored ina an attribute")
-	public SimpleFeatureSource pointFeatures;
+  /**
+   * Point features which will be used to reallocate parcel land use types
+   */
+  @In
+  @Name("Land Use Feature Points")
+  @Description("Point feature data set with land use categories stored ina an attribute")
+  public SimpleFeatureSource pointFeatures;
 
-	/**
-	 * Attribute in pointFeatures which represents land use type
-	 */
-	@In
-	@Name("Land Use Attribute")
-	@Description("The land use attribute in the point data set which will be used to allocate land uses to the parcels")
-	public String landUseAttribute;
+  /**
+   * Attribute in pointFeatures which represents land use type
+   */
+  @In
+  @Name("Land Use Attribute")
+  @Description("The land use attribute in the point data set which will be used to allocate land uses to the parcels")
+  public String landUseAttribute;
 
-	/**
-	 * Attribute in mapping table which maps landUse attribute to priority
-	 */
-	@In
-	@Name("Priority Attribute")
-	@Description("The Attribute on which to apply the priority order")
-	public String priorityAttribute;
+  /**
+   * The priority list of which land uses, to figure out which one to allocate
+   */
+  @In
+  @Name("Priority Order")
+  @Description("An ordered list of land use categories that will be used to allocate a single land use to parcels where multiple category types may exisit within them.")
+  public SimpleFeatureSource priorityOrderSource;
 
-	/**
-	 * The priority list of which land uses, to figure out which one to allocate
-	 */
-	@In
-	@Name("Priority Order")
-	@Description("An ordered list of land use categories that will be used to allocate a single land use to parcels where multiple category types may exisit within them.")
-	public SimpleFeatureSource priorityOrderSource;
+  /**
+   * The resulting parcels with re-allocated land use types
+   */
+  @Out
+  public SimpleFeatureSource resultParcels;
 
-	@In
-	@Name("Land Use Lookup")
-	@Description("A lookup table with columns matching land use attributes to classifications")
-	public SimpleFeatureSource landUseLookupSource;
+  /**
+   * Reads in the population count layer and regions layer from given URLs, writes out average density results to
+   * resultsURL
+   * 
+   * @throws CQLException
+   * @throws IOException
+   */
+  @Execute
+  public void allocate() throws CQLException, IOException {
+    LOGGER.info("Calculating Priority Allocation");
 
-	/**
-	 * The resulting parcels with re-allocated land use types
-	 */
-	@Out
-	public SimpleFeatureSource resultParcels;
+    Map<String, Integer> priorityOrder = priorityOrderMap(priorityOrderSource);
+    try {
+      FeatureIterator<SimpleFeature> regions = regionsSource.getFeatures().features();
+      List<SimpleFeature> allocatedParcels = new ArrayList<SimpleFeature>();
+      try {
+        ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        List<Future<List<SimpleFeature>>> futures = new ArrayList<Future<List<SimpleFeature>>>();
+        while (regions.hasNext()) {
+          LOGGER.debug("Calculating priority allocation for service area ..");
+          SimpleFeature regionOfInterest = regions.next();
+          Allocater ac = new Allocater(regionOfInterest, pointFeatures, priorityOrder, parcels, landUseAttribute);
+          Future<List<SimpleFeature>> future = executorService.submit(ac);
+          futures.add(future);
+        }
+        for (Future<List<SimpleFeature>> future : futures) {
+          allocatedParcels.addAll(future.get());
+        }
+        resultParcels = DataUtilities.source(AllocationUtils.prioritiseOverlap(
+            DataUtilities.collection(allocatedParcels), landUseAttribute, priorityOrder));
+        resultParcels = DataUtilities.source(DataUtilities.collection(AllocationUtils.dissolveByCategory(
+            DataUtilities.collection(allocatedParcels), landUseAttribute, priorityOrder.keySet())));
+        LOGGER.info("Completed Priority Allocation");
 
-	/**
-	 * Reads in the population count layer and regions layer from given URLs,
-	 * writes out average density results to resultsURL
-	 * 
-	 * @throws CQLException
-	 * @throws IOException
-	 */
-	@Execute
-	public void allocate() throws CQLException, IOException {
-		LOGGER.info("Calculating Priority Allocation");
-		Map<String, String> classificationLookup = AllocationUtils
-				.createLanduseLookup(landUseLookupSource, landUseAttribute,
-						priorityAttribute);
+      } catch (ExecutionException e) {
+        LOGGER.error("Failed to complete process for all features; ExecutionException: {}", e.getMessage());
+      } catch (InterruptedException e) {
+        LOGGER.error("Failed to complete process for all features; InterruptedException: {}", e.getMessage());
+      } finally {
+        regions.close();
+      }
+    } catch (IOException e) {
+      LOGGER.error("Failed to read features");
+    }
 
-		Map<String, Integer> priorityOrder = priorityOrderMap(priorityOrderSource);
-		try {
-			FeatureIterator<SimpleFeature> regions = regionsSource
-					.getFeatures().features();
-			// SimpleFeatureCollection intersectingParcels =
-			// DataUtilities.collection(new SimpleFeature[0]);
-			List<SimpleFeature> allocatedParcels = new ArrayList<SimpleFeature>();
-			try {
-				ExecutorService executorService = Executors
-						.newFixedThreadPool(Runtime.getRuntime()
-								.availableProcessors());
-				// ExecutorService executorService = Executors
-				// .newFixedThreadPool(1);
-				List<Future<List<SimpleFeature>>> futures = new ArrayList<Future<List<SimpleFeature>>>();
-				while (regions.hasNext()) {
-					LOGGER.debug("Calculating priority allocation for service area ..");
-					SimpleFeature regionOfInterest = regions.next();
-					Allocater ac = new Allocater(regionOfInterest,
-							classificationLookup, pointFeatures, priorityOrder,
-							parcels, priorityAttribute, landUseAttribute);
-					Future<List<SimpleFeature>> future = executorService
-							.submit(ac);
-					futures.add(future);
-				}
-				for (Future<List<SimpleFeature>> future : futures) {
-					allocatedParcels.addAll(future.get());
-				}
-				resultParcels = DataUtilities.source(AllocationUtils
-						.prioritiseOverlap(
-								DataUtilities.collection(allocatedParcels),
-								priorityAttribute, priorityOrder));
-				resultParcels = DataUtilities.source(DataUtilities
-						.collection(AllocationUtils.dissolveByCategory(
-								DataUtilities.collection(allocatedParcels),
-								classificationLookup, priorityAttribute)));
-				LOGGER.info("Completed Priority Allocation");
+  }
 
-			} catch (ExecutionException e) {
-				LOGGER.error(
-						"Failed to complete process for all features; ExecutionException: {}",
-						e.getMessage());
-			} catch (InterruptedException e) {
-				LOGGER.error(
-						"Failed to complete process for all features; InterruptedException: {}",
-						e.getMessage());
-			} finally {
-				regions.close();
-			}
-		} catch (IOException e) {
-			LOGGER.error("Failed to read features");
-		}
-
-	}
-
-	private Map<String, Integer> priorityOrderMap(SimpleFeatureSource source)
-			throws IOException {
-		SimpleFeatureIterator features = source.getFeatures().features();
-		Map<String, Integer> priorityOrder = new HashMap();
-		try {
-			while (features.hasNext()) {
-				SimpleFeature feature = features.next();
-				Integer value;
-				Object valueObj = feature.getAttribute("value");
-				if (valueObj.getClass() == Integer.class) {
-					value = (Integer) valueObj;
-				} else if (valueObj.getClass() == String.class) {
-					value = Integer.parseInt((String) (valueObj));
-				} else {
-					throw new IOException("Cannot parse value object");
-				}
-				priorityOrder
-						.put(feature.getAttribute("key").toString(), value);
-			}
-		} finally {
-			features.close();
-		}
-		return priorityOrder;
-	}
+  private Map<String, Integer> priorityOrderMap(SimpleFeatureSource source) throws IOException {
+    SimpleFeatureIterator features = source.getFeatures().features();
+    Map<String, Integer> priorityOrder = new HashMap();
+    try {
+      while (features.hasNext()) {
+        SimpleFeature feature = features.next();
+        Integer value;
+        Object valueObj = feature.getAttribute("value");
+        if (valueObj.getClass() == Integer.class) {
+          value = (Integer) valueObj;
+        } else if (valueObj.getClass() == String.class) {
+          value = Integer.parseInt((String) (valueObj));
+        } else {
+          throw new IOException("Cannot parse value object");
+        }
+        priorityOrder.put(feature.getAttribute("key").toString(), value);
+      }
+    } finally {
+      features.close();
+    }
+    return priorityOrder;
+  }
 
 }
