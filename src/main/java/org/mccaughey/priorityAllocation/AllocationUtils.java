@@ -199,9 +199,9 @@ public class AllocationUtils {
 		return union;
 	}
 
-	static SimpleFeature buildFeature(SimpleFeature baseFeature,
+	static SimpleFeature buildFeature(SimpleFeatureType ft, SimpleFeature baseFeature,
 			List<String> newValues) {
-		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(baseFeature.getFeatureType());
+		SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(ft);
 		sfb.addAll(baseFeature.getAttributes());
 		for (String value : newValues) {
 			sfb.add(value);

@@ -12,6 +12,7 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureIterator;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.filter.text.cql2.CQLException;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -68,8 +69,9 @@ class Allocater implements Callable<List<SimpleFeature>> {
     unAllocatedParcels.close();
 
     SimpleFeatureCollection allocatedFeatures = DataUtilities.collection(allocatedParcels);
-    SimpleFeatureSource source = DataUtilities.source(AllocationUtils.prioritiseOverlap(allocatedFeatures,landUseAttribute, priorityOrder));
-    return AllocationUtils.dissolveByCategory(source.getFeatures(),landUseAttribute, priorityOrder.keySet());
+    SimpleFeatureSource source = DataUtilities.source(AllocationUtils.prioritiseOverlap(allocatedFeatures,
+        landUseAttribute, priorityOrder));
+    return AllocationUtils.dissolveByCategory(source.getFeatures(), landUseAttribute, priorityOrder.keySet());
   }
 
   private SimpleFeature allocateParcel(SimpleFeatureSource pointPriorityFeatures, SimpleFeature parcelOfInterest,
@@ -80,6 +82,7 @@ class Allocater implements Callable<List<SimpleFeature>> {
     Filter filter = ff.intersects(ff.property(geometryPropertyName), ff.literal(parcelOfInterest.getDefaultGeometry()));
 
     SimpleFeatureIterator pointFeatures = pointPriorityFeatures.getFeatures(filter).features();
+    SimpleFeatureType ft = augmentType("Allocated Parcel",parcelOfInterest.getFeatureType(), landUseAttribute, String.class);
     try {
       int currentPriority = priorityOrder.size() + 1;
       String currentPriorityClass = "";
@@ -88,20 +91,20 @@ class Allocater implements Callable<List<SimpleFeature>> {
 
         String landUse = comparisonPoint.getAttribute(landUseAttribute).toString();
 
-          if (priorityOrder.containsKey(landUse)) {
-            int comparisonPriority = priorityOrder.get(landUse);
-            if (comparisonPriority < currentPriority) {
-              currentPriority = comparisonPriority;
-              currentPriorityClass = landUse;
-            }
-          } else {
-            LOGGER.debug("Misssing priority value for classification " + landUse);
+        if (priorityOrder.containsKey(landUse)) {
+          int comparisonPriority = priorityOrder.get(landUse);
+          if (comparisonPriority < currentPriority) {
+            currentPriority = comparisonPriority;
+            currentPriorityClass = landUse;
           }
+        } else {
+          LOGGER.debug("Misssing priority value for classification " + landUse);
+        }
       }
       if (currentPriorityClass != "") {
         List<String> priorityValue = new ArrayList<String>();
         priorityValue.add(currentPriorityClass);
-        return AllocationUtils.buildFeature(parcelOfInterest, priorityValue);
+        return AllocationUtils.buildFeature(ft, parcelOfInterest, priorityValue);
       } else { // don't add parcels which have no classification of
         // interest
         return null;
@@ -109,5 +112,14 @@ class Allocater implements Callable<List<SimpleFeature>> {
     } finally {
       pointFeatures.close();
     }
+  }
+
+  private SimpleFeatureType augmentType(String name, SimpleFeatureType featureType, String landUseAttribute2, Class<?> type) {
+    SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+    builder.setName(name);
+    builder.addAll(featureType.getAttributeDescriptors());
+    builder.add(landUseAttribute, type);
+    builder.setCRS(featureType.getCoordinateReferenceSystem());
+    return builder.buildFeatureType();
   }
 }

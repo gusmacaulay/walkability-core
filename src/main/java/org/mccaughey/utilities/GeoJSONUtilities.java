@@ -25,10 +25,10 @@ import java.net.URL;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,6 +175,10 @@ public final class GeoJSONUtilities {
   public static SimpleFeatureCollection readFeatures(URL url)
       throws IOException {
     FeatureJSON io = new FeatureJSON();
+    //FeatureJSON crsReader = new FeatureJSON();
+    
+    io.setEncodeFeatureCRS(true);
+    //CoordinateReferenceSystem crs = crsReader.readCRS(url.openConnection().getInputStream());
     // io.setEncodeFeatureCollectionCRS(true);
 
     LOGGER.debug("READING GeoJSON from {}", url);
