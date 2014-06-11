@@ -52,6 +52,12 @@
 	<dependencies>
 		<!-- Test Dependencies -->
 		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-compress</artifactId>
+			<version>1.8.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>au.org.aurin</groupId>
 			<artifactId>aggregate-functions-oms</artifactId>
 			<version>0.0.5</version>
