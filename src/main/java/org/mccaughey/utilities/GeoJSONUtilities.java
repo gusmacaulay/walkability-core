@@ -16,13 +16,19 @@
  */
 package org.mccaughey.utilities;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URISyntaxException;
 import java.net.URL;
 
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.CompressorInputStream;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureIterator;
@@ -50,8 +56,11 @@ public final class GeoJSONUtilities {
 
   /**
    * Writes out a SimpleFeatureCollection to a file as geojson
-   * @param features The features to write
-   * @param file The file to write to
+   * 
+   * @param features
+   *          The features to write
+   * @param file
+   *          The file to write to
    */
   public static void writeFeatures(SimpleFeatureCollection features, File file) {
     FeatureJSON fjson = new FeatureJSON();
@@ -68,8 +77,8 @@ public final class GeoJSONUtilities {
         } else {
           LOGGER.debug("CRS is null");
         }
-     //   LOGGER.debug("CRS: {}", features.getSchema()
-     //       .getCoordinateReferenceSystem().toString());
+        // LOGGER.debug("CRS: {}", features.getSchema()
+        // .getCoordinateReferenceSystem().toString());
         // if
         // (features.getSchema().getCoordinateReferenceSystem().toString().contains("UNIT[\"m"))
         // {
@@ -96,8 +105,7 @@ public final class GeoJSONUtilities {
    * @param file
    *          The URL to write to (will overwrite existing)
    */
-  public static URL writeFeatures(SimpleFeatureCollection features,
-      URL dataStoreURL) {
+  public static URL writeFeatures(SimpleFeatureCollection features, URL dataStoreURL) {
     String dataStore = dataStoreURL.toString();
 
     try {
@@ -147,16 +155,14 @@ public final class GeoJSONUtilities {
   }
 
   /**
-   * Gets a FeatureIterator from a GeoJSON URL, does not need to read all the
-   * features?
+   * Gets a FeatureIterator from a GeoJSON URL, does not need to read all the features?
    * 
    * @param url
    *          The FeatureCollection URL
    * @return An Iterator for the features at the URL
    * @throws IOException
    */
-  public static FeatureIterator<SimpleFeature> getFeatureIterator(URL url)
-      throws IOException {
+  public static FeatureIterator<SimpleFeature> getFeatureIterator(URL url) throws IOException {
     LOGGER.debug("Reading features from URL {}", url);
     FeatureJSON io = new FeatureJSON();
     // SslUtil.trustSelfSignedSSL();
@@ -172,19 +178,33 @@ public final class GeoJSONUtilities {
    * @return The features at the URL
    * @throws IOException
    */
-  public static SimpleFeatureCollection readFeatures(URL url)
-      throws IOException {
+  public static SimpleFeatureCollection readFeatures(URL url) throws IOException {
     FeatureJSON io = new FeatureJSON();
-    //FeatureJSON crsReader = new FeatureJSON();
-    
+    // FeatureJSON crsReader = new FeatureJSON();
+
     io.setEncodeFeatureCRS(true);
-    //CoordinateReferenceSystem crs = crsReader.readCRS(url.openConnection().getInputStream());
+    // CoordinateReferenceSystem crs = crsReader.readCRS(url.openConnection().getInputStream());
     // io.setEncodeFeatureCollectionCRS(true);
 
     LOGGER.debug("READING GeoJSON from {}", url);
     // io.readCRS(url.openConnection().getInputStream()));
-    FeatureIterator<SimpleFeature> features = io.streamFeatureCollection(url
-        .openConnection().getInputStream());
+    FeatureIterator<SimpleFeature> features = null;
+    try {
+      if (url.toString().contains(".geojson.gz")) {
+        CompressorInputStream input;
+
+        input = new CompressorStreamFactory().createCompressorInputStream(new BufferedInputStream(new FileInputStream(
+           new File(url.toURI()))));
+        features = io.streamFeatureCollection(input);
+
+      } else {
+        features = io.streamFeatureCollection(url.openConnection().getInputStream());
+      }
+    } catch (CompressorException e) {
+      throw new IOException(e);
+    } catch (URISyntaxException e) {
+      throw new IOException(e);
+    }
     DefaultFeatureCollection collection = new DefaultFeatureCollection();
 
     while (features.hasNext()) {
