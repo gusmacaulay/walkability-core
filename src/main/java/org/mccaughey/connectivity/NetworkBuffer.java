@@ -34,6 +34,7 @@ import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.geometry.jts.Geometries;
 import org.geotools.geometry.jts.GeometryCollector;
 import org.geotools.graph.build.feature.FeatureGraphGenerator;
 import org.geotools.graph.build.line.LineStringGraphGenerator;
@@ -56,6 +57,7 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.PrecisionModel;
@@ -132,7 +134,7 @@ public final class NetworkBuffer {
 		return serviceArea;
 	}
 
-	private static Graph createGraphWithStartNode(
+  private static Graph createGraphWithStartNode(
 			LocationIndexedLine connectedLine, Path startPath,
 			SimpleFeatureCollection networkRegion, Point pointOfInterest) {
 		Coordinate pt = pointOfInterest.getCoordinate();
