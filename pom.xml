@@ -178,6 +178,11 @@
 			<version>${slf4jVersion}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>au.org.aurin</groupId>
+			<artifactId>aurin-commons</artifactId>
+			<version>0.2.9-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 
 	<repositories>

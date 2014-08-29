@@ -40,6 +40,8 @@ import org.opengis.feature.type.AttributeDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import au.org.aurin.gis.SplitMultipointUtil;
+
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -49,7 +51,7 @@ import com.vividsolutions.jts.geom.Polygon;
 
 /**
  * Generates network buffers for a set of points, using Fork/Join for concurrency
- * 
+ *
  * @author amacaulay
  */
 public class NetworkBufferBatch { // extends RecursiveAction {
@@ -69,7 +71,7 @@ public class NetworkBufferBatch { // extends RecursiveAction {
 
   /**
    * Generates network buffers for a set of points
-   * 
+   *
    * @param network
    *          The network to use to generate service networks
    * @param points
@@ -91,7 +93,7 @@ public class NetworkBufferBatch { // extends RecursiveAction {
   }
 
   /**
-   * 
+   *
    * @return A SimpleFeatureCollection of the service area networks for all points of interest
    */
   public SimpleFeatureCollection getGraphs() {
@@ -99,7 +101,7 @@ public class NetworkBufferBatch { // extends RecursiveAction {
   }
 
   /**
-   * 
+   *
    * @return A SimpleFeatureCollection consisting of the buffered service areas for each point of interest
    * @throws IOException
    */
@@ -111,7 +113,7 @@ public class NetworkBufferBatch { // extends RecursiveAction {
       int count = 0;
       SimpleFeatureIterator features = points.features();
       while (features.hasNext()) {
-        for (SimpleFeature point : getIndividualPoints(features.next())) {
+        for (SimpleFeature point : SplitMultipointUtil.getIndividualPoints(features.next())) {
           LOGGER.debug("Feature {} : Buffer count {}", point.getID(), ++count);
           // SimpleFeature point = features.next();
           Buffernator ac = new Buffernator(point, network);
@@ -185,7 +187,7 @@ public class NetworkBufferBatch { // extends RecursiveAction {
     for (Point point : pointGeometries) {
 
       // add the attributes
-      
+
       builder.addAll(geometryFeature.getAttributes());
       builder.add(point);
       // build the feature

@@ -16,7 +16,6 @@
  */
 package org.mccaughey.connectivity;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,14 +26,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.geometry.jts.Geometries;
 import org.geotools.geometry.jts.GeometryCollector;
 import org.geotools.graph.build.feature.FeatureGraphGenerator;
 import org.geotools.graph.build.line.LineStringGraphGenerator;
@@ -42,7 +39,6 @@ import org.geotools.graph.path.Path;
 import org.geotools.graph.structure.Edge;
 import org.geotools.graph.structure.Graph;
 import org.geotools.graph.structure.Node;
-import org.mccaughey.utilities.GeoJSONUtilities;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
@@ -57,7 +53,6 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.PrecisionModel;
@@ -68,7 +63,7 @@ import com.vividsolutions.jts.linearref.LocationIndexedLine;
 
 /**
  * Generates Network Buffers, which can be used as service areas
- * 
+ *
  * @author amacaulay
  */
 public final class NetworkBuffer {
@@ -113,9 +108,9 @@ public final class NetworkBuffer {
 				networkDistance, bufferDistance, pointOfInterest);
 		LOGGER.debug("Found nearest edge line {}", nearestLine);
 		if (nearestLine == null) {
-			LOGGER.error("Failed to snap point {} to network",
-					pointFeature.getID());
-			return null;
+			LOGGER.error("Failed to snap point {},{} to network",
+					pointFeature.getID(), pointFeature.getDefaultGeometryProperty().toString());
+			throw new IllegalArgumentException("Failed to snap point to network: " + pointFeature.getID());
 		}
 
 		Path startPath = new Path();
@@ -151,7 +146,7 @@ public final class NetworkBuffer {
 
 		if ((lineB.getLength() == 0.0) || (lineA.getLength() == 0.0)) {
 			FeatureGraphGenerator networkGraphGen = buildFeatureNetwork(networkRegion);
-		
+
 			Graph graph = networkGraphGen.getGraph();
 			startPath.add(findStartNode(graph, originalLine));
 			return graph;
@@ -182,7 +177,7 @@ public final class NetworkBuffer {
 
 	/**
 	 * Constructs a geotools Graph line network from a feature source
-	 * 
+	 *
 	 * @param featureCollection
 	 *            the network feature collection
 	 * @return returns a geotools FeatureGraphGenerator based on the features
@@ -359,7 +354,7 @@ public final class NetworkBuffer {
 
 	/**
 	 * Generates a buffered service area from a set of network edges
-	 * 
+	 *
 	 * @param serviceArea
 	 *            The set of service area edges
 	 * @param distance
@@ -369,30 +364,30 @@ public final class NetworkBuffer {
 	 */
 	public static SimpleFeature createBufferFromEdges(Map serviceArea,
 			Double distance, SimpleFeature sourceFeature, String id) {
-		LOGGER.debug("Creating Buffer");
+		LOGGER.debug("Creating Buffer {}", id);
 		Set<Edge> edges = serviceArea.keySet();
 		Geometry all = null;
 		while (edges.size() > 0) {
-		
+
 			Set<Edge> unjoined = new HashSet();
 			for (Edge edge : edges) {
-			
+
 				Geometry geom = (Geometry) ((SimpleFeature) serviceArea
 						.get(edge)).getDefaultGeometry();
-				
+
 				geom = geom.union();
-			
+
 				double bufferDistance = distance;
-		
+
 				geom = geom.buffer(bufferDistance);
-			
+
 				try {
 					if (all != null) {
 						all = all.union().union();
 					}
 					if (all == null) {
 						all = geom;
-					} else if (!(all.covers(geom))) {		
+					} else if (!(all.covers(geom))) {
 						if (all.intersects(geom)) {
 							all = all.union(geom);
 						} else {
@@ -423,7 +418,7 @@ public final class NetworkBuffer {
 
 	private static SimpleFeature buildFeatureFromGeometry(
 			SimpleFeature sourceFeature, Geometry geom, String id) {
-		SimpleFeatureType sft = (SimpleFeatureType) sourceFeature.getType();
+		SimpleFeatureType sft = sourceFeature.getType();
 		SimpleFeatureTypeBuilder stb = new SimpleFeatureTypeBuilder();
 		stb.init(sft);
 		stb.setName("densityFeatureType");
@@ -445,7 +440,7 @@ public final class NetworkBuffer {
 
 	/**
 	 * Creates a line network representation of service area from set of Edges
-	 * 
+	 *
 	 * @param serviceArea
 	 *            The service area edges
 	 * @return The edges as SimpleFeature
@@ -462,7 +457,7 @@ public final class NetworkBuffer {
 
 	/**
 	 * Creates a convex hull buffer of service area
-	 * 
+	 *
 	 * @param serviceArea
 	 *            The set of edges
 	 * @param distance
