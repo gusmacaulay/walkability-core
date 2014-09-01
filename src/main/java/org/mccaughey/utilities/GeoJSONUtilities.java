@@ -30,11 +30,9 @@ import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorInputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +42,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handles reading and writing of GeoJSON in and out of Geotools
- * 
+ *
  * @author amacaulay
  */
 public final class GeoJSONUtilities {
@@ -56,7 +54,7 @@ public final class GeoJSONUtilities {
 
   /**
    * Writes out a SimpleFeatureCollection to a file as geojson
-   * 
+   *
    * @param features
    *          The features to write
    * @param file
@@ -99,7 +97,7 @@ public final class GeoJSONUtilities {
 
   /**
    * Writes a SimpleFeatureCollection to a URL as geojson
-   * 
+   *
    * @param features
    *          The features to write out
    * @param file
@@ -120,7 +118,7 @@ public final class GeoJSONUtilities {
 
   /**
    * Writes a single feature to file
-   * 
+   *
    * @param feature
    * @param file
    */
@@ -142,7 +140,7 @@ public final class GeoJSONUtilities {
 
   /**
    * Reads a single feature from GeoJSON
-   * 
+   *
    * @param url
    *          A URL pointing to a GeoJSON feature
    * @return The feature from the URL
@@ -156,7 +154,7 @@ public final class GeoJSONUtilities {
 
   /**
    * Gets a FeatureIterator from a GeoJSON URL, does not need to read all the features?
-   * 
+   *
    * @param url
    *          The FeatureCollection URL
    * @return An Iterator for the features at the URL
@@ -172,7 +170,7 @@ public final class GeoJSONUtilities {
 
   /**
    * Gets a SimpleFeatureCollection from a GeoJSON URL - reads all the features
-   * 
+   *
    * @param url
    *          The FeatureCollection URL
    * @return The features at the URL
@@ -186,7 +184,6 @@ public final class GeoJSONUtilities {
     // CoordinateReferenceSystem crs = crsReader.readCRS(url.openConnection().getInputStream());
     // io.setEncodeFeatureCollectionCRS(true);
 
-    LOGGER.debug("READING GeoJSON from {}", url);
     // io.readCRS(url.openConnection().getInputStream()));
     FeatureIterator<SimpleFeature> features = null;
     try {
@@ -195,23 +192,14 @@ public final class GeoJSONUtilities {
 
         input = new CompressorStreamFactory().createCompressorInputStream(new BufferedInputStream(new FileInputStream(
            new File(url.toURI()))));
-        features = io.streamFeatureCollection(input);
+        return (SimpleFeatureCollection) io.readFeatureCollection(input);
 
-      } else {
-        features = io.streamFeatureCollection(url.openConnection().getInputStream());
       }
+      return (SimpleFeatureCollection) io.readFeatureCollection(url.openConnection().getInputStream());
     } catch (CompressorException e) {
       throw new IOException(e);
     } catch (URISyntaxException e) {
       throw new IOException(e);
     }
-    DefaultFeatureCollection collection = new DefaultFeatureCollection();
-
-    while (features.hasNext()) {
-      SimpleFeature feature = features.next();
-      collection.add(feature);
-    }
-
-    return collection;
   }
 }

@@ -26,12 +26,14 @@ import org.geotools.data.DataUtilities;
 import org.geotools.data.Query;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
+import org.geotools.data.store.ReprojectingFeatureCollection;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * An OMS Wrapper for Network Buffer generation
- * 
+ *
  * @author amacaulay
  */
 @Name("netbuffer")
@@ -79,7 +81,6 @@ public class NetworkBufferOMS {
   @Name("The original road network")
   public SimpleFeatureSource networkOut;
 
-
   /**
    * Reads the input network and point datasets then uses NetworkBufferBatch to
    * generate all the network buffers and writes out to regions URL
@@ -90,26 +91,28 @@ public class NetworkBufferOMS {
     validateInputs();
 
     try {
-      SimpleFeatureSource networkSource = network;
-      SimpleFeatureSource pointsSource = points;
-
-      assert (network.getSchema().getCoordinateReferenceSystem() != null);
-      //LOGGER.debug("Coordinate Units: {}", network.getSchema()
-      //    .getCoordinateReferenceSystem().getCoordinateSystem().getAxis(0)
-      //    .getUnit().toString());
-      assert (network.getSchema().getCoordinateReferenceSystem()
-          .getCoordinateSystem().getAxis(0).getUnit().toString().equals("m"));
-
       LOGGER.debug("Received network data containing {} features",
-          networkSource.getCount(new Query()));
+          network.getCount(new Query()));
       LOGGER.debug("Received points data containing {} features",
-          pointsSource.getCount(new Query()));
+          points.getCount(new Query()));
 
-      LOGGER.debug("Points Source CRS: {}", pointsSource.getSchema()
-          .getCoordinateReferenceSystem());
+      final CoordinateReferenceSystem pointsCRS = points.getSchema()
+          .getCoordinateReferenceSystem();
+      LOGGER.debug("Points Source CRS: {}", pointsCRS);
+      final CoordinateReferenceSystem networkCRS = network.getSchema()
+          .getCoordinateReferenceSystem();
+      LOGGER.debug("Roads Source CRS: {}", networkCRS);
+
+      SimpleFeatureCollection pointsFC = points.getFeatures();
+
+      if (pointsCRS != null && !pointsCRS.equals(networkCRS)) {
+        pointsFC = new ReprojectingFeatureCollection(pointsFC,
+            networkCRS);
+      }
+
       LOGGER.info("Generate network service areas...");
-      NetworkBufferBatch nbb = new NetworkBufferBatch(networkSource,
-          pointsSource.getFeatures(), distance, bufferSize);
+      NetworkBufferBatch nbb = new NetworkBufferBatch(network,
+          pointsFC, distance, bufferSize);
       SimpleFeatureCollection buffers = nbb.createBuffers();
 
       if (buffers.isEmpty()) {
@@ -151,6 +154,16 @@ public class NetworkBufferOMS {
     if (bufferSize == null) {
       throw new IllegalArgumentException(
           "Network buffer error: A buffer size must be provided");
+    }
+
+    if (network.getSchema().getCoordinateReferenceSystem() == null) {
+      throw new IllegalArgumentException(
+          "Network dataset does not contain a CRS");
+    }
+
+    if (!network.getSchema().getCoordinateReferenceSystem()
+        .getCoordinateSystem().getAxis(0).getUnit().toString().equals("m")) {
+      throw new IllegalArgumentException("Network axis unit is not m");
     }
   }
 }
