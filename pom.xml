@@ -3,7 +3,7 @@
 
 	<groupId>org.mccaughey</groupId>
 	<artifactId>walkability</artifactId>
-	<version>0.2.7-SNAPSHOT</version>
+	<version>0.2.7</version>
 	<packaging>jar</packaging>
 
 	<name>Walkability</name>
@@ -21,7 +21,7 @@
 	<scm>
 		<url>http://github.com/AURIN/walkability</url>
 		<connection>scm:git:git://github.com/AURIN/walkability.git</connection>
-		<tag>HEAD</tag>
+		<tag>v0.2.7</tag>
 	</scm>
 
 	<developers>
@@ -181,7 +181,7 @@
 		<dependency>
 			<groupId>au.org.aurin</groupId>
 			<artifactId>aurin-commons</artifactId>
-			<version>0.2.9-SNAPSHOT</version>
+			<version>0.2.9</version>
 		</dependency>
 	</dependencies>
 
