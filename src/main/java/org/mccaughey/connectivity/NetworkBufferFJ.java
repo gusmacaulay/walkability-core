@@ -263,7 +263,6 @@ public class NetworkBufferFJ extends RecursiveAction {
 
     Geometry lineGeom = ((Geometry) ((SimpleFeature) edge.getObject())
         .getDefaultGeometry());
-    // lineGeom = Densifier.densify(lineGeom, 1); //1 metre tolerance
     LengthIndexedLine line = new LengthIndexedLine(lineGeom);
 
     if (node.equals(edge.getNodeA())) {
@@ -271,20 +270,12 @@ public class NetworkBufferFJ extends RecursiveAction {
       SimpleFeature newFeature = buildFeatureFromGeometry(
           ((SimpleFeature) edge.getObject()).getType(), newLine);
       newEdge.setObject(newFeature);
-      // LOGGER.debug("...To {}",newLine.getLength());
-      // Double delta = 1500.0 - pathLength(path) - newLine.getLength();
-      // LOGGER.debug("Delta Length A: " + delta);//(newLine.getLength() -
-      // length) );
       return newEdge;
     } else if (node.equals(edge.getNodeB())) {
       Geometry newLine = line.extractLine(line.getEndIndex(), -length);
       SimpleFeature newFeature = buildFeatureFromGeometry(
           ((SimpleFeature) edge.getObject()).getType(), newLine);
       newEdge.setObject(newFeature);
-      // LOGGER.debug("...To {}",newLine.getLength());
-      // Double delta = 1500.0 - pathLength(path) - newLine.getLength();
-      // LOGGER.debug("Delta Length B: " + delta);//(newLine.getLength() -
-      // length) );
       return newEdge;
     } else {
       LOGGER.error("Failed To Cut Edge");
@@ -299,7 +290,6 @@ public class NetworkBufferFJ extends RecursiveAction {
 
     Geometry lineGeom = ((Geometry) ((SimpleFeature) edge.getObject())
         .getDefaultGeometry());
-    // lineGeom = Densifier.densify(lineGeom, 1); //1 metre tolerance
     LengthIndexedLine line = new LengthIndexedLine(lineGeom);
 
     if (node.equals(edge.getNodeA())) {
@@ -308,20 +298,12 @@ public class NetworkBufferFJ extends RecursiveAction {
       SimpleFeature newFeature = buildFeatureFromGeometry(
           ((SimpleFeature) edge.getObject()).getType(), newLine);
       newEdge.setObject(newFeature);
-      // LOGGER.debug("...To {}",newLine.getLength());
-      // Double delta = 1500.0 - pathLength(path) - newLine.getLength();
-      // LOGGER.debug("Delta Length A: " + delta);//(newLine.getLength() -
-      // length) );
       return newEdge;
     } else if (node.equals(edge.getNodeB())) {
       Geometry newLine = line.extractLine(line.getStartIndex(), length);
       SimpleFeature newFeature = buildFeatureFromGeometry(
           ((SimpleFeature) edge.getObject()).getType(), newLine);
       newEdge.setObject(newFeature);
-      // LOGGER.debug("...To {}",newLine.getLength());
-      // Double delta = 1500.0 - pathLength(path) - newLine.getLength();
-      // LOGGER.debug("Delta Length B: " + delta);//(newLine.getLength() -
-      // length) );
       return newEdge;
     } else {
       LOGGER.error("Failed To Cut Edge");
