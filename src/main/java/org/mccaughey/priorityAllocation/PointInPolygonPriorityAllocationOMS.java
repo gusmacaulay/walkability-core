@@ -142,8 +142,10 @@ public class PointInPolygonPriorityAllocationOMS {
           value = (Integer) valueObj;
         } else if (valueObj.getClass() == String.class) {
           value = Integer.parseInt((String) (valueObj));
+        } else if (valueObj.getClass() == Long.class) {
+          value = ((Long) (valueObj)).intValue();
         } else {
-          throw new IOException("Cannot parse value object");
+          throw new IOException("Cannot parse value object " + valueObj.getClass().toString());
         }
         priorityOrder.put(feature.getAttribute("key").toString(), value);
       }
